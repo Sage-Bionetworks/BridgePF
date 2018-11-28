@@ -64,6 +64,7 @@ public class StudyServiceTest {
 
     @Before
     public void before() {
+        //BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         mockCache = mock(CacheProvider.class);
         studyService.setCacheProvider(mockCache);
     }

@@ -46,7 +46,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.ImmutableSet;
 
 @Component("authenticationService")
 public class AuthenticationService {
@@ -202,7 +201,7 @@ public class AuthenticationService {
         // This is effectively equivalent to the app submitting an token identification token and a 19-character reauth
         // token, which is still reasonably secure.
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
-        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestId());
+        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
 
         CacheKey reauthCacheKey = CacheKey.reauthCacheKey(signIn.getReauthToken(), signIn.getStudyId());
         
@@ -262,7 +261,7 @@ public class AuthenticationService {
         try {
             // Since caller has no roles, no roles can be assigned on sign up. Right now public sign up cannot
             // assign the user to a substudy.
-            return participantService.createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), participant, true);
+            return participantService.createParticipant(study, participant, true);
         } catch(EntityAlreadyExistsException e) {
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
@@ -348,8 +347,7 @@ public class AuthenticationService {
             // establish such a relationship.
             StudyParticipant participant = new StudyParticipant.Builder()
                     .withExternalId(externalId).withPassword(password).build();
-            userId = participantService.createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), 
-                    participant, false).getIdentifier();
+            userId = participantService.createParticipant(study, participant, false).getIdentifier();
         } else {
             // Account exists, so rotate the password
             accountDao.changePassword(account, null, password);

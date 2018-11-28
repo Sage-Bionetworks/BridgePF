@@ -28,6 +28,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -115,8 +117,8 @@ public class ParticipantServiceTest {
     private static final String ACTIVITY_GUID = "activityGuid";
     private static final String PAGED_BY = "100";
     private static final int PAGE_SIZE = 50;
-    private static final Set<Roles> RESEARCH_CALLER_ROLES = Sets.newHashSet(RESEARCHER);
-    private static final Set<Roles> DEV_CALLER_ROLES = Sets.newHashSet(DEVELOPER);
+    private static final Set<Roles> RESEARCH_CALLER_ROLES = ImmutableSet.of(RESEARCHER);
+    private static final Set<Roles> DEV_CALLER_ROLES = ImmutableSet.of(DEVELOPER);
     private static final Set<String> CALLER_SUBS = ImmutableSet.of();
     private static final List<String> USER_LANGUAGES = ImmutableList.copyOf(BridgeUtils.commaListToOrderedSet("de,fr"));
     private static final String EMAIL = "email@email.com";
@@ -242,6 +244,14 @@ public class ParticipantServiceTest {
         participantService.setSubstudyService(substudyService);
 
         account = Account.create();
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+                .withCallerSubstudies(CALLER_SUBS).build());
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -276,7 +286,7 @@ public class ParticipantServiceTest {
         
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, true);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
@@ -309,6 +319,8 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantTransfersSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(substudies).build());
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
         when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
@@ -316,7 +328,7 @@ public class ParticipantServiceTest {
         
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, ImmutableSet.of(), substudies, participant, false);
+        participantService.createParticipant(STUDY, participant, false);
         
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         
@@ -343,7 +355,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         
@@ -358,7 +370,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().build();
         
         try {
-            participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, participant, false);
+            participantService.createParticipant(STUDY, participant, false);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
         }
@@ -371,7 +383,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -385,7 +397,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withPhone(null).build();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, participant, true);
+        participantService.createParticipant(STUDY, participant, true);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -397,7 +409,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -409,7 +421,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
 
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, true);
+        participantService.createParticipant(STUDY, PARTICIPANT, true);
 
         verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -423,7 +435,7 @@ public class ParticipantServiceTest {
         study.setAutoVerificationEmailSuppressed(true);
         mockHealthCodeAndAccountRetrieval();
 
-        participantService.createParticipant(study, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, true);
+        participantService.createParticipant(study, PARTICIPANT, true);
 
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -438,7 +450,7 @@ public class ParticipantServiceTest {
         
         // Make minimal phone participant.
         StudyParticipant phoneParticipant = new StudyParticipant.Builder().withPhone(PHONE).build();
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, phoneParticipant, false);
+        participantService.createParticipant(STUDY, phoneParticipant, false);
 
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -449,7 +461,7 @@ public class ParticipantServiceTest {
     public void createParticipantPhoneDisabledNoVerificationWanted() {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -461,7 +473,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
         STUDY.setEmailVerificationEnabled(true);
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, true);
+        participantService.createParticipant(STUDY, PARTICIPANT, true);
 
         verify(accountWorkflowService).sendPhoneVerificationToken(STUDY, ID, PHONE);
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -475,7 +487,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
         study.setEmailVerificationEnabled(true);
-        participantService.createParticipant(study, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, true);
+        participantService.createParticipant(study, PARTICIPANT, true);
 
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -488,7 +500,7 @@ public class ParticipantServiceTest {
 
         // Make minimal email participant.
         StudyParticipant emailParticipant = new StudyParticipant.Builder().withEmail(EMAIL).build();
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, emailParticipant, false);
+        participantService.createParticipant(STUDY, emailParticipant, false);
 
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -499,7 +511,7 @@ public class ParticipantServiceTest {
     public void createPhoneParticipant_OptInPhoneNumber() {
         // Set up and execute test.
         mockHealthCodeAndAccountRetrieval(null, PHONE);
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
 
         // Verify calls to SmsService.
         verify(smsService).optInPhoneNumber(ID, PHONE);
@@ -510,7 +522,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(null, null);
         
         StudyParticipant idParticipant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, idParticipant, false);
+        participantService.createParticipant(STUDY, idParticipant, false);
         
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
         assertNull(account.getPhoneVerified());
@@ -523,7 +535,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant idParticipant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID)
                 .withPassword(PASSWORD).build();
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, idParticipant, false);
+        participantService.createParticipant(STUDY, idParticipant, false);
         
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
@@ -871,6 +883,8 @@ public class ParticipantServiceTest {
 
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
+        
         when(externalIdService.getExternalId(TestConstants.TEST_STUDY, EXTERNAL_ID)).thenReturn(EXT_ID);
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
@@ -889,7 +903,7 @@ public class ParticipantServiceTest {
         oldSession.setStudyIdentifier(STUDY.getStudyIdentifier());
         doReturn(oldSession).when(cacheProvider).getUserSessionByUserId(ID);
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -909,6 +923,8 @@ public class ParticipantServiceTest {
     @Test
     public void updateParticipantTransfersSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(substudies).build());
+
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
         when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
@@ -920,7 +936,7 @@ public class ParticipantServiceTest {
         account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyC", ID));
         account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
         
-        participantService.updateParticipant(STUDY, ImmutableSet.of(), substudies, participant);
+        participantService.updateParticipant(STUDY, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         
@@ -945,7 +961,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         // account and participant have the same ID, so externalIdService is not called
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         verify(externalIdService, never()).assignExternalId(any(), any(), any());
     }
     
@@ -956,14 +972,14 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withDataGroups(Sets.newHashSet("bogusGroup"))
                 .build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
     }
     
     @Test
     public void updateParticipantWithNoAccount() {
         doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(ACCOUNT_ID);
         try {
-            participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+            participantService.updateParticipant(STUDY, PARTICIPANT);
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
@@ -998,13 +1014,15 @@ public class ParticipantServiceTest {
 
     @Test
     public void notSettingStatusDoesntClearStatus() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
         mockHealthCodeAndAccountRetrieval();
         account.setStatus(AccountStatus.ENABLED);
 
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(null).build();
 
-        participantService.updateParticipant(STUDY, ImmutableSet.of(ADMIN), ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
 
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -1386,7 +1404,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         // Validated and required, use reservation service and don't set as option
         verify(externalIdService).assignExternalId(studyCaptor.capture(), eq(EXTERNAL_ID), eq(HEALTH_CODE));
@@ -1401,7 +1419,7 @@ public class ParticipantServiceTest {
         when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH))
                 .thenReturn(accountSummaries);
         
-        participantService.createParticipant(STUDY,  RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
     }
     
     @Test
@@ -1411,7 +1429,7 @@ public class ParticipantServiceTest {
         when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         try {
-            participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+            participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(LimitExceededException e) {
             assertEquals("While study is in evaluation mode, it may not exceed 10 accounts.", e.getMessage());
@@ -1424,7 +1442,7 @@ public class ParticipantServiceTest {
         when(accountSummaries.getTotal()).thenReturn(13);
         when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
     }
     
 
@@ -1628,7 +1646,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withRoles(Sets.newHashSet())
                 .withExternalId(null).build();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, participant, false);
+        participantService.createParticipant(STUDY, participant, false);
     }
 
     public void createRequiredExternalIdWithRolesOK() {
@@ -1637,7 +1655,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withExternalId(null).build();
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, participant, false);
+        participantService.createParticipant(STUDY, participant, false);
     }
     
     @Test
@@ -1647,7 +1665,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1660,7 +1678,7 @@ public class ParticipantServiceTest {
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(null);
         
         try {
-            participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+            participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             verify(accountDao, never()).createAccount(any(), any());
@@ -1681,7 +1699,7 @@ public class ParticipantServiceTest {
         doThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null))
                 .when(accountDao).createAccount(any(), any());
         try {
-            participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+            participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
             verify(externalIdService, never()).assignExternalId(any(), any(), any());    
@@ -1697,7 +1715,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
     }
     
     @Test
@@ -1708,7 +1726,7 @@ public class ParticipantServiceTest {
         ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1722,7 +1740,7 @@ public class ParticipantServiceTest {
                 .copyOf(PARTICIPANT)
                 .withExternalId("").build();
         try {
-            participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+            participantService.updateParticipant(STUDY, participant);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             
@@ -1740,7 +1758,7 @@ public class ParticipantServiceTest {
         // This record has a different external ID than the mocked account
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals("newExternalId", account.getExternalId());
         verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1754,7 +1772,7 @@ public class ParticipantServiceTest {
         // Paticipant has no external ID, so externalIdService is not called
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, null, HEALTH_CODE);
     }
@@ -1766,7 +1784,7 @@ public class ParticipantServiceTest {
         ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1782,7 +1800,7 @@ public class ParticipantServiceTest {
         // This record has a different external ID than the mocked accound
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals(null, account.getExternalId());
         verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1795,7 +1813,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(null);
         
-        participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
@@ -1806,7 +1824,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         account.setExternalId(null);
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1817,7 +1835,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(false);
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).assignExternalId(any(), any(), any());
@@ -1830,7 +1848,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals("newExternalId", account.getExternalId());
         verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1844,7 +1862,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals(null, account.getExternalId());
         verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -1853,12 +1871,15 @@ public class ParticipantServiceTest {
     
     @Test
     public void changingExternalIdOnlyWorksForResearcher() {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(false);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("someOtherId").build();
-        participantService.updateParticipant(STUDY, ImmutableSet.of(Roles.DEVELOPER), ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any(), any());
@@ -1867,12 +1888,15 @@ public class ParticipantServiceTest {
     
     @Test
     public void removingExternalIdOnlyWorksForResearcher() {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(false);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
-        participantService.updateParticipant(STUDY, ImmutableSet.of(Roles.DEVELOPER), ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any(), any());
@@ -1931,10 +1955,12 @@ public class ParticipantServiceTest {
     
     @Test
     public void normalUserCanAddExternalIdOnUpdate() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        
         mockHealthCodeAndAccountRetrieval();
         account.setExternalId(null);
         
-        participantService.updateParticipant(STUDY, ImmutableSet.of(), ImmutableSet.of(), PARTICIPANT);
+        participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
@@ -1942,12 +1968,14 @@ public class ParticipantServiceTest {
     
     @Test
     public void normalUserCannotChangeExternalIdOnUpdate() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
         
-        participantService.updateParticipant(STUDY, ImmutableSet.of(), ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
@@ -1960,7 +1988,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
         
-        participantService.updateParticipant(STUDY, RESEARCH_CALLER_ROLES, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
@@ -1971,13 +1999,15 @@ public class ParticipantServiceTest {
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
-    private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
+    private void verifyStatusUpdate(Set<Roles> callerRoles, boolean canSetStatus) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+        
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(AccountStatus.ENABLED).build();
         
-        participantService.updateParticipant(STUDY, roles, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
 
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
@@ -1990,12 +2020,14 @@ public class ParticipantServiceTest {
     }
 
     private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+        
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
-        participantService.createParticipant(STUDY, callerRoles, CALLER_SUBS, participant, false);
+        participantService.createParticipant(STUDY, participant, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
@@ -2009,11 +2041,13 @@ public class ParticipantServiceTest {
     }
     
     private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet, Set<Roles> expected) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(rolesThatAreSet).build();
-        participantService.updateParticipant(STUDY, callerRoles, ImmutableSet.of(), participant);
+        participantService.updateParticipant(STUDY, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();

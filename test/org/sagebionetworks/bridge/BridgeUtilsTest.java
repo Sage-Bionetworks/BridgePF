@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -22,12 +24,15 @@ import org.joda.time.LocalDateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -36,6 +41,51 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    
+    @Test
+    public void filterForSubstudyNullReturnsNull() {
+        assertNull(BridgeUtils.filterForSubstudy(null));
+    }
+    
+    @Test
+    public void filterForSubstudyNoContextReturnsNormalAccount() {
+        BridgeUtils.setRequestContext(null);
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+    }
+    
+    @Test
+    public void filterForSubstudyNoContextReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(null);
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyWithSubstudiesHidesNormalAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+    }
+
+    @Test
+    public void filterForSubstudyWithMatchingSubstudiesReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyWithMismatchedSubstudiesHidesSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("notSubstudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    private HibernateAccount getAccountWithSubstudy(String... substudyIds) {
+        HibernateAccount account = new HibernateAccount();
+        Set<AccountSubstudy> accountSubstudies = Arrays.asList(substudyIds)
+                .stream().map((id) -> {
+            return AccountSubstudy.create("studyId", id, "accountId");
+        }).collect(BridgeCollectors.toImmutableSet());
+        account.setAccountSubstudies(accountSubstudies);
+        return account;
+    }
     
     @Test
     public void isExternalIdAccount() {
@@ -50,27 +100,30 @@ public class BridgeUtilsTest {
     }
 
     @Test
-    public void getRequestId() throws Exception {
+    public void getRequestContext() throws Exception {
         // Can set request ID in this thread.
-        BridgeUtils.setRequestId("main request ID");
-        assertEquals("main request ID", BridgeUtils.getRequestId());
+        RequestContext context = new RequestContext.Builder().withRequestId("main request ID").build();
+        RequestContext otherContext = new RequestContext.Builder().withRequestId("other request ID").build();
+        
+        BridgeUtils.setRequestContext(context);
+        assertEquals("main request ID", BridgeUtils.getRequestContext().getId());
 
         // Request ID is thread local, so a separate thread should see a different request ID.
         Runnable runnable = () -> {
-            assertNull(BridgeUtils.getRequestId());
-            BridgeUtils.setRequestId("other request ID");
-            assertEquals("other request ID", BridgeUtils.getRequestId());
+            assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
+            BridgeUtils.setRequestContext(otherContext);
+            assertEquals("other request ID", BridgeUtils.getRequestContext().getId());
         };
         Thread otherThread = new Thread(runnable);
         otherThread.start();
         otherThread.join();
 
         // Other thread doesn't affect this thread.
-        assertEquals("main request ID", BridgeUtils.getRequestId());
+        assertEquals("main request ID", BridgeUtils.getRequestContext().getId());
 
         // Setting request ID to null is fine.
-        BridgeUtils.setRequestId(null);
-        assertNull(BridgeUtils.getRequestId());
+        BridgeUtils.setRequestContext(null);
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
     }
 
     @Test

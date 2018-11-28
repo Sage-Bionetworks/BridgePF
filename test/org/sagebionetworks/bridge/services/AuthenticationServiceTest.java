@@ -26,8 +26,9 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
@@ -71,7 +72,6 @@ import com.google.common.collect.Sets;
 public class AuthenticationServiceTest {
     
     private static final String PASSWORD = "P@ssword`1";
-    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet();
     private static final Set<String> ORIGINAL_DATA_GROUPS = Sets.newHashSet("group1");
     private static final Set<String> UPDATED_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2","group1");
     
@@ -118,6 +118,7 @@ public class AuthenticationServiceTest {
     
     @After
     public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         if (testUser != null && testUser.getId() != null) {
             helper.deleteUser(testUser);
         }
@@ -255,6 +256,10 @@ public class AuthenticationServiceTest {
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
+        // The AuthenticationService will verify the caller is an ADMIN, so RequestContext must be set
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.RESEARCHER).build();
         // Can no longer delete an account without getting a session, and the assigned ID, first, so there's
@@ -265,6 +270,10 @@ public class AuthenticationServiceTest {
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
+        // The AuthenticationService will verify the caller is an ADMIN, so RequestContext must be set
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
@@ -457,7 +466,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = participantService.getParticipant(study, userId, false);
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withDataGroups(UPDATED_DATA_GROUPS).withId(userId).build();
-        participantService.updateParticipant(study, CALLER_ROLES, ImmutableSet.of(), updated);
+        participantService.updateParticipant(study, updated);
         
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier())

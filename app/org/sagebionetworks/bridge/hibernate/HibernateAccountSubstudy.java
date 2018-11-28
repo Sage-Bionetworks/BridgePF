@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
@@ -18,6 +19,7 @@ public class HibernateAccountSubstudy implements AccountSubstudy {
     @Id
     private String substudyId;
     @Id
+    @JoinColumn(name = "account_id")
     private String accountId;
     private String externalId;
     

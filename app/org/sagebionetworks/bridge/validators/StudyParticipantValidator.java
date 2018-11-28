@@ -29,11 +29,11 @@ public class StudyParticipantValidator implements Validator {
     private final boolean isNew;
     
     public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
-            Set<String> callerSubstudies, boolean isNew) {
+            boolean isNew) {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;
         this.study = study;
-        this.callerSubstudies = callerSubstudies;
+        this.callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
         this.isNew = isNew;
     }
     

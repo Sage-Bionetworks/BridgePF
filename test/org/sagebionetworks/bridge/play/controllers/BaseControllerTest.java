@@ -23,10 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.mockito.ArgumentCaptor;
 import play.mvc.Http;
 
@@ -83,6 +85,11 @@ public class BaseControllerTest {
     static {
         TEST_HEADERS = new HashMap<>();
         TEST_HEADERS.put(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
@@ -685,6 +692,36 @@ public class BaseControllerTest {
         BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         controller.getAuthenticatedSession(false, Roles.DEVELOPER);
+    }
+    
+    @Test
+    public void getSessionPopulatesTheRequestContext() {
+        RequestContext context = BridgeUtils.getRequestContext();
+        assertNull(context.getId());
+        assertNull(context.getCallerStudyId());
+        assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
+        assertEquals(ImmutableSet.of(), context.getCallerRoles());
+        
+        Set<String> substudyIds = ImmutableSet.of("substudyA", "substudyB");
+        Set<Roles> roles = ImmutableSet.of(Roles.DEVELOPER);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withSubstudyIds(substudyIds)
+                .withRoles(roles)
+                .build();
+        UserSession session = makeValidSession();
+        session.setParticipant(participant);
+        session.setAuthenticated(true);
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
+        
+        controller.getAuthenticatedSession(false);
+        
+        context = BridgeUtils.getRequestContext();
+        assertNotNull(context.getId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, context.getCallerStudyId());
+        assertEquals(substudyIds, context.getCallerSubstudies());
+        assertEquals(roles, context.getCallerRoles());
     }
     
     @Test
