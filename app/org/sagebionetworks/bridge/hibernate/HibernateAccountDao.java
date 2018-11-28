@@ -7,11 +7,7 @@ import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelT
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -24,8 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -48,23 +50,23 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-
-import com.google.common.base.Joiner;
 
 /** Hibernate implementation of Account Dao. */
 @Component
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
-
-    static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyId, firstName, lastName, email, phone, externalId, id, status) ";
-    static final String EMAIL_QUERY = "from HibernateAccount where studyId=:studyId and email=:email";
-    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId=:studyId and healthCode=:healthCode";
-    static final String PHONE_QUERY = "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode";
-    static final String EXTID_QUERY = "from HibernateAccount where studyId=:studyId and externalId=:externalId";
+    
+    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
+            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) "+
+            "FROM HibernateAccount AS acct";
+            
+    static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
+    
+    static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
     
     private HibernateHelper hibernateHelper;
     private CacheProvider cacheProvider;
@@ -162,7 +164,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
+        Account hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
                 hibernateAccount.getPasswordHash(), signIn.getPassword(), "password", signIn);
     }
@@ -173,12 +175,12 @@ public class HibernateAccountDao implements AccountDao {
         if (!study.isReauthenticationEnabled()) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
-        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
+        Account hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
                 hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token", signIn);
     }
     
-    private Account authenticateInternal(Study study, HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
+    private Account authenticateInternal(Study study, Account hibernateAccount, PasswordAlgorithm algorithm,
             String hash, String credentialValue, String credentialName, SignIn signIn) {
 
         // First check and throw an entity not found exception if the password is wrong.
@@ -204,7 +206,7 @@ public class HibernateAccountDao implements AccountDao {
         boolean accountUpdated = validateHealthCode(hibernateAccount);
         accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
         if (accountUpdated) {
-            HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+            Account updated = hibernateHelper.update(hibernateAccount);
             hibernateAccount.setVersion(updated.getVersion());
         }
         return hibernateAccount;
@@ -212,13 +214,13 @@ public class HibernateAccountDao implements AccountDao {
 
     @Override
     public Account getAccountAfterAuthentication(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
 
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -230,7 +232,7 @@ public class HibernateAccountDao implements AccountDao {
 
     @Override
     public void deleteReauthToken(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null && hibernateAccount.getReauthTokenHash() != null) {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
@@ -239,7 +241,7 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount) {
+    private boolean updateReauthToken(Study study, Account hibernateAccount) {
         if (study != null && !study.isReauthenticationEnabled()) {
             hibernateAccount.setReauthToken(null);
             return false;
@@ -310,7 +312,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
-        // Create account
+        // Create account. We don't verify substudies because this is handled by validation
         hibernateHelper.create(account);
     }
 
@@ -336,7 +338,7 @@ public class HibernateAccountDao implements AccountDao {
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
-        // Update
+        // Update. We don't verify substudies because this is handled by validation
         hibernateHelper.update(account);            
     }
     
@@ -345,6 +347,7 @@ public class HibernateAccountDao implements AccountDao {
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
         Account account = getAccount(accountId);
+        
         if (account != null) {
             accountEdits.accept(account);
             updateAccount(account);
@@ -354,11 +357,11 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account getAccount(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -368,9 +371,9 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-    private HibernateAccount fetchHibernateAccount(SignIn signIn) {
+    private Account fetchHibernateAccount(SignIn signIn) {
         // Fetch account
-        HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
+        Account hibernateAccount = getHibernateAccount(signIn.getAccountId());
         if (hibernateAccount == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -405,7 +408,7 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     // Helper method to get a single account for a given study and id, email address, or phone number.
-    private HibernateAccount getHibernateAccount(AccountId accountId) {
+    private Account getHibernateAccount(AccountId accountId) {
         // This is the only method where accessing null values is not an error, since we're searching for 
         // the value that was provided. There will be one.
         HibernateAccount hibernateAccount = null;
@@ -413,91 +416,105 @@ public class HibernateAccountDao implements AccountDao {
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
             hibernateAccount = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-            if (hibernateAccount == null) {
-                return null;
-            }
-        } else {
-            String query = null;
-            Map<String,Object> parameters = new HashMap<>();
-            if (unguarded.getEmail() != null) {
-                query = EMAIL_QUERY;
-                parameters.put("studyId", unguarded.getStudyId());
-                parameters.put("email", unguarded.getEmail());
-            } else if (unguarded.getHealthCode() != null) {
-                query = HEALTH_CODE_QUERY;
-                parameters.put("studyId", unguarded.getStudyId());
-                parameters.put("healthCode", unguarded.getHealthCode());
-            } else if (unguarded.getPhone() != null) {
-                query = PHONE_QUERY;
-                parameters.put("studyId", unguarded.getStudyId());
-                parameters.put("number", unguarded.getPhone().getNumber());
-                parameters.put("regionCode", unguarded.getPhone().getRegionCode());
-            } else {
-                query = EXTID_QUERY;
-                parameters.put("studyId", unguarded.getStudyId());
-                parameters.put("externalId", unguarded.getExternalId());
-            }
-            List<HibernateAccount> accountList = hibernateHelper.queryGet(query, parameters, null, null, HibernateAccount.class);
-            if (accountList.isEmpty()) {
-                return null;
-            }
-            hibernateAccount = accountList.get(0);
-            if (accountList.size() > 1) {
-                LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
-            }
+            // Verify the sub-study rules are matched  
+            return BridgeUtils.filterForSubstudy(hibernateAccount);
+        }
+        
+        QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
+        
+        List<HibernateAccount> accountList = hibernateHelper.queryGet(
+                builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
+        if (accountList.isEmpty()) {
+            return null;
+        }
+        hibernateAccount = accountList.get(0);
+        if (accountList.size() > 1) {
+            LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
         }
         return hibernateAccount;
     }
+    
+    QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(prefix);
+        builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
+        builder.append("WITH acct.id = acctSubstudy.accountId");
+        builder.append("WHERE acct.studyId = :studyId", "studyId", studyId);
+
+        if (accountId != null) {
+            AccountId unguarded = accountId.getUnguardedAccountId();
+            if (unguarded.getEmail() != null) {
+                builder.append("AND acct.email=:email", "email", unguarded.getEmail());
+            } else if (unguarded.getHealthCode() != null) {
+                builder.append("AND acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
+            } else if (unguarded.getPhone() != null) {
+                builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
+                        "number", unguarded.getPhone().getNumber(),
+                        "regionCode", unguarded.getPhone().getRegionCode());
+            } else {
+                builder.append("AND acct.externalId=:externalId", "externalId", unguarded.getExternalId());
+            }
+        }
+        if (search != null) {
+            // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
+            if (StringUtils.isNotBlank(search.getEmailFilter())) {
+                builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
+            }
+            if (StringUtils.isNotBlank(search.getPhoneFilter())) {
+                String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
+                builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
+            }
+            // Note: start- and endTime are inclusive.            
+            if (search.getStartTime() != null) {
+                builder.append("AND acct.createdOn >= :startTime", "startTime", search.getStartTime());
+            }
+            if (search.getEndTime() != null) {
+                builder.append("AND acct.createdOn <= :endTime", "endTime", search.getEndTime());
+            }
+            if (search.getLanguage() != null) {
+                builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
+            }
+            builder.dataGroups(search.getAllOfGroups(), "IN");
+            builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
+        }
+        Set<String> callerSubstudies = context.getCallerSubstudies();
+        if (!callerSubstudies.isEmpty()) {
+            builder.append("AND acctSubstudy.substudyId IN (:substudies)", "substudies", callerSubstudies);
+        }
+        if (!isCount) {
+            builder.append("GROUP BY acct.id");        
+        }
+        return builder;
+    }
+
 
     /** {@inheritDoc} */
     @Override
     public void deleteAccount(AccountId accountId) {
-        String userId = accountId.getUnguardedAccountId().getId();
-        if (userId == null) {
-            HibernateAccount hibernateAccount = getHibernateAccount(accountId);
-            userId = hibernateAccount.getId();
+        Account hibernateAccount = getHibernateAccount(accountId);
+        if (hibernateAccount != null) {
+            String userId = hibernateAccount.getId();
+            hibernateHelper.deleteById(HibernateAccount.class, userId);
         }
-        hibernateHelper.deleteById(HibernateAccount.class, userId);    
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Iterator<AccountSummary> getAllAccounts() {
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet("from HibernateAccount", null, null,
-                null, HibernateAccount.class);
-        return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Iterator<AccountSummary> getStudyAccounts(Study study) {
-        Map<String,Object> parameters = new HashMap<>();
-        parameters.put("studyId", study.getIdentifier());
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(
-                "from HibernateAccount where studyId=:studyId", parameters, null, null, HibernateAccount.class);
-        return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
     }
 
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
-        // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
-        // Note: start- and endTime are inclusive.
-        Map<String,Object> parameters = new HashMap<>();
-        String query = assembleSearchQuery(study.getIdentifier(), search, parameters);
-        
-        // Don't retrieve unused columns, clientData can be large
-        String getQuery = ACCOUNT_SUMMARY_QUERY_PREFIX + query;
+        QueryBuilder builder = makeQuery(SUMMARY_QUERY, study.getIdentifier(), null, search, false);
 
         // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, parameters,
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
                 search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
         List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
-                .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
+                .map(this::unmarshallAccountSummary).collect(Collectors.toList());
 
         // Get count of accounts.
-        int count = hibernateHelper.queryCount(query, parameters);
-
+        builder = makeQuery(COUNT_QUERY, study.getIdentifier(), null, search, true);
+        int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
+        
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
                 .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
@@ -511,58 +528,11 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups());
     }
     
-    protected String assembleSearchQuery(String studyId, AccountSummarySearch search, Map<String,Object> parameters) {
-        StringBuilder queryBuilder = new StringBuilder();
-
-        queryBuilder.append("from HibernateAccount as acct where studyId=:studyId");
-        parameters.put("studyId", studyId);
-
-        if (StringUtils.isNotBlank(search.getEmailFilter())) {
-            queryBuilder.append(" and email like :email");
-            parameters.put("email", "%"+search.getEmailFilter()+"%");
-        }
-        if (StringUtils.isNotBlank(search.getPhoneFilter())) {
-            String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
-            queryBuilder.append(" and phone.number like :number");
-            parameters.put("number", "%"+phoneString+"%");
-        }
-        if (search.getStartTime() != null) {
-            queryBuilder.append(" and createdOn >= :startTime");
-            parameters.put("startTime", search.getStartTime());
-        }
-        if (search.getEndTime() != null) {
-            queryBuilder.append(" and createdOn <= :endTime");
-            parameters.put("endTime", search.getEndTime());
-        }
-        if (search.getLanguage() != null) {
-            queryBuilder.append(" and :language in elements(acct.languages)");
-            parameters.put("language", search.getLanguage());
-        }
-        dataGroupQuerySegment(queryBuilder, search.getAllOfGroups(), "in", parameters);
-        dataGroupQuerySegment(queryBuilder, search.getNoneOfGroups(), "not in", parameters);
-        
-        return queryBuilder.toString();        
-    }
-
-    private void dataGroupQuerySegment(StringBuilder queryBuilder, Set<String> dataGroups, String operator,
-            Map<String, Object> parameters) {
-        if (dataGroups != null && !dataGroups.isEmpty()) {
-            int i = 0;
-            Set<String> clauses = new HashSet<>();
-            for (String oneDataGroup : dataGroups) {
-                String varName = operator.replace(" ", "") + (++i);
-                clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
-                parameters.put(varName, oneDataGroup);
-            }
-            queryBuilder.append(" and (").append(Joiner.on(" and ").join(clauses)).append(")");
-        }
-    }
-    
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
-    private boolean validateHealthCode(HibernateAccount hibernateAccount) {
+    private boolean validateHealthCode(Account hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode())) {
             hibernateAccount.setHealthCode(generateGUID());
 
@@ -576,21 +546,25 @@ public class HibernateAccountDao implements AccountDao {
 
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
-    static AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        // Some attrs need parsing.
-        DateTime createdOn = null;
-        if (hibernateAccount.getCreatedOn() != null) {
-            createdOn = new DateTime(hibernateAccount.getCreatedOn());
-        }
-
+    AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
         StudyIdentifier studyId = null;
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
             studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
         }
-        
-        // Unmarshall single account
+        // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
+        // to limit the data you retrieve from a table. May need to manually construct the objects to 
+        // avoid this 1+N query.
+        Set<String> substudyIds = ImmutableSet.of();
+        if (hibernateAccount.getId() != null) {
+            List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
+                    "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
+                    ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
+            substudyIds = accountSubstudies.stream()
+                    .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
+        }
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
-                hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(), studyId);
+                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 
+                studyId, substudyIds);
     }
 }

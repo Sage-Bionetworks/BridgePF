@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.Iterator;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -100,16 +99,6 @@ public interface AccountDao {
      * Delete an account along with the authentication credentials.
      */
     void deleteAccount(AccountId accountId);
-    
-    /**
-     * Get all account summaries in all studies in a given environment.
-     */
-    Iterator<AccountSummary> getAllAccounts();
-    
-    /**
-     * Get all account summaries in one study in a given environment.
-     */
-    Iterator<AccountSummary> getStudyAccounts(Study study);
     
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 

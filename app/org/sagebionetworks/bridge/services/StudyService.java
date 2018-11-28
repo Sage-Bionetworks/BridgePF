@@ -375,7 +375,7 @@ public class StudyService {
 
         // validate participants first
         for (StudyParticipant user : users) {
-            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, substudyService, study, ImmutableSet.of(), true), user);
+            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, substudyService, study, true), user);
         }
 
         // validate roles for each user
@@ -394,7 +394,7 @@ public class StudyService {
         // then create users for that study
         // send verification email from both Bridge and Synapse as well
         for (StudyParticipant user: users) {
-            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), ImmutableSet.of(), user, false);
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user, false);
 
             NewUser synapseUser = new NewUser();
             synapseUser.setEmail(user.getEmail());

@@ -33,6 +33,7 @@ import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,6 +47,8 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -126,7 +129,8 @@ public class ParticipantControllerTest {
     private static final Set<String> EMPTY_SET = new HashSet<>();
     
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email",
-            TestConstants.PHONE, "externalId", "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
+            TestConstants.PHONE, "externalId", "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY,
+            ImmutableSet.of());
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(TestConstants.EMAIL).withPassword(TestConstants.PASSWORD).build();
@@ -248,6 +252,11 @@ public class ParticipantControllerTest {
         controller.setSessionUpdateService(sessionUpdateService);
         
         mockPlayContext();
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
 
     @Test
@@ -378,8 +387,7 @@ public class ParticipantControllerTest {
         assertResult(result, 200, "Participant updated.");
         
         // Both the caller roles and the caller's substudies are passed to participantService
-        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(CALLER_SUBS),
-                participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(ID, participant.getId());
@@ -417,7 +425,7 @@ public class ParticipantControllerTest {
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = setUpCreateParticipant();
-        doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(), any(), any(StudyParticipant.class), eq(true));
+        doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(StudyParticipant.class), eq(true));
         
         Result result = controller.createParticipant();
 
@@ -425,7 +433,7 @@ public class ParticipantControllerTest {
         String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
-        verify(mockParticipantService).createParticipant(eq(study), eq(CALLER_ROLES), eq(CALLER_SUBS), participantCaptor.capture(), eq(true));
+        verify(mockParticipantService).createParticipant(eq(study), participantCaptor.capture(), eq(true));
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals("firstName", participant.getFirstName());
@@ -501,8 +509,7 @@ public class ParticipantControllerTest {
         Result result = controller.updateParticipant("id1");
         assertResult(result, 200, "Participant updated.");
         
-        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(CALLER_SUBS),
-                participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals("id1", persisted.getId());
@@ -530,6 +537,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void updateSelfParticipant() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(
+                ImmutableSet.of("substudyA", "substudyB")).build());
+        
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
@@ -553,8 +563,7 @@ public class ParticipantControllerTest {
         // verify the object is passed to service, one field is sufficient
         verify(mockCacheProvider).setUserSession(any());
         // No roles are passed in this method, and the substudies of the user are passed 
-        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()),
-                eq(ImmutableSet.of("substudyA", "substudyB")), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
@@ -602,8 +611,7 @@ public class ParticipantControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()),
-                eq(ImmutableSet.of()), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
         assertEquals("firstName", captured.getFirstName());
@@ -657,7 +665,7 @@ public class ParticipantControllerTest {
         assertEquals("UserSessionInfo", node.get("type").asText());
         
         // verify the object is passed to service, one field is sufficient
-        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
 
         // The ID was changed back to the session's participant user ID, not the one provided.
         StudyParticipant captured = participantCaptor.getValue();

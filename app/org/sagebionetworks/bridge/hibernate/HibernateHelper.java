@@ -49,13 +49,13 @@ public class HibernateHelper {
     }
 
     /**
-     * Executes the query and returns the count. Note that this prepends "select count(*) " to the query automatically.
+     * Executes the query and returns the count. The query should be a count based query.
      */
     public int queryCount(String queryString, Map<String,Object> parameters) {
         // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
         // reasons.
         Long count = executeWithExceptionHandling(null, session -> {
-            Query<Long> query = session.createQuery("select count(*) " + queryString, Long.class);
+            Query<Long> query = session.createQuery(queryString, Long.class);
             if (parameters != null) {
                 for (Map.Entry<String, Object> entry : parameters.entrySet()) {
                     query.setParameter(entry.getKey(), entry.getValue());

@@ -1,51 +1,61 @@
 package org.sagebionetworks.bridge.play.interceptors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableMap;
+
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 
-public class RequestIdInterceptorTest {
+public class RequestInterceptorTest {
     private static final String REQUEST_ID = "request-id";
 
     @Test
-    public void test() throws Throwable {
-        // Mock Play headers. Note that we don't actually care about JSON body, but this helper method is the simplest
-        // way to mock all things Play.
+    public void testWithNoSession() throws Throwable {
+        assertRequestContext(null, (context) -> {
+            assertEquals(REQUEST_ID, context.getId());
+        });
+    }
+    
+    private void assertRequestContext(UserSession session, Consumer<RequestContext> consumer) throws Throwable {
+        CacheProvider mockCacheProvider = mock(CacheProvider.class);
+        when(mockCacheProvider.getUserSession("ABC-DEF")).thenReturn(session);
+        
         Map<String, String[]> headerMap = ImmutableMap.of(BridgeConstants.X_REQUEST_ID_HEADER,
                 new String[] { REQUEST_ID });
         TestUtils.mockPlayContextWithJson("{}", headerMap);
-
-        // Mock method invocation.
+        
         Object expectedReturnValue = new Object();
         MethodInvocation mockMethod = mock(MethodInvocation.class);
         when(mockMethod.proceed()).thenAnswer(invocation -> {
-            // Verify that we set the request ID.
-            assertEquals(REQUEST_ID, BridgeUtils.getRequestId());
+            RequestContext context = BridgeUtils.getRequestContext();
+            consumer.accept(context); // verification
             return expectedReturnValue;
         });
-
         // Execute.
-        RequestIdInterceptor interceptor = new RequestIdInterceptor();
+        RequestInterceptor interceptor = new RequestInterceptor();
         Object returnValue = interceptor.invoke(mockMethod);
+        
         assertSame(expectedReturnValue, returnValue);
 
         // Verify the method was _actually_ called.
         verify(mockMethod).proceed();
 
         // Verify we reset the request ID afterwards.
-        assertNull(BridgeUtils.getRequestId());
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
     }
 }

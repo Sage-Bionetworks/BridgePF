@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.anySet;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -14,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +21,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -120,11 +121,16 @@ public class UserAdminServiceMockTest {
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
         
-        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
-                anySet(), anyObject(), anyBoolean());
+        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anyObject(),
+                anyBoolean());
         doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
         doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
                 anyString(), anyBoolean());
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -136,6 +142,9 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+        
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
@@ -146,8 +155,7 @@ public class UserAdminServiceMockTest {
         
         service.createUser(study, participant, null, true, true);
         
-        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
-                participant, false);
+        verify(participantService).createParticipant(study, participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -167,14 +175,16 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserWithPhone() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+        
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword("password").build();
 
         service.createUser(study, participant, null, true, true);
         
-        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
-                participant, false);
+        verify(participantService).createParticipant(study, participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -197,14 +207,16 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+                ImmutableSet.of(Roles.ADMIN)).build());
+                
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
         
         UserSession session = service.createUser(study, participant, consentedGuid, true, true);
         
-        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
-                participant, false);
+        verify(participantService).createParticipant(study, participant, false);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));

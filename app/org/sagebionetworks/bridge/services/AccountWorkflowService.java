@@ -318,8 +318,8 @@ public class AccountWorkflowService {
 
         Account account = accountDao.getAccount(accountId);
         
-        boolean verifiedEmail = account.getEmail() != null && account.getEmailVerified();
-        boolean verifiedPhone = account.getPhone() != null && account.getPhoneVerified();
+        boolean verifiedEmail = account.getEmail() != null && Boolean.TRUE.equals(account.getEmailVerified());
+        boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
         boolean sendEmail = study.isEmailVerificationEnabled() && !study.isAutoVerificationEmailSuppressed();
         boolean sendPhone = !study.isAutoVerificationPhoneSuppressed();
         

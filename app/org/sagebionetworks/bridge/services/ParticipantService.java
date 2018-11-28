@@ -321,25 +321,22 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a user before
      * triggering a reset password request.
      */
-    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
-            StudyParticipant participant, boolean shouldSendVerification) {
+    public IdentifierHolder createParticipant(Study study, StudyParticipant participant, boolean shouldSendVerification) {
         checkNotNull(study);
-        checkNotNull(callerRoles);
-        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
         
-        StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, substudyService, study, callerSubstudies, true);
+        StudyParticipantValidator validator = new StudyParticipantValidator(externalIdService, substudyService, study,
+                true);
         Validate.entityThrowingException(validator, participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
 
-        updateAccountAndRoles(study, callerRoles, account, participant);
+        updateAccountAndRoles(study, account, participant);
         
         account.setStatus(AccountStatus.UNVERIFIED);
 
@@ -389,21 +386,19 @@ public class ParticipantService {
             participant.getExternalId() != null && participant.getPassword() != null;
     }
 
-    public void updateParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
-            StudyParticipant participant) {
+    public void updateParticipant(Study study, StudyParticipant participant) {
         checkNotNull(study);
-        checkNotNull(callerRoles);
-        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, substudyService, study, callerSubstudies, false);
+                externalIdService, substudyService, study, false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
         
         // Users can add an external ID to their own accounts (but not change or remove it); researchers can 
         // change an external ID. In the latter case, the old external ID needs to be unassigned first.
+        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         boolean isSimpleAdd = account.getExternalId() == null && participant.getExternalId() != null;
         boolean isResearcherChange = callerRoles.contains(Roles.RESEARCHER) && 
                 !Objects.equals(account.getExternalId(), participant.getExternalId());
@@ -416,7 +411,7 @@ public class ParticipantService {
             }
             account.setExternalId(participant.getExternalId());
         }
-        updateAccountAndRoles(study, callerRoles, account, participant);
+        updateAccountAndRoles(study, account, participant);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
@@ -439,8 +434,7 @@ public class ParticipantService {
         }
     }
     
-    private void updateAccountAndRoles(Study study, Set<Roles> callerRoles, Account account,
-            StudyParticipant participant) {
+    private void updateAccountAndRoles(Study study, Account account, StudyParticipant participant) {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
@@ -464,6 +458,7 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
+        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
         }

@@ -18,7 +18,6 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +111,7 @@ public class ParticipantController extends BaseController {
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
                 .withId(session.getId()).build();
-        participantService.updateParticipant(study, ImmutableSet.of(), existing.getSubstudyIds(), updated);
+        participantService.updateParticipant(study, updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
@@ -229,8 +228,7 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
-                session.getParticipant().getSubstudyIds(), participant, true);
+        IdentifierHolder holder = participantService.createParticipant(study, participant, true);
         return createdResult(holder);
     }
     
@@ -285,8 +283,7 @@ public class ParticipantController extends BaseController {
         // Force userId of the URL
         participant = new StudyParticipant.Builder().copyOf(participant).withId(userId).build();
         
-        participantService.updateParticipant(study, session.getParticipant().getRoles(),
-                session.getParticipant().getSubstudyIds(), participant);
+        participantService.updateParticipant(study, participant);
 
         return okResult("Participant updated.");
     }
