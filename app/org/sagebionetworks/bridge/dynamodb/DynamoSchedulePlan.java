@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
@@ -149,12 +150,14 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     public void setData(ObjectNode data) {
         if (data != null) {
+            String typeName = JsonUtils.asText(data, "type");
             try {
-                String typeName = JsonUtils.asText(data, "type");
                 String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + typeName;
                 Class<?> clazz = Class.forName(className);
                 strategy = (ScheduleStrategy) BridgeObjectMapper.get().treeToValue(data, clazz);
-            } catch (JsonProcessingException | ClassNotFoundException e) {
+            } catch (ClassCastException | ClassNotFoundException e) {
+                throw new BadRequestException("Invalid type " + typeName);
+            } catch (JsonProcessingException e) {
                 throw new BridgeServiceException(e);
             }
         }

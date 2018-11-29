@@ -10,6 +10,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
@@ -75,5 +76,35 @@ public class DynamoSchedulePlanTest {
         plan = DynamoSchedulePlan.fromJson(node);
         assertNull(plan.getStudyKey());
     }
-    
+
+    @Test(expected = BadRequestException.class)
+    public void fromJson_NullStrategyType() throws Exception {
+        String json = "{\n" +
+                "   \"strategy\":{}\n" +
+                "}";
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        DynamoSchedulePlan.fromJson(node);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void fromJson_NonExistentStrategyType() throws Exception {
+        String json = "{\n" +
+                "   \"strategy\":{\n" +
+                "       \"type\":\"NonExistent\"\n" +
+                "   }\n" +
+                "}";
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        DynamoSchedulePlan.fromJson(node);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void fromJson_InvalidStrategyType() throws Exception {
+        String json = "{\n" +
+                "   \"strategy\":{\n" +
+                "       \"type\":\"ScheduleCriteria\"\n" +
+                "   }\n" +
+                "}";
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        DynamoSchedulePlan.fromJson(node);
+    }
 }
