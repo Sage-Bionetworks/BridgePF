@@ -81,9 +81,11 @@ public final class CacheKey {
     public static final CacheKey subpopList(StudyIdentifier studyId) {
         return new CacheKey(studyId.getIdentifier(), "SubpopulationList");
     }
+    @Deprecated
     public static final CacheKey session(String sessionToken) {
         return new CacheKey(sessionToken, "session");
     }
+    @Deprecated
     public static final CacheKey sessionByUserId(String userId) {
         return new CacheKey(userId, "session", "user");
     }

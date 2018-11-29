@@ -158,6 +158,7 @@ public class CacheProvider {
      *  This is the original method for saving a session which we can leave in place until 
      *  all sessions have been rotated to storage under the new keys (a day will do).
      */
+    @SuppressWarnings("deprecation")
     private UserSession getUserSessionOldVersion(final String sessionToken) {
         checkNotNull(sessionToken);
         try {
@@ -197,6 +198,7 @@ public class CacheProvider {
         }
     }
     
+    @SuppressWarnings("deprecation")
     private UserSession getUserSessionByUserIdOldVersion(final String userId) {
         checkNotNull(userId);
         
@@ -211,6 +213,7 @@ public class CacheProvider {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public void removeSession(UserSession session) {
         checkNotNull(session);
         checkNotNull(session.getSessionToken());
