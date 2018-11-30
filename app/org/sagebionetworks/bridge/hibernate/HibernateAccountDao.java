@@ -384,7 +384,7 @@ public class HibernateAccountDao implements AccountDao {
             String credentialValue) {
         // Verify credential (password or reauth token)
         if (algorithm == null || StringUtils.isBlank(hash)) {
-            LOG.error("Account " + accountId + " is enabled but has no "+type+".");
+            LOG.warn("Account " + accountId + " is enabled but has no "+type+".");
             throw new EntityNotFoundException(Account.class);
         }
         try {
