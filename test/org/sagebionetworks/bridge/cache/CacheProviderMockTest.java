@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -12,6 +13,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -166,6 +169,46 @@ public class CacheProviderMockTest {
     }
 
     @Test
+    public void newGetUserSessionTokenNotFound() {
+        // When nothing is mocked, the session token is not found
+        reset(jedisOps);
+        
+        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        assertNull(retrieved);
+    }
+    
+    @Test
+    public void newGetUserSessionUserHasNoSession() {
+        // When token --> userId mapping is mocked, but there's no session, return null
+        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        assertNull(retrieved);
+    }
+    
+    @Test
+    public void newGetUserSessionSessionTokenMismatch() throws Exception {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setSessionToken("notTheSessionTokenWereLookingFor");
+        
+        when(jedisOps.get(USER_ID_TO_SESSION.toString()))
+                .thenReturn(BridgeObjectMapper.get().writeValueAsString(session));
+
+        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        assertNull(retrieved);
+    }
+    
+    @Test
+    public void newGetUserSessionSuccessful() throws Exception {
+        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
+        
+        when(jedisOps.get(USER_ID_TO_SESSION.toString()))
+                .thenReturn(BridgeObjectMapper.get().writeValueAsString(session));
+
+        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        assertEquals(session.getSessionToken(), retrieved.getSessionToken());
+    }
+    
+    @Test
     public void testRemoveSession() {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
 
@@ -177,6 +220,8 @@ public class CacheProviderMockTest {
         
         verify(transaction).del(TOKEN_TO_USER_ID.toString());
         verify(transaction).del(USER_ID_TO_SESSION.toString());
+        verify(transaction).del(CacheKey.session(DECRYPTED_SESSION_TOKEN).toString());
+        verify(transaction).del(CacheKey.sessionByUserId(USER_ID).toString());
         verify(transaction).exec();
     }
 
@@ -191,6 +236,8 @@ public class CacheProviderMockTest {
         
         verify(transaction).del(TOKEN_TO_USER_ID.toString());
         verify(transaction).del(USER_ID_TO_SESSION.toString());
+        verify(transaction).del(CacheKey.session(DECRYPTED_SESSION_TOKEN).toString());
+        verify(transaction).del(CacheKey.sessionByUserId(USER_ID).toString());
         verify(transaction).exec();
     }
 
@@ -419,6 +466,24 @@ public class CacheProviderMockTest {
         
         UserSession retrieved = cacheProvider.getUserSessionByUserId(USER_ID);
         assertEquals(session.getSessionToken(), retrieved.getSessionToken());
+    }
+    
+    @Test
+    public void getUserSessionByUserIdNewVersionUserHasNoSession() {
+        // No session returned, null returned
+        UserSession retrieved = cacheProvider.getUserSessionByUserIdNewVersion(USER_ID);
+        assertNull(retrieved);
+    }
+    
+    @Test
+    public void getUserSessionByUserIdNewVersionUserHasSession() throws Exception {
+        UserSession session = new UserSession();
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
+        String ser = BridgeObjectMapper.get().writeValueAsString(session);
+        when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(ser);
+        
+        UserSession retrieved = cacheProvider.getUserSessionByUserIdNewVersion(USER_ID);
+        assertEquals(DECRYPTED_SESSION_TOKEN, retrieved.getSessionToken());
     }
     
     private void assertSession(String json) {

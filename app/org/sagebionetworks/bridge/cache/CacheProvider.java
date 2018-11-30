@@ -24,8 +24,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
- * A wrapper around whatever cache provider we ultimately decide to go with (probably Redis). 
- * Assuming for the moment that we can store objects, by serialization if we have to.
+ * A wrapper around our use of Redis.
  */
 @Component
 public class CacheProvider {
@@ -125,7 +124,7 @@ public class CacheProvider {
         return session;
     }
     
-    private UserSession getUserSessionNewVersion(String sessionToken) {
+    UserSession getUserSessionNewVersion(String sessionToken) {
         checkNotNull(sessionToken);
         try {
             CacheKey tokenToUserIdKey = CacheKey.tokenToUserId(sessionToken);
@@ -159,7 +158,7 @@ public class CacheProvider {
      *  all sessions have been rotated to storage under the new keys (a day will do).
      */
     @SuppressWarnings("deprecation")
-    private UserSession getUserSessionOldVersion(final String sessionToken) {
+    UserSession getUserSessionOldVersion(final String sessionToken) {
         checkNotNull(sessionToken);
         try {
             final CacheKey sessionKey = CacheKey.session(sessionToken);
@@ -182,7 +181,7 @@ public class CacheProvider {
         return session;
     }
     
-    private UserSession getUserSessionByUserIdNewVersion(final String userId) {
+    UserSession getUserSessionByUserIdNewVersion(final String userId) {
         checkNotNull(userId);
         
         try {
