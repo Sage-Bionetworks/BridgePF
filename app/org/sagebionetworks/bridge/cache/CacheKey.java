@@ -72,9 +72,6 @@ public final class CacheKey {
     public static final CacheKey requestInfo(String userId) {
         return new CacheKey(userId, "request-info");
     }
-    public static final CacheKey session(String sessionToken) {
-        return new CacheKey(sessionToken, "session");
-    }
     public static final CacheKey study(String studyId) {
         return new CacheKey(studyId, "study");
     }    
@@ -84,9 +81,22 @@ public final class CacheKey {
     public static final CacheKey subpopList(StudyIdentifier studyId) {
         return new CacheKey(studyId.getIdentifier(), "SubpopulationList");
     }
+    @Deprecated
+    public static final CacheKey session(String sessionToken) {
+        return new CacheKey(sessionToken, "session");
+    }
+    @Deprecated
     public static final CacheKey sessionByUserId(String userId) {
         return new CacheKey(userId, "session", "user");
     }
+
+    public static final CacheKey userIdToSession(String userId) {
+        return new CacheKey(userId, "session2", "user");
+    }
+    public static final CacheKey tokenToUserId(String sessionToken) {
+        return new CacheKey(sessionToken, "session2");
+    }
+    
     public static final CacheKey verificationToken(String sptoken) {
         return new CacheKey(sptoken); // no type, not great
     }
