@@ -1366,6 +1366,32 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
+    public void getPagedRemovesSubstudiesNotInCaller() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
+        
+        HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false, false);
+        HibernateAccount hibernateAccount2 = makeValidHibernateAccount(false, false);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount1,
+                hibernateAccount2));
+
+        // Finally, mock the retrieval of substudies to verify this is called to populate the substudies
+        List<HibernateAccountSubstudy> list = ImmutableList.of(
+                    (HibernateAccountSubstudy)AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, SUBSTUDY_A, ACCOUNT_ID), 
+                    (HibernateAccountSubstudy)AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, SUBSTUDY_B, ACCOUNT_ID));
+        when(mockHibernateHelper.queryGet(eq("FROM HibernateAccountSubstudy WHERE accountId=:accountId"), any(), any(),
+                any(), eq(HibernateAccountSubstudy.class))).thenReturn(list);
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(study, search);
+        List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
+        
+        // substudy B is not there
+        assertEquals(ImmutableSet.of(SUBSTUDY_A), accountSummaryList.get(0).getSubstudyIds());
+        assertEquals(ImmutableSet.of(SUBSTUDY_A), accountSummaryList.get(1).getSubstudyIds());
+    }
+    
+    @Test
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, acct.firstName, "+
                 "acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) FROM "+

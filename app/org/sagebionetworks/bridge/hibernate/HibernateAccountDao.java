@@ -554,13 +554,20 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
+        
+        // Further, we do not return any substudy IDs that the caller is not associated with (because
+        // this would leak our partners and this is not desirable).
+        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        
         Set<String> substudyIds = ImmutableSet.of();
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                     ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
             substudyIds = accountSubstudies.stream()
-                    .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
+                    .map(AccountSubstudy::getSubstudyId)
+                    .filter(substudyId -> callerSubstudyIds.isEmpty() || callerSubstudyIds.contains(substudyId))
+                    .collect(BridgeCollectors.toImmutableSet());
         }
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),

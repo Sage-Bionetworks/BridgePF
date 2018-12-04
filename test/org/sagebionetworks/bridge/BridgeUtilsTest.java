@@ -16,6 +16,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -25,6 +26,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -43,19 +45,36 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
+    public void filterForSubstudyRemovesUnsharedSubstudyIds() {
+        Set<String> substudies = ImmutableSet.of("substudyA");
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(substudies).build());
+        
+        Account account = BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyB", "substudyA"));
+        assertEquals(1, account.getAccountSubstudies().size());
+        assertEquals("substudyA", Iterables.getFirst(account.getAccountSubstudies(), null).getSubstudyId());
+        
+        BridgeUtils.setRequestContext(null);
+    }
+    
+    @Test
+    public void filterForSubstudyReturnsAllUnsharedSubstudyIdsForNonSubstudyCaller() {
+        Account account = BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyB", "substudyA"));
+        assertEquals(2, account.getAccountSubstudies().size());
+    }
+    
+    @Test
     public void filterForSubstudyNullReturnsNull() {
         assertNull(BridgeUtils.filterForSubstudy(null));
     }
     
     @Test
     public void filterForSubstudyNoContextReturnsNormalAccount() {
-        BridgeUtils.setRequestContext(null);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
     }
     
     @Test
     public void filterForSubstudyNoContextReturnsSubstudyAccount() {
-        BridgeUtils.setRequestContext(null);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
@@ -63,6 +82,7 @@ public class BridgeUtilsTest {
     public void filterForSubstudyWithSubstudiesHidesNormalAccount() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
