@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -183,6 +184,7 @@ public class DynamoHealthDataDaoTest {
         DynamoDBQueryExpression<DynamoHealthDataRecord> query = queryCaptor.getValue();
         assertEquals(TEST_HEALTH_CODE, query.getHashKeyValues().getHealthCode());
         assertFalse(query.isConsistentRead());
+        assertEquals(BridgeConstants.DUPE_RECORDS_MAX_COUNT, query.getLimit().intValue());
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
         assertEquals(ComparisonOperator.BETWEEN.toString(), rangeKeyCondition.getComparisonOperator());
