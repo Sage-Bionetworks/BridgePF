@@ -14,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -121,7 +122,8 @@ public class DynamoHealthDataDao implements HealthDataDao {
                 new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                         .withConsistentRead(false)
                         .withHashKeyValues(queryRecord)
-                        .withRangeKeyCondition("createdOn", rangeKeyCondition);
+                        .withRangeKeyCondition("createdOn", rangeKeyCondition)
+                        .withLimit(BridgeConstants.DUPE_RECORDS_MAX_COUNT);
 
         // Execute query.
         QueryResultPage<DynamoHealthDataRecord> resultPage = mapper.queryPage(DynamoHealthDataRecord.class, expression);
