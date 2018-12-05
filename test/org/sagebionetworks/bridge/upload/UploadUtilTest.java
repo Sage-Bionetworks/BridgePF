@@ -316,11 +316,10 @@ public class UploadUtilTest {
     @Test
     public void invalidFieldNameValidAnswerChoice() {
         String[] testCases = {
-                "select",
-                "where",
-                "time",
-                "true",
-                "false",
+                "row_id",
+                "row_ID",
+                "row_version",
+                "Row_Version",
         };
 
         for (String oneTestCase : testCases) {
@@ -338,6 +337,11 @@ public class UploadUtilTest {
                 "foo.bar",
                 "foo bar",
                 "foo-bar_baz.qwerty asdf",
+                "select",
+                "where",
+                "time",
+                "true",
+                "false",
         };
 
         for (String oneTestCase : testCases) {
