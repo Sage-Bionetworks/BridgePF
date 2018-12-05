@@ -316,6 +316,7 @@ public class UploadUtilTest {
     @Test
     public void invalidFieldNameValidAnswerChoice() {
         String[] testCases = {
+                "row_etag",
                 "row_id",
                 "row_ID",
                 "row_version",
@@ -348,6 +349,19 @@ public class UploadUtilTest {
             assertTrue(oneTestCase + " should be valid answer choice", UploadUtil.isValidAnswerChoice(oneTestCase));
             assertTrue(oneTestCase + " should be valid field name", UploadUtil.isValidSchemaFieldName(oneTestCase));
         }
+    }
+
+    @Test
+    public void fieldNameAndAnswerChoiceTooLong() {
+        // Generate name with 130 characters.
+        StringBuilder nameBuilder = new StringBuilder();
+        for (int i = 0; i < 13; i++) {
+            nameBuilder.append("abcdefghij");
+        }
+        String name = nameBuilder.toString();
+
+        assertFalse(UploadUtil.isValidAnswerChoice(name));
+        assertFalse(UploadUtil.isValidSchemaFieldName(name));
     }
 
     @Test
