@@ -15,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 public class DynamoExternalIdentifier implements ExternalIdentifier {
 
     private String studyId;
+    private String substudyId;
     private String identifier;
     private String healthCode;
     
@@ -24,6 +25,7 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
         this.studyId = studyId.getIdentifier();
         this.identifier = identifier;
     }
+    
     @DynamoDBHashKey
     @Override
     public String getStudyId() {
@@ -33,20 +35,25 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
-    @DynamoDBRangeKey
+    
+    @DynamoDBAttribute
     @Override
+    public String getSubstudyId() {
+        return substudyId;
+    }
+    @Override
+    public void setSubstudyId(String substudyId) {
+        this.substudyId = substudyId;
+    }
+    
+    @DynamoDBRangeKey
     public String getIdentifier() {
         return identifier;
     }
-    @Override
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
     }
-    // The set externalId API took "identifier", while the FPHS controller takes
-    // "externalId", so either way, this will deserialize the value.
-    void setExternalId(String externalId) {
-        setIdentifier(externalId);
-    }
+
     @DynamoDBAttribute
     @Override
     public String getHealthCode() {

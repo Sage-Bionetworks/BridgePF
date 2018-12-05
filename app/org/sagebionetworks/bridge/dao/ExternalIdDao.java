@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -19,37 +20,27 @@ public interface ExternalIdDao {
     String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
     /**
-     * Get a single external ID record. Returns null if there is no record.
+     * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
+     * substudy membership.
      */
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
+    ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
+
+    /**
+     * Get a forward-only cursor page of results, filtered for the caller's substudy memberships, and optionally
+     * by the start of the identifier or its assignment status (assigned or not). 
+     */
+    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIdentifiers(StudyIdentifier studyId,
+            Set<String> callerSubstudies, String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
     
     /**
-     * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 
-     * records. Each page is identified by the offsetKey of the last record of the immediately prior page. If that value is 
-     * null, there is not a further page of IDs to retrieve.
-     * 
-     * More interestingly, you can retrieve the next available ID by asking for pageSize=1, assignmentFilter=FALSE.
-     *   
-     * @param studyId
-     *      study of caller
-     * @param offsetKey
-     *      if it exists, the key that must be passed to the next call of getExternalIds() to move the cursor forward one 
-     *      more page.
-     * @param pageSize
-     *      the number of records to return
-     * @param idFilter
-     *      a case-sensitive string that must be found in an external identifier to return it in the results
-     * @param assignmentFilter
-     *      an optional boolean (can be null). If TRUE, all records returned will be assigned. More usefully, if FALSE,
-     *      will return unassigned external identifiers. 
+     * Create a new external identifier.
      */
-    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey,
-            int pageSize, String idFilter, Boolean assignmentFilter);
+    void createExternalIdentifier(ExternalIdentifier externalIdentifier);
     
     /**
-     * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.
+     * Delete an external identifier.
      */
-    void addExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
+    void deleteExternalIdentifier(ExternalIdentifier externalIdentifier);
     
     /**
      * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 
@@ -62,10 +53,28 @@ public interface ExternalIdDao {
      * is deleted, usually during testing.
      */
     void unassignExternalId(StudyIdentifier studyId, String externalIdentifier);
+    
+    /**
+     * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 
+     * records. Each page is identified by the offsetKey of the last record of the immediately prior page. If that value is 
+     * null, there is not a further page of IDs to retrieve.
+     * 
+     * More interestingly, you can retrieve the next available ID by asking for pageSize=1, assignmentFilter=FALSE.
+     */
+    @Deprecated
+    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey,
+            int pageSize, String idFilter, Boolean assignmentFilter);
+    
+    /**
+     * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.
+     */
+    @Deprecated
+    void addExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
 
     /**
      * Delete external IDs. This is used by tests to delete test records.
      */
+    @Deprecated
     void deleteExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
     
 }

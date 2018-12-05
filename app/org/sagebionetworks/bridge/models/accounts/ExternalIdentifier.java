@@ -15,13 +15,15 @@ public interface ExternalIdentifier extends BridgeEntity {
         return new DynamoExternalIdentifier(studyId, identifier);
     }
     
-    String getIdentifier();
-    void setIdentifier(String identifier);
-    
     String getStudyId();
     void setStudyId(String studyId);
     
+    String getSubstudyId();
+    void setSubstudyId(String substudyId);
+    
+    String getIdentifier();
+    void setIdentifier(String identifier);
+    
     String getHealthCode();
     void setHealthCode(String healthCode);
-    
 }

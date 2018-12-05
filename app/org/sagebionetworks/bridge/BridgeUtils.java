@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -114,6 +115,20 @@ public class BridgeUtils {
         return null;
     }
 
+    public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {
+        if (externalId != null) {
+            RequestContext context = getRequestContext();
+            Set<String> callerSubstudies = context.getCallerSubstudies();
+            if (BridgeUtils.isEmpty(callerSubstudies)) {
+                return externalId;
+            }
+            if (callerSubstudies.contains(externalId.getSubstudyId())) {
+                return externalId;
+            }
+        }
+        return null;
+    }
+    
     /**
      * Convert expiration measures in seconds to an English language explanation of
      * the expiration time. This is not intended to cover odd cases--our expirations 

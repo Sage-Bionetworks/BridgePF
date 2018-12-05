@@ -300,6 +300,11 @@ POST   /v3/externalIds                      @org.sagebionetworks.bridge.play.con
 DELETE /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
 POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdController.generatePassword(externalId: String, createAccount: Boolean ?= true)
 
+GET    /v4/externalids                      @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.getExternalIdentifiers(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
+POST   /v4/externalids                      @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.createExternalIdentifier
+DELETE /v4/externalids/:externalId          @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.deleteExternalIdentifier(externalId: String)
+POST   /v4/externalids/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.generatePassword(externalId: String, createAccount: Boolean ?= true)
+
 # Worker APIs for getting entities across studies
 GET  /v3/studies/:studyId/oauth/:vendorId                                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
 GET  /v3/studies/:studyId/oauth/:vendorId/:healthCode                                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)

@@ -185,6 +185,10 @@
         <property name="targetName" value="externalIdController"/>
     </bean>
     
+    <bean id="ExternalIdControllerV4Proxied" parent="proxiedController">
+        <property name="targetName" value="externalIdControllerV4"/>
+    </bean>
+    
     <bean id="StudyReportControllerProxied" parent="proxiedController">
         <property name="targetName" value="studyReportController"/>
     </bean>
