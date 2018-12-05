@@ -281,6 +281,26 @@ public class ScheduledActivityServiceMockTest {
     }
     
     @Test
+    public void removesDuplicateActivities() {
+        ScheduleContext context = createScheduleContext(ENDS_ON.plusDays(3)).build();
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
+        int size = scheduledActivities.size();
+        
+        // Now duplicate the members of the list
+        scheduledActivities.add(scheduledActivities.get(0));
+        
+        // Now mark them all finished so they are all persisted
+        for (ScheduledActivity activity : scheduledActivities) {
+            activity.setFinishedOn(DateTimeUtils.currentTimeMillis());
+        }
+        
+        service.updateScheduledActivities("AAA", scheduledActivities);
+        
+        verify(activityDao).updateActivities(eq("AAA"), scheduledActivityListCaptor.capture());
+        assertEquals(size, scheduledActivityListCaptor.getValue().size());
+    }
+    
+    @Test
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
@@ -346,11 +366,11 @@ public class ScheduledActivityServiceMockTest {
         assertEquals(scheduledActivities.get(2).getGuid(), dbActivities.get(2).getGuid());
         assertEquals(scheduledActivities.get(3).getClientData(), dbActivities.get(3).getClientData());
         
-        // Correct published activities
-        ScheduledActivity publishedActivity1 = publishCapture.getAllValues().get(0);
-        assertEquals(scheduledActivities.get(1).getGuid(), publishedActivity1.getGuid());
-        ScheduledActivity publishedActivity2 = publishCapture.getAllValues().get(1);
+        // Correct published activities.
+        ScheduledActivity publishedActivity2 = publishCapture.getAllValues().get(0);
         assertEquals(scheduledActivities.get(2).getGuid(), publishedActivity2.getGuid());
+        ScheduledActivity publishedActivity1 = publishCapture.getAllValues().get(1);
+        assertEquals(scheduledActivities.get(1).getGuid(), publishedActivity1.getGuid());
     }
     
     @Test(expected = BadRequestException.class)

@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +50,13 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class ScheduledActivityService {
-
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityService.class);
+    
     static final Predicate<ScheduledActivity> V3_FILTER = activity -> {
         return ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus());
     };
@@ -296,9 +302,16 @@ public class ScheduledActivityService {
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(scheduledActivities);
-
-        List<ScheduledActivity> activitiesToSave = Lists.newArrayListWithCapacity(scheduledActivities.size());
-        for (int i=0; i < scheduledActivities.size(); i++) {
+        
+        // Remove duplicates sent by the client because these lead to an error when persisting the records
+        // (BRIDGE-2350). Preserve the order the activities were submitted in the list, mostly because tests 
+        // expect that order to be preserved.
+        Set<String> activitiesAlreadySeen = new HashSet<>();
+        List<ScheduledActivity> activitiesToSave = new LinkedList<>();
+        
+        // According to the client team, the last activity is most likely to be correct, so iterate from 
+        // the last one
+        for (int i=scheduledActivities.size()-1; i >= 0; i--) {
             ScheduledActivity schActivity = scheduledActivities.get(i);
             if (schActivity == null) {
                 throw new BadRequestException("A task in the array is null");
@@ -310,8 +323,20 @@ public class ScheduledActivityService {
                 throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit) for task "
                         + schActivity.getGuid());
             }
+
             // This isn't returned to the client, so the exact time zone used does not matter.
             ScheduledActivity dbActivity = activityDao.getActivity(DateTimeZone.UTC, healthCode, schActivity.getGuid(), true);
+            String key = dbActivity.getHealthCode()+":"+dbActivity.getGuid();
+            if (activitiesAlreadySeen.contains(key)) {
+                ScheduledActivity previouslyAdded = activitiesToSave.stream().filter((sch) -> {
+                    return sch.getHealthCode().equals(dbActivity.getHealthCode()) && 
+                            sch.getGuid().equals(dbActivity.getGuid()); 
+                }).findFirst().get();
+                LOG.warn("Duplicate activities submitted to server, activity to persist: " + previouslyAdded + ", duplicate: " + dbActivity);
+                continue;
+            }
+            activitiesAlreadySeen.add(key);
+            
             boolean addToSaves = false;
             if (hasUpdatedClientData(schActivity, dbActivity)) {
                 dbActivity.setClientData(schActivity.getClientData());
@@ -327,8 +352,9 @@ public class ScheduledActivityService {
                 addToSaves = true;
             }
             if (addToSaves) {
-                activitiesToSave.add(dbActivity);
+                activitiesToSave.add(0, dbActivity);
             }
+            
         }
         activityDao.updateActivities(healthCode, activitiesToSave);
     }
