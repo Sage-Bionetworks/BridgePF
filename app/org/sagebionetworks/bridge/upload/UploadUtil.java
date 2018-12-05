@@ -66,6 +66,12 @@ public class UploadUtil {
     public static final String INVALID_FIELD_NAME_ERROR_MESSAGE = INVALID_ANSWER_CHOICE_ERROR_MESSAGE +
             ", and can't be a reserved keyword";
 
+    // Synapse allows column names of up to 256 characters. Synapse columns are created for each schema field, as well
+    // as for each multiple choice answer. For multiple choice answers, we append the field name with the answer,
+    // delimited by a '.'. If we set the max length to 127, this all but guarantees we will never have a Synapse column
+    // name longer than 256 characters
+    private static final int FIELD_NAME_MAX_LENGTH = 127;
+
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
 
@@ -132,19 +138,8 @@ public class UploadUtil {
                     .put(UploadFieldType.TIME_V2, 12)
                     .build();
 
-    // List of reserved SQL keywords and Synapse keywords that can't be used as field names.
-    private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.<String>builder().add("access", "add",
-            "all", "alter", "and", "any", "as", "asc", "audit", "between", "by", "char", "check", "cluster", "column",
-            "column_value", "comment", "compress", "connect", "create", "current", "date", "decimal", "default",
-            "delete", "desc", "distinct", "drop", "else", "exclusive", "exists", "false", "file", "float", "for", "from",
-            "grant", "group", "having", "identified", "immediate", "in", "increment", "index", "initial", "insert",
-            "integer", "intersect", "into", "is", "level", "like", "lock", "long", "maxextents", "minus", "mlslabel",
-            "mode", "modify", "nested_table_id", "noaudit", "nocompress", "not", "nowait", "null", "number", "of",
-            "offline", "on", "online", "option", "or", "order", "pctfree", "prior", "public", "raw", "rename",
-            "resource", "revoke", "row", "row_id", "row_version", "rowid", "rownum", "rows", "select", "session", "set",
-            "share", "size", "smallint", "start", "successful", "synonym", "sysdate", "table", "then", "time", "to",
-            "trigger", "true", "uid", "union", "unique", "update", "user", "validate", "values", "varchar", "varchar2", "view",
-            "whenever", "where", "with").build();
+    // List of Synapse keywords that can't be used as field names.
+    private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.of("row_etag", "row_id", "row_version");
 
     /*
      * Suffix used for unit fields in schemas. For example, if we had a field called "jogtime", we would have a field
@@ -504,6 +499,7 @@ public class UploadUtil {
      * 1. must start and end with an alphanumeric character
      * 2. can only contain alphanumeric characters, spaces, dashes, underscores, and periods
      * 3. can't contain two or more non-alphanumeric characters in a row
+     * 4. can't be longer than the max length
      * </p>
      *
      * @param name
@@ -538,6 +534,11 @@ public class UploadUtil {
             return false;
         }
 
+        // Can't be too long.
+        if (name.length() > FIELD_NAME_MAX_LENGTH) {
+            return false;
+        }
+
         // Exhausted all our rules, so it must be valid.
         return true;
     }
@@ -552,13 +553,14 @@ public class UploadUtil {
      */
     public static boolean isValidSchemaFieldName(String name) {
         // Valid schema field name follows all the same rules as a valid survey answer choice. (This also checks for
-        // nulls and blanks.)
+        // nulls and blanks and names that are too long.)
         if (!isValidAnswerChoice(name)) {
             return false;
         }
 
-        // In addition, it can't be a reserved keyword.
-        if (RESERVED_FIELD_NAME_LIST.contains(name)) {
+        // In addition, it can't be a reserved keyword. Reserved keywords are case-insensitive, so flatten the name to
+        // lowercase.
+        if (RESERVED_FIELD_NAME_LIST.contains(name.toLowerCase())) {
             return false;
         }
 
