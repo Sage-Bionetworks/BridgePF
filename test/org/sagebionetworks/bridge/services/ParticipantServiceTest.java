@@ -319,13 +319,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantTransfersSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(substudies).build());
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
-        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
-        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyB", false)).thenReturn(Substudy.create());
-        
+        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies);
         mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, participant, false);
@@ -921,17 +915,10 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void updateParticipantTransfersSubstudyIds() {
+    public void updateParticipantDoesNotTransferSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(substudies).build());
-
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
-        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
-        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyB", false)).thenReturn(Substudy.create());
+        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies);
         
-        // Make this test more robust by including accountSubstudies that should
-        // be either kept or removed. These do not change the final persisted set.
         mockHealthCodeAndAccountRetrieval();
         account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyC", ID));
         account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
@@ -943,17 +930,39 @@ public class ParticipantServiceTest {
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(2, accountSubstudies.size());
         
+        // Not changed at all, because user isn't an admin
         AccountSubstudy substudyA = accountSubstudies.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
+                .filter((as) -> as.getSubstudyId().equals("substudyC")).findAny().get();
         assertEquals(STUDY.getIdentifier(), substudyA.getStudyId());
-        assertEquals("substudyA", substudyA.getSubstudyId());
         assertEquals(ID, substudyA.getAccountId());
         
         AccountSubstudy substudyB = accountSubstudies.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
         assertEquals(STUDY.getIdentifier(), substudyB.getStudyId());
-        assertEquals("substudyB", substudyB.getSubstudyId());
         assertEquals(ID, substudyB.getAccountId());
+    }
+    
+    @Test
+    public void updateParticipantTransfersSubstudyIdsForAdmins() {
+        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies, Roles.ADMIN);
+        
+        mockHealthCodeAndAccountRetrieval();
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyC", ID));
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
+        
+        participantService.updateParticipant(STUDY, participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        
+        Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
+        assertEquals(2, accountSubstudies.size());
+        
+        // get() throws exception if accountSubstudy not found
+        accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
+        accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
     }
     
     @Test
@@ -2073,5 +2082,21 @@ public class ParticipantServiceTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.getUserProfileAttributes().add("can_be_recontacted");
         return study;
+    }
+    
+    private StudyParticipant mockSubstudiesInRequest(Set<String> callerSubstudies, Set<String> participantSubstudies, Roles... roles) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies)
+                .withCallerRoles( (roles.length == 0) ? null : ImmutableSet.copyOf(roles)).build());
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withSubstudyIds(participantSubstudies).build();
+        
+        for (String substudyId : callerSubstudies) {
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+        }
+        for (String substudyId : participantSubstudies) {
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+        }
+        return participant;
     }
 }
