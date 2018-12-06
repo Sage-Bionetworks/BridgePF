@@ -336,7 +336,7 @@ public class ParticipantService {
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
 
-        updateAccountAndRoles(study, account, participant);
+        updateAccountAndRoles(study, account, participant, true);
         
         account.setStatus(AccountStatus.UNVERIFIED);
 
@@ -411,7 +411,7 @@ public class ParticipantService {
             }
             account.setExternalId(participant.getExternalId());
         }
-        updateAccountAndRoles(study, account, participant);
+        updateAccountAndRoles(study, account, participant, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
@@ -434,7 +434,7 @@ public class ParticipantService {
         }
     }
     
-    private void updateAccountAndRoles(Study study, Account account, StudyParticipant participant) {
+    private void updateAccountAndRoles(Study study, Account account, StudyParticipant participant, boolean isNew) {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
@@ -443,22 +443,25 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        
-        // Adjust the persisted Hibernate collection, w/o concurrency exceptions
-        Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
-            return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
-        }).collect(Collectors.toSet());
-        
-        account.getAccountSubstudies().clear();
-        account.getAccountSubstudies().addAll(updatedSubstudies);
-        
+       
+        // Only allow the setting of substudies on new accounts, or if the caller is an admin (changing
+        // substudies while not changing external IDs or consents may break things, so we don't allow it).
+        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
+        if (isNew || callerRoles.contains(Roles.ADMIN)) {
+            // Adjust the persisted Hibernate collection, w/o concurrency exceptions
+            Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
+                return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
+            }).collect(Collectors.toSet());
+            
+            account.getAccountSubstudies().clear();
+            account.getAccountSubstudies().addAll(updatedSubstudies);
+        }
         // Do not copy timezone or external ID. Neither can be updated once set.
         
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
-        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
         }

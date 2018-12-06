@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -105,10 +106,13 @@ public class BridgeUtils {
             if (BridgeUtils.isEmpty(callerSubstudies)) {
                 return account;
             }
-            for (AccountSubstudy accountSubstudy : account.getAccountSubstudies()) {
-                if (callerSubstudies.contains(accountSubstudy.getSubstudyId())) {
-                    return account;
-                }
+            Set<AccountSubstudy> matched = account.getAccountSubstudies().stream()
+                    .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
+                    .collect(BridgeCollectors.toImmutableSet());
+            
+            if (!matched.isEmpty()) {
+                account.setAccountSubstudies(matched);
+                return account;
             }
         }
         return null;
