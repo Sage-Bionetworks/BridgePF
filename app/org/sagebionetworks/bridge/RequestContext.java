@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -11,13 +12,13 @@ public class RequestContext {
     public static final RequestContext NULL_INSTANCE = new RequestContext.Builder().build();
 
     private final String id;
-    private final String callerStudyId;
+    private final StudyIdentifier callerStudyId;
     private final Set<String> callerSubstudies;
     private final Set<Roles> callerRoles;
     
     private RequestContext(String id, String callerStudyId, Set<String> callerSubstudies, Set<Roles> callerRoles) {
         this.id = id;
-        this.callerStudyId = callerStudyId;
+        this.callerStudyId = (callerStudyId == null) ? null : new StudyIdentifierImpl(callerStudyId);
         this.callerSubstudies = callerSubstudies;
         this.callerRoles = callerRoles;
     }
@@ -26,6 +27,9 @@ public class RequestContext {
         return id;
     }
     public String getCallerStudyId() {
+        return (callerStudyId == null) ? null : callerStudyId.getIdentifier();
+    }
+    public StudyIdentifier getCallerStudyIdentifier() {
         return callerStudyId;
     }
     public Set<String> getCallerSubstudies() {

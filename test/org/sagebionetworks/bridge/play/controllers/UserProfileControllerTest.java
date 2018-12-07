@@ -29,6 +29,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -45,7 +46,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -78,7 +79,7 @@ public class UserProfileControllerTest {
     private CacheProvider cacheProvider;
     
     @Mock
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     
     @Mock
     private StudyService studyService;
@@ -249,14 +250,19 @@ public class UserProfileControllerTest {
     @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
         TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
-                
+        
+        Account account = Account.create();
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
         Result result = controller.createExternalIdentifier();
         
         TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
-        verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, "ABC-123-XYZ");
     }
 
     @Test

@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
 import org.sagebionetworks.bridge.services.SubstudyService;
 
 import com.google.common.collect.ImmutableSet;
@@ -41,7 +41,7 @@ public class StudyParticipantValidatorTest {
     private StudyParticipantValidator validator;
     
     @Mock
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     
     @Mock
     private SubstudyService substudyService;

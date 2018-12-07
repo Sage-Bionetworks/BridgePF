@@ -19,7 +19,7 @@ public class ExternalIdentifierInfoTest {
 
     @Test
     public void canSerialize() throws Exception {
-        ExternalIdentifierInfo info = new ExternalIdentifierInfo("AAA", true);
+        ExternalIdentifierInfo info = new ExternalIdentifierInfo("AAA", null, true);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals("AAA", node.get("identifier").asText());

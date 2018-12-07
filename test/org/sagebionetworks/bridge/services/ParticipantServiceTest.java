@@ -198,7 +198,7 @@ public class ParticipantServiceTest {
     private PagedResourceList<AccountSummary> accountSummaries;
     
     @Mock
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     
     @Mock
     private AccountWorkflowService accountWorkflowService;
@@ -290,7 +290,7 @@ public class ParticipantServiceTest {
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
         
         // suppress email (true) == sendEmail (false)
         verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
@@ -355,7 +355,7 @@ public class ParticipantServiceTest {
         
         Account account = accountCaptor.getValue();
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -971,7 +971,7 @@ public class ParticipantServiceTest {
         
         // account and participant have the same ID, so externalIdService is not called
         participantService.updateParticipant(STUDY, PARTICIPANT);
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+        verify(externalIdService, never()).assignExternalId(any(), any());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -1416,8 +1416,7 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         // Validated and required, use reservation service and don't set as option
-        verify(externalIdService).assignExternalId(studyCaptor.capture(), eq(EXTERNAL_ID), eq(HEALTH_CODE));
-        assertTrue(studyCaptor.getAllValues().get(0).isExternalIdValidationEnabled());
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
 
     @Test
@@ -1583,7 +1582,7 @@ public class ParticipantServiceTest {
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         assertEquals("extid", account.getExternalId());
-        verify(externalIdService).assignExternalId(STUDY, "extid", HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, "extid");
     }
     
     @Test
@@ -1600,7 +1599,7 @@ public class ParticipantServiceTest {
         } catch(EntityNotFoundException e) {
             verify(accountDao, never()).updateAccount(any());
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-            verify(externalIdService, never()).assignExternalId(any(), any(), any());
+            verify(externalIdService, never()).assignExternalId(any(), any());
         }
     }
     
@@ -1626,7 +1625,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(accountDao, never()).updateAccount(any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(STUDY, account.getExternalId(), account.getHealthCode());
+        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1644,7 +1643,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(accountDao).updateAccount(any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(STUDY, account.getExternalId(), account.getHealthCode());
+        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -1677,7 +1676,7 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1691,7 +1690,7 @@ public class ParticipantServiceTest {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             verify(accountDao, never()).createAccount(any(), any());
-            verify(externalIdService, never()).assignExternalId(any(), any(), any());    
+            verify(externalIdService, never()).assignExternalId(any(), any());    
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
     }
@@ -1711,7 +1710,7 @@ public class ParticipantServiceTest {
             participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
-            verify(externalIdService, never()).assignExternalId(any(), any(), any());    
+            verify(externalIdService, never()).assignExternalId(any(), any());    
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
     }
@@ -1738,7 +1737,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1754,7 +1753,7 @@ public class ParticipantServiceTest {
         } catch(InvalidEntityException e) {
             
         }
-        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1770,8 +1769,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals("newExternalId", account.getExternalId());
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, "newExternalId");
     }
     
     @Test
@@ -1782,8 +1781,8 @@ public class ParticipantServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
         participantService.updateParticipant(STUDY, participant);
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, null, HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, null);
     }
     
     @Test
@@ -1796,7 +1795,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1812,8 +1811,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals(null, account.getExternalId());
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, null, HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, null);
     }
     
     @Test
@@ -1824,7 +1823,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -1836,7 +1835,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
 
     @Test
@@ -1847,7 +1846,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+        verify(externalIdService, never()).assignExternalId(any(), any());
     }
     
     @Test
@@ -1860,8 +1859,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals("newExternalId", account.getExternalId());
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, "newExternalId");
     }
     
     @Test
@@ -1874,8 +1873,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals(null, account.getExternalId());
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, null, HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, null);
     }
     
     @Test
@@ -1891,8 +1890,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).unassignExternalId(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+        verify(externalIdService, never()).unassignExternalId(any(), any());
+        verify(externalIdService, never()).assignExternalId(any(), any());
     }
     
     @Test
@@ -1908,8 +1907,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).unassignExternalId(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+        verify(externalIdService, never()).unassignExternalId(any(), any());
+        verify(externalIdService, never()).assignExternalId(any(), any());
     }
     
     @Test
@@ -2002,8 +2001,8 @@ public class ParticipantServiceTest {
         verify(accountDao).updateAccount(accountCaptor.capture());
         assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
         
-        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(externalIdService).assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
+        verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(account, "newExternalId");
     }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,

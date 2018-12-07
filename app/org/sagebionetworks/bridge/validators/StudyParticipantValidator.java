@@ -16,19 +16,19 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
 import org.sagebionetworks.bridge.services.SubstudyService;
 
 public class StudyParticipantValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
-    private final ExternalIdService externalIdService;
+    private final ExternalIdServiceV4 externalIdService;
     private final SubstudyService substudyService;
     private final Study study;
     private final Set<String> callerSubstudies;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
+    public StudyParticipantValidator(ExternalIdServiceV4 externalIdService, SubstudyService substudyService, Study study,
             boolean isNew) {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;

@@ -67,7 +67,7 @@ public class AuthenticationService {
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
     private IntentService intentService;
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
 
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -107,7 +107,7 @@ public class AuthenticationService {
         this.intentService = intentService;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
+    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
         this.externalIdService = externalIdService;
     }
     

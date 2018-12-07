@@ -68,8 +68,8 @@ public class ExternalIdControllerV4Test {
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authenticationService);
         
-        List<ExternalIdentifierInfo> items = ImmutableList.of(new ExternalIdentifierInfo("id1", true),
-                new ExternalIdentifierInfo("id2", false));
+        List<ExternalIdentifierInfo> items = ImmutableList.of(new ExternalIdentifierInfo("id1", null, true),
+                new ExternalIdentifierInfo("id2", null, false));
         list = new ForwardCursorPagedResourceList<>(items, "nextPageOffsetKey");
         
         study = Study.create();
@@ -97,7 +97,7 @@ public class ExternalIdControllerV4Test {
     @Test
     public void getExternalIdentifiersAllDefaults() throws Exception {
         TestUtils.mockPlayContext();
-        when(mockService.getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, Boolean.FALSE))
+        when(mockService.getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, null))
                 .thenReturn(list);
         
         Result result = controller.getExternalIdentifiers(null, null, null, null);
@@ -106,7 +106,7 @@ public class ExternalIdControllerV4Test {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = TestUtils.getResponsePayload(result, REF);
         assertEquals(2, results.getItems().size());
         
-        verify(mockService).getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, Boolean.FALSE);
+        verify(mockService).getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, null);
     }
     
     @Test

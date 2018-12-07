@@ -82,7 +82,7 @@ public class ParticipantService {
 
     private ConsentService consentService;
 
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
 
     private CacheProvider cacheProvider;
 
@@ -127,7 +127,7 @@ public class ParticipantService {
     }
 
     @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
+    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
         this.externalIdService = externalIdService;
     }
 
@@ -358,7 +358,7 @@ public class ParticipantService {
             account.setStatus(AccountStatus.ENABLED);
         }
         accountDao.createAccount(study, account);
-        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
+        externalIdService.assignExternalId(account, participant.getExternalId());    
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
@@ -407,7 +407,7 @@ public class ParticipantService {
         
         if  (assigningExternalId) {
             if (account.getExternalId() != null) {
-                externalIdService.unassignExternalId(study, account.getExternalId(), account.getHealthCode());    
+                externalIdService.unassignExternalId(account, account.getExternalId());
             }
             account.setExternalId(participant.getExternalId());
         }
@@ -422,7 +422,7 @@ public class ParticipantService {
         accountDao.updateAccount(account);
         
         if (assigningExternalId) {
-            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
+            externalIdService.assignExternalId(account, account.getExternalId());
         }
     }
 
@@ -705,7 +705,7 @@ public class ParticipantService {
             accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
         if (assignExternalId) {
-            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());
+            externalIdService.assignExternalId(account, account.getExternalId());
         }
         
         // return updated StudyParticipant to update and return session

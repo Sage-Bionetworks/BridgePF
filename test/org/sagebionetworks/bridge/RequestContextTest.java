@@ -24,6 +24,7 @@ public class RequestContextTest {
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerStudyId());
+        assertNull(nullContext.getCallerStudyIdentifier());
     }
 
     @Test

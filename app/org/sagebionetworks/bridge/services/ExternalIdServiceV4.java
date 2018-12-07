@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.util.Set;
@@ -11,11 +14,11 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,14 +64,14 @@ public class ExternalIdServiceV4 {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
 
-        StudyIdentifier studyId = new StudyIdentifierImpl(BridgeUtils.getRequestContext().getCallerStudyId());
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        
-        return externalIdDao.getExternalIdentifiers(studyId, callerSubstudies, offsetKey, pageSize, idFilter, assignmentFilter);
+        StudyIdentifier studyId = BridgeUtils.getRequestContext().getCallerStudyIdentifier();
+        return externalIdDao.getExternalIds(studyId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
     public void createExternalIdentifier(ExternalIdentifier externalIdentifier) {
-        StudyIdentifier studyId = new StudyIdentifierImpl(BridgeUtils.getRequestContext().getCallerStudyId());
+        checkNotNull(externalIdentifier);
+        
+        StudyIdentifier studyId = BridgeUtils.getRequestContext().getCallerStudyIdentifier();
         externalIdentifier.setStudyId(studyId.getIdentifier());
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
@@ -89,11 +92,40 @@ public class ExternalIdServiceV4 {
         externalIdDao.createExternalIdentifier(externalIdentifier);
     }
     
-    public void deleteExternalId(Study study, String externalId) {
+    public void deleteExternalIdentifier(ExternalIdentifier externalIdentifier) {
+        checkNotNull(externalIdentifier);
+        
+        externalIdDao.deleteExternalIdentifier(externalIdentifier);
+    }
+    
+    public void assignExternalId(Account account, String externalIdentifier) {
+        checkNotNull(account);
+        checkNotNull(account.getStudyId());
+        checkNotNull(account.getHealthCode());
+        
+        if (externalIdentifier != null) {
+            externalIdDao.assignExternalId(account, externalIdentifier);
+        }
+    }
+    
+    public void unassignExternalId(Account account, String externalIdentifier) {
+        checkNotNull(account);
+        checkNotNull(account.getStudyId());
+        checkNotNull(account.getHealthCode());
+        
+        if (externalIdentifier != null) {
+            externalIdDao.unassignExternalId(account, externalIdentifier);
+        }
+    }
+    
+    public void deleteExternalId(Study study, String externalIdentifier) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(externalIdentifier));
+        
         if (study.isExternalIdValidationEnabled()) {
             throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
         }
-        ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId);
+        ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalIdentifier);
         if (existing == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }

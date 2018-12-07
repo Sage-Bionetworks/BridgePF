@@ -33,7 +33,7 @@ public class ExternalIdControllerV4 extends BaseController {
         getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         Integer pageSize = BridgeUtils.getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
-        Boolean assignmentFilter = "true".equals(assignmentFilterString);
+        Boolean assignmentFilter = (assignmentFilterString == null) ? null : "true".equals(assignmentFilterString);
         
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(
                 offsetKey, pageSize, idFilter, assignmentFilter);

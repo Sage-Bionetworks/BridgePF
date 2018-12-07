@@ -23,7 +23,7 @@ public class ExternalIdValidator implements Validator {
     
     @Override
     public boolean supports(Class<?> clazz) {
-        return ExternalIdValidator.class.isAssignableFrom(clazz);
+        return ExternalIdentifier.class.isAssignableFrom(clazz);
     }
 
     @Override

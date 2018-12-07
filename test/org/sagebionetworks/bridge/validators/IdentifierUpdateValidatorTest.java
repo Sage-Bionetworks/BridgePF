@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IdentifierUpdateValidatorTest {
@@ -24,7 +24,7 @@ public class IdentifierUpdateValidatorTest {
     private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TestConstants.TEST_STUDY, UPDATED_EXTERNAL_ID);
     
     @Mock
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
 
     private Study study; 
     

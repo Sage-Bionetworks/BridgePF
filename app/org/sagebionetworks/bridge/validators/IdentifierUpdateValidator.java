@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -15,9 +15,9 @@ public class IdentifierUpdateValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private Study study;
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     
-    public IdentifierUpdateValidator(Study study, ExternalIdService externalIdService) {
+    public IdentifierUpdateValidator(Study study, ExternalIdServiceV4 externalIdService) {
         this.study = study;
         this.externalIdService = externalIdService;
     }

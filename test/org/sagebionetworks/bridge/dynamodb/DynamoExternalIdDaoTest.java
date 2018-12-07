@@ -8,16 +8,12 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -30,9 +26,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -55,22 +51,16 @@ public class DynamoExternalIdDaoTest {
     @Before
     public void before() {
         studyId = new StudyIdentifierImpl(TestUtils.randomName(DynamoExternalIdDaoTest.class));
-        dao.addExternalIds(studyId, EXT_IDS);
+        dao.createExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(0)));
+        dao.createExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(1)));
+        dao.createExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(2)));
     }
     
     @After
     public void after() {
-        dao.deleteExternalIds(studyId, EXT_IDS);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void addCannotExceedLimit() {
-        // Limit is set to 10. Make a list of 11 external IDs.
-        List<String> extIdList = new ArrayList<>();
-        for (int i = 0; i < 11; i++) {
-            extIdList.add(String.valueOf(i));
-        }
-        dao.addExternalIds(studyId, extIdList);
+        dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(0)));
+        dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(1)));
+        dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, EXT_IDS.get(2)));
     }
     
     @Test
@@ -82,50 +72,40 @@ public class DynamoExternalIdDaoTest {
     public void getExistingIdReturnsNull() {
         assertNull(dao.getExternalId(studyId, "does-not-exist"));
     }
-
-    @Test
-    public void cannotAddExistingIdentifiers() {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
-        
-        dao.addExternalIds(studyId, EXT_IDS);
-        
-        DynamoDBQueryExpression<DynamoExternalIdentifier> query = new DynamoDBQueryExpression<>();
-        query.withScanIndexForward(false);
-        query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null));
-        
-        PaginatedQueryList<? extends DynamoExternalIdentifier> page = mapper.query(DynamoExternalIdentifier.class, query);
-        Set<String> ids = page.stream().map(DynamoExternalIdentifier::getIdentifier).collect(Collectors.toSet());
-        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), ids);
-        
-        // Just as importantly, AAA is still assigned to "healthCode"
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertEquals("healthCode", identifier.getHealthCode());
-    }
     
+    private Account createAccount(String healthCode) {
+        Account account = Account.create();
+        account.setStudyId(studyId.getIdentifier());
+        account.setHealthCode(healthCode);
+        return account;
+    }
+
     @Test
     public void missingIdentifierDoesNothing() {
         DynamoDBMapper spiedMapper = Mockito.spy(mapper);
         
-        dao.assignExternalId(studyId, "missing", "healthCode");
+        Account account = createAccount("healthCode");
+        dao.assignExternalId(account, "missing");
         
         verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
 
     @Test
     public void matchingHealthCodeDoesNothing() {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        Account account = createAccount("healthCode");
+        dao.assignExternalId(account, "AAA");
         
         DynamoDBMapper spiedMapper = Mockito.spy(mapper);
         
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        dao.assignExternalId(account, "AAA");
         
         verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
 
     @Test
     public void availableExternalIdIsAssigned() {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        Account account = createAccount("healthCode");
+        dao.assignExternalId(account, "AAA");
         
         ExternalIdentifier externalId = dao.getExternalId(studyId, "AAA");
         assertEquals("AAA", externalId.getIdentifier());
@@ -135,35 +115,29 @@ public class DynamoExternalIdDaoTest {
 
     @Test(expected = EntityAlreadyExistsException.class)
     public void assignedExternalIdThrowsException() {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.assignExternalId(studyId, "AAA", "differentHealthCode");
+        Account account1 = createAccount("healthCode");
+        Account account2 = createAccount("differentHealthCode");
+        dao.assignExternalId(account1, "AAA");
+        dao.assignExternalId(account2, "AAA");
     }
 
     @Test
     public void identifierCanBeUnassigned() {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        Account account = createAccount("healthCode");
+        dao.assignExternalId(account, "AAA");
         
-        dao.unassignExternalId(studyId, "AAA");
+        dao.unassignExternalId(account, "AAA");
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
+        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId.getIdentifier(), "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertNull(identifier.getHealthCode());
     }
     
     @Test
     public void unassignFailsQuietly() {
-        dao.unassignExternalId(studyId, "AAA"); // never assigned
-        dao.unassignExternalId(studyId, "DDD"); // doesn't exist
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void pageSizeCannotBeNegative() {
-        dao.getExternalIds(studyId, null, -100, null, null);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void pageSizeCannotBeGreaterThan100() {
-        dao.getExternalIds(studyId, null, 101, null, null);
+        Account account = createAccount("healthCode");
+        dao.unassignExternalId(account, "AAA"); // never assigned
+        dao.unassignExternalId(account, "DDD"); // doesn't exist
     }
     
     @Test
@@ -179,7 +153,9 @@ public class DynamoExternalIdDaoTest {
     public void canFilterIds() {
         List<String> moreIds = Lists.newArrayList("aaa", "bbb", "ccc", "DDD", "AEE", "AFF");
         try {
-            dao.addExternalIds(studyId, moreIds);
+            for (String id : moreIds) {
+                dao.createExternalIdentifier(ExternalIdentifier.create(studyId, id));    
+            }
             
             // AAA, AEE, AFF
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, "A", null);
@@ -195,27 +171,34 @@ public class DynamoExternalIdDaoTest {
             assertEquals("ZZZ", page.getRequestParams().get("idFilter"));
             assertNull(page.getNextPageOffsetKey());
             
-            dao.assignExternalId(studyId, "AAA", "healthCode1");
-            dao.assignExternalId(studyId, "BBB", "healthCode1");
+            Account account1 = createAccount("healthCode1");
+            Account account2 = createAccount("healthCode2");
+            dao.assignExternalId(account1, "AAA");
+            dao.assignExternalId(account2, "BBB");
 
             page = dao.getExternalIds(studyId, null, 10, null, Boolean.TRUE);
             assertEquals(2, page.getItems().size());
             assertEquals(toSet(true, "AAA", "BBB"), Sets.newHashSet(page.getItems()));
         } finally {
-            dao.deleteExternalIds(studyId, moreIds);
+            for (String id : moreIds) {
+                try {
+                    dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, id));
+                } catch (Exception ex) {
+                    // suppress cleanup exception
+                }
+            }
         }
     }
     
     @Test
     public void canRetrieveCurrentAndNextPage() {
         // Add more external IDs.
-        List<String> moreIds1 = ImmutableList.of("DDD", "EEE", "FFF", "GGG", "HHH", "III", "JJJ", "KKK", "LLL", "MMM");
-        List<String> moreIds2 = ImmutableList.of("NNN", "OOO", "PPP", "QQQ", "RRR", "SSS", "TTT", "UUU", "VVV", "WWW");
-        List<String> moreIds3 = ImmutableList.of("XXX", "YYY", "ZZZ");
+        List<String> moreIds = ImmutableList.of("DDD", "EEE", "FFF", "GGG", "HHH", "III", "JJJ", "KKK", "LLL", "MMM",
+                "NNN", "OOO", "PPP", "QQQ", "RRR", "SSS", "TTT", "UUU", "VVV", "WWW", "XXX", "YYY", "ZZZ");
         try {
-            dao.addExternalIds(studyId, moreIds1);
-            dao.addExternalIds(studyId, moreIds2);
-            dao.addExternalIds(studyId, moreIds3);
+            for (String id : moreIds) {
+                dao.createExternalIdentifier(ExternalIdentifier.create(studyId, id));
+            }
 
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
@@ -239,22 +222,12 @@ public class DynamoExternalIdDaoTest {
             assertNull(page.getNextPageOffsetKey());
             assertEquals("OOO", page.getRequestParams().get("offsetKey"));
         } finally {
-            try {
-                dao.deleteExternalIds(studyId, moreIds1);
-            } catch (Exception ex) {
-                // suppress cleanup exception
-            }
-
-            try {
-                dao.deleteExternalIds(studyId, moreIds2);
-            } catch (Exception ex) {
-                // suppress cleanup exception
-            }
-
-            try {
-                dao.deleteExternalIds(studyId, moreIds3);
-            } catch (Exception ex) {
-                // suppress cleanup exception
+            for (String id : moreIds) {
+                try {
+                    dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, id));
+                } catch (Exception ex) {
+                    // suppress cleanup exception
+                }
             }
         }
     }
@@ -262,7 +235,7 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void pagingWithFilterResetsInapplicableOffsetKey() {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);
-        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertEquals(new ExternalIdentifierInfo("CCC", null, false), page.getItems().get(0));
         assertNull(page.getNextPageOffsetKey());
     }
     
@@ -275,7 +248,7 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void pagingWithFilterShorterThanKeyWorks() {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "C", 5, "CC", null);
-        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertEquals(new ExternalIdentifierInfo("CCC", null, false), page.getItems().get(0));
         assertNull(page.getNextPageOffsetKey());
     }
     
@@ -285,7 +258,9 @@ public class DynamoExternalIdDaoTest {
     public void pagingWithNoRemainderWorks() {
         List<String> moreIds = Lists.newArrayList("DDD", "EEE", "FFF");
         try {
-            dao.addExternalIds(studyId, moreIds);
+            for (String id : moreIds) {
+                dao.createExternalIdentifier(ExternalIdentifier.create(studyId, id));
+            }
 
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 3, null, null);
             assertEquals(3, page.getItems().size());
@@ -298,30 +273,37 @@ public class DynamoExternalIdDaoTest {
             assertNull(page.getNextPageOffsetKey());
             assertEquals(nextOffsetKey, page.getRequestParams().get("offsetKey"));
         } finally {
-            dao.deleteExternalIds(studyId, moreIds);
+            for (String id : moreIds) {
+                try {
+                    dao.deleteExternalIdentifier(ExternalIdentifier.create(studyId, id));        
+                } catch(Exception e) {
+                }
+            }
         }
     }
     
     @Test
     public void retrieveUnassignedExcludesReserved() throws Exception {
-        dao.assignExternalId(studyId, "AAA", "healthCode1");
-        dao.assignExternalId(studyId, "BBB", "healthCode1");
+        Account account = createAccount("healthCode1");
+        dao.assignExternalId(account, "AAA");
+        dao.assignExternalId(account, "BBB");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
-        assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
+        assertEquals(new ExternalIdentifierInfo("CCC", null, false), page.getItems().get(0));
 
         page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(2, page.getItems().size());
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", true)));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", null, true)));
+        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", null, true)));
     }
     
     @Test
     public void getNextAvailableID() {
+        Account account = createAccount("healthCode");
         // We should skip over reserved and assigned IDs to find a free one
-        dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.assignExternalId(studyId, "BBB", "healthCode");
+        dao.assignExternalId(account, "AAA");
+        dao.assignExternalId(account, "BBB");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
@@ -344,7 +326,7 @@ public class DynamoExternalIdDaoTest {
     private Set<ExternalIdentifierInfo> toSet(boolean isAssigned, String... infos) {
         Set<ExternalIdentifierInfo> set = Sets.newHashSetWithExpectedSize(infos.length);
         for (String identifier : infos) {
-            set.add(new ExternalIdentifierInfo(identifier, isAssigned));
+            set.add(new ExternalIdentifierInfo(identifier, null, isAssigned));
         }
         return set; 
     }

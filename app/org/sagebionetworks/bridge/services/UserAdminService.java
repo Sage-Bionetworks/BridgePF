@@ -41,7 +41,7 @@ public class UserAdminService {
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     private UploadService uploadService;
 
     @Autowired
@@ -84,7 +84,7 @@ public class UserAdminService {
         this.cacheProvider = cache;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
+    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
         this.externalIdService = externalIdService;
     }
     @Autowired
@@ -206,7 +206,7 @@ public class UserAdminService {
             // Remove the externalId from the table even if validation is not enabled. If the study
             // turns it off/back on again, we want to track what has changed
             if (account.getExternalId() != null) {
-                externalIdService.unassignExternalId(study, account.getExternalId(), healthCode);    
+                externalIdService.unassignExternalId(account, account.getExternalId());    
             }
             accountDao.deleteAccount(accountId);
         }

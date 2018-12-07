@@ -81,13 +81,16 @@ public class UserAdminServiceMockTest {
     private ActivityEventService activityEventService;
     
     @Mock
-    private ExternalIdService externalIdService;
+    private ExternalIdServiceV4 externalIdService;
     
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
     @Captor
     private ArgumentCaptor<SignIn> signInCaptor;
+    
+    @Captor
+    private ArgumentCaptor<Account> accountCaptor;
 
     private UserAdminService service;
     
@@ -249,8 +252,10 @@ public class UserAdminServiceMockTest {
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");
-        verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
+        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("externalId"));
         verify(accountDao).deleteAccount(accountId);
+        
+        assertEquals("healthCode", accountCaptor.getValue().getHealthCode());
     }
     
 }
