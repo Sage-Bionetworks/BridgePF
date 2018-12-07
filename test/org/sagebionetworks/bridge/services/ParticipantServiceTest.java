@@ -198,7 +198,7 @@ public class ParticipantServiceTest {
     private PagedResourceList<AccountSummary> accountSummaries;
     
     @Mock
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     @Mock
     private AccountWorkflowService accountWorkflowService;

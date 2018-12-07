@@ -82,7 +82,7 @@ public class ParticipantService {
 
     private ConsentService consentService;
 
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
 
     private CacheProvider cacheProvider;
 
@@ -127,7 +127,7 @@ public class ParticipantService {
     }
 
     @Autowired
-    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
 

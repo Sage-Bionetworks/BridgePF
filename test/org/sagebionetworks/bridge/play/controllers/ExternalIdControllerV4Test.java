@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -44,7 +44,7 @@ public class ExternalIdControllerV4Test {
     private static final TypeReference<ForwardCursorPagedResourceList<ExternalIdentifierInfo>> REF = new TypeReference<ForwardCursorPagedResourceList<ExternalIdentifierInfo>>() {};
     
     @Mock
-    private ExternalIdServiceV4 mockService;
+    private ExternalIdService mockService;
     
     @Mock
     private StudyService studyService;
@@ -73,6 +73,7 @@ public class ExternalIdControllerV4Test {
         list = new ForwardCursorPagedResourceList<>(items, "nextPageOffsetKey");
         
         study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
@@ -118,7 +119,7 @@ public class ExternalIdControllerV4Test {
         Result result = controller.createExternalIdentifier();
         TestUtils.assertResult(result, 201, "External identifier created.");
         
-        verify(mockService).createExternalIdentifier(externalIdCaptor.capture());
+        verify(mockService).createExternalId(externalIdCaptor.capture());
         
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
         assertEquals(TestConstants.TEST_STUDY.getIdentifier(), retrievedId.getStudyId());
@@ -134,7 +135,9 @@ public class ExternalIdControllerV4Test {
         Result result = controller.deleteExternalIdentifier("externalId");
         TestUtils.assertResult(result, 200, "External identifier deleted.");
         
-        verify(mockService).deleteExternalId(study, "externalId");
+        verify(mockService).deleteExternalIdPermanently(eq(study), externalIdCaptor.capture());
+        assertEquals("externalId", externalIdCaptor.getValue().getIdentifier());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
     
     @Test

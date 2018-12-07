@@ -21,20 +21,21 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 
 @Controller("externalIdController")
 public class ExternalIdController extends BaseController {
     
     private static final TypeReference<List<String>> EXTERNAL_ID_TYPE_REF = new TypeReference<List<String>>() {};
 
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     @Autowired
-    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
     
+    @Deprecated
     public Result getExternalIds(String offsetKey, String pageSizeString, String idFilter, String assignmentFilterString) {
         getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
@@ -47,6 +48,7 @@ public class ExternalIdController extends BaseController {
         return okResult(page);
     }
     
+    @Deprecated
     public Result addExternalIds() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -55,11 +57,12 @@ public class ExternalIdController extends BaseController {
         
         for (String externalIdentifier : identifiers) {
             ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);
-            externalIdService.createExternalIdentifier(extId);    
+            externalIdService.createExternalId(extId);    
         }
         return createdResult("External identifiers added.");
     }
     
+    @Deprecated
     public Result deleteExternalIds() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -71,13 +74,12 @@ public class ExternalIdController extends BaseController {
         List<String> identifiers = Lists.newArrayList(externalIds);
         for (String externalIdentifier : identifiers) {
             ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);
-            externalIdService.deleteExternalIdentifier(extId);
+            externalIdService.deleteExternalIdPermanently(study, extId);
         }
-        
-        
         return okResult("External identifiers deleted.");
     }
     
+    @Deprecated
     @BodyParser.Of(BodyParser.Empty.class)
     public Result generatePassword(String externalId, boolean createAccount) throws Exception {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
@@ -87,5 +89,4 @@ public class ExternalIdController extends BaseController {
         
         return okResult(password);
     }
-
 }

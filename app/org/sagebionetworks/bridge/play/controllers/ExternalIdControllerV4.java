@@ -11,7 +11,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -21,10 +21,10 @@ import play.mvc.Result;
 @Controller("externalIdControllerV4")
 public class ExternalIdControllerV4 extends BaseController {
 
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     @Autowired
-    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
     
@@ -44,7 +44,7 @@ public class ExternalIdControllerV4 extends BaseController {
         getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         ExternalIdentifier externalIdentifier = parseJson(request(), ExternalIdentifier.class);
-        externalIdService.createExternalIdentifier(externalIdentifier);
+        externalIdService.createExternalId(externalIdentifier);
         
         return createdResult("External identifier created.");
     }
@@ -53,7 +53,8 @@ public class ExternalIdControllerV4 extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        externalIdService.deleteExternalId(study, externalId);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);        
+        externalIdService.deleteExternalIdPermanently(study, externalIdentifier);
         
         return okResult("External identifier deleted.");
     }

@@ -114,7 +114,7 @@ public class StudyService {
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
     private ParticipantService participantService;
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     private SubstudyService substudyService;
 
     private String defaultEmailVerificationTemplate;
@@ -268,7 +268,7 @@ public class StudyService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
     @Autowired

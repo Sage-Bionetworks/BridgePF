@@ -57,7 +57,7 @@ public class UserAdminServiceTest {
     UserAdminService userAdminService;
     
     @Resource
-    ExternalIdServiceV4 externalIdService;
+    ExternalIdService externalIdService;
     
     @Resource
     SubstudyService substudyService;
@@ -178,7 +178,7 @@ public class UserAdminServiceTest {
         
         ExternalIdentifier idForTest = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);
         idForTest.setSubstudyId(substudy.getId());
-        externalIdService.createExternalIdentifier(idForTest);
+        externalIdService.createExternalId(idForTest);
         try {
             study.setExternalIdValidationEnabled(true);
             session = userAdminService.createUser(study, participant, null, true, true);
@@ -202,7 +202,7 @@ public class UserAdminServiceTest {
             session = null;
             // this is a cheat, for sure, but allow deletion
             study.setExternalIdValidationEnabled(false);
-            externalIdService.deleteExternalIdentifier(idForTest);
+            externalIdService.deleteExternalIdPermanently(study, idForTest);
         }
     }
 

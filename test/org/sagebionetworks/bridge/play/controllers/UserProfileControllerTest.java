@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -79,7 +79,7 @@ public class UserProfileControllerTest {
     private CacheProvider cacheProvider;
     
     @Mock
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     @Mock
     private StudyService studyService;

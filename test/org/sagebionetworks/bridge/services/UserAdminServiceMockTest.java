@@ -81,7 +81,7 @@ public class UserAdminServiceMockTest {
     private ActivityEventService activityEventService;
     
     @Mock
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;

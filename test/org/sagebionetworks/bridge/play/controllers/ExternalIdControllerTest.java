@@ -41,7 +41,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -66,7 +66,7 @@ public class ExternalIdControllerTest {
             new TypeReference<ForwardCursorPagedResourceList<ExternalIdentifierInfo>>() {};
     
     @Mock
-    ExternalIdServiceV4 externalIdService;
+    ExternalIdService externalIdService;
     
     @Mock
     StudyService studyService;
@@ -140,11 +140,11 @@ public class ExternalIdControllerTest {
         Result result = controller.addExternalIds();
         assertResult(result, 201, "External identifiers added.");
         
-        verify(externalIdService).createExternalIdentifier(
+        verify(externalIdService).createExternalId(
                 ExternalIdentifier.create(study.getStudyIdentifier(), "AAA"));
-        verify(externalIdService).createExternalIdentifier(
+        verify(externalIdService).createExternalId(
                 ExternalIdentifier.create(study.getStudyIdentifier(), "BBB"));
-        verify(externalIdService).createExternalIdentifier(
+        verify(externalIdService).createExternalId(
                 ExternalIdentifier.create(study.getStudyIdentifier(), "CCC"));
     }
     
@@ -155,7 +155,7 @@ public class ExternalIdControllerTest {
         Result result = controller.addExternalIds();
         assertResult(result, 201, "External identifiers added.");
         
-        verify(externalIdService, never()).createExternalIdentifier(any());        
+        verify(externalIdService, never()).createExternalId(any());        
     }
     
     @Test
@@ -168,11 +168,11 @@ public class ExternalIdControllerTest {
         Result result = controller.deleteExternalIds();
         assertResult(result, 200, "External identifiers deleted.");
         
-        verify(externalIdService).deleteExternalIdentifier(
+        verify(externalIdService).deleteExternalIdPermanently(study, 
                 ExternalIdentifier.create(study.getStudyIdentifier(), "AAA"));
-        verify(externalIdService).deleteExternalIdentifier(
+        verify(externalIdService).deleteExternalIdPermanently(study, 
                 ExternalIdentifier.create(study.getStudyIdentifier(), "BBB"));
-        verify(externalIdService).deleteExternalIdentifier(
+        verify(externalIdService).deleteExternalIdPermanently(study, 
                 ExternalIdentifier.create(study.getStudyIdentifier(), "CCC"));
     }
     

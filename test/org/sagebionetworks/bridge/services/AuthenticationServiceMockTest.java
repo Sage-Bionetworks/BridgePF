@@ -141,7 +141,7 @@ public class AuthenticationServiceMockTest {
     @Mock
     private AccountWorkflowService accountWorkflowService;
     @Mock
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     @Mock
     private IntentService intentService;
     @Captor

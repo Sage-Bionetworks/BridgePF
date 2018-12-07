@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdServiceV4;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ public class UserProfileController extends BaseController {
 
     private ParticipantService participantService;
     
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     
     private ViewCache viewCache;
 
@@ -60,7 +60,7 @@ public class UserProfileController extends BaseController {
         this.viewCache = viewCache;
     }
     @Autowired
-    public final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    public final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
 

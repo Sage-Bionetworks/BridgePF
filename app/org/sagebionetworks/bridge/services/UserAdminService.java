@@ -41,7 +41,7 @@ public class UserAdminService {
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
-    private ExternalIdServiceV4 externalIdService;
+    private ExternalIdService externalIdService;
     private UploadService uploadService;
 
     @Autowired
@@ -84,7 +84,7 @@ public class UserAdminService {
         this.cacheProvider = cache;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdServiceV4 externalIdService) {
+    final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
     @Autowired
