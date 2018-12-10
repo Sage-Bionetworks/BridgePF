@@ -40,9 +40,12 @@ public class AuthenticationController extends BaseController {
     
     public Result requestEmailSignIn() { 
         SignIn signInRequest = parseJson(request(), SignIn.class);
-        
-        accountWorkflowService.requestEmailSignIn(signInRequest);
-        
+
+        String userId = accountWorkflowService.requestEmailSignIn(signInRequest);
+        if (userId != null) {
+            getMetrics().setUserId(userId);
+        }
+
         return acceptedResult("Email sent.");
     }
     
@@ -70,8 +73,11 @@ public class AuthenticationController extends BaseController {
 
     public Result requestPhoneSignIn() {
         SignIn signInRequest = parseJson(request(), SignIn.class);
-        
-        accountWorkflowService.requestPhoneSignIn(signInRequest);
+
+        String userId = accountWorkflowService.requestPhoneSignIn(signInRequest);
+        if (userId != null) {
+            getMetrics().setUserId(userId);
+        }
 
         return acceptedResult("Message sent.");
     }
