@@ -23,8 +23,7 @@ public class CacheAdminServiceTest {
     private static final String REQUEST_INFO_KEY = CacheKey.requestInfo("10E9SFUz9BYrqCrTzfiaNW").toString();
     
     private final static Set<String> KEYS = Sets.newHashSet(CacheKey.study("foo").toString(),
-            CacheKey.viewKey(Survey.class, "baz").toString(),
-            CacheKey.sessionByUserId("xh7YDmjGQuTKnfdv9iJb0").toString(), REQUEST_INFO_KEY);
+            CacheKey.viewKey(Survey.class, "baz").toString());
     
     private CacheAdminService adminService;
     

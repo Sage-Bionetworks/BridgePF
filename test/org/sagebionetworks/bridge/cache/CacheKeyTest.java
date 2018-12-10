@@ -94,11 +94,6 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void sessionKey() {
-        assertEquals("sessionToken:session", CacheKey.session("sessionToken").toString());
-    }
-    
-    @Test
     public void study() {
         assertEquals("api:study", CacheKey.study("api").toString());
     }    
@@ -111,11 +106,6 @@ public class CacheKeyTest {
     @Test
     public void subpopList() {
         assertEquals("api:SubpopulationList", CacheKey.subpopList(TestConstants.TEST_STUDY).toString());
-    }
-    
-    @Test
-    public void userSessionKey() {
-        assertEquals("userId:session:user", CacheKey.sessionByUserId("userId").toString());
     }
     
     @Test
