@@ -19,8 +19,8 @@ import javax.annotation.Resource;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.util.concurrent.RateLimiter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -44,38 +45,36 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 @Component
 public class DynamoExternalIdDao implements ExternalIdDao {
+//    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     static final int PAGE_SCAN_LIMIT = 200;
-
-    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
-
-    private static final String HEALTH_CODE = "healthCode";
+    static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
     static final String SUBSTUDY_ID = "substudyId";
-    private static final String STUDY_ID = "studyId";
+    static final String STUDY_ID = "studyId";
 
     private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
 
     /** Gets the add limit and lock duration from Config. */
     @Autowired
-    public final void setConfig(Config config) {
+    final void setConfig(Config config) {
         setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
 
     // allow unit test to mock this
-    void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
+    final void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
         this.getExternalIdRateLimiter = getExternalIdRateLimiter;
     }
 
     @Resource(name = "externalIdDdbMapper")
-    public final void setMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
@@ -171,28 +170,25 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(account);
         checkArgument(isNotBlank(externalId));
         
-        String healthCode = account.getHealthCode();
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(account.getStudyId(), externalId);
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-
-        // If the identifier doesn't exist, or the same code has already been set, do nothing
-        if (identifier != null && !healthCode.equals(identifier.getHealthCode())) {
-            try {
-                identifier.setHealthCode(healthCode);
-                mapper.save(identifier, getAssignmentExpression());
-                account.setExternalId(externalId);
-                // This is currently optional.
-                if (identifier.getSubstudyId() != null) {
-                    AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                            identifier.getSubstudyId(), account.getId());
-                    account.getAccountSubstudies().add(acctSubstudy);
-                }
-            } catch(ConditionalCheckFailedException e) {
-                // If this happens, it's a consistency error because the account should have failed. We need to reconcile.
-                LOG.error("Failed attempt to assign externalId: " + externalId + " from " + identifier.getHealthCode()
-                        + " to " + healthCode);
-                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
-            }        
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = getExternalId(studyId, externalId);
+        
+        // If the identifier doesn't exist, or a code has already been set, do nothing
+        if (identifier == null || account.getHealthCode().equals(identifier.getHealthCode())) {
+            return;
+        }
+        try {
+            identifier.setHealthCode(account.getHealthCode());
+            mapper.save(identifier, getHealthCodeAssignedExpression(false));
+            account.setExternalId(externalId);
+            // This is currently optional.
+            if (identifier.getSubstudyId() != null) {
+                AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                        identifier.getSubstudyId(), account.getId());
+                account.getAccountSubstudies().add(acctSubstudy);
+            }
+        } catch(ConditionalCheckFailedException e) {
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, IDENTIFIER, identifier.getIdentifier());
         }
     }
 
@@ -201,19 +197,19 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(account);
         checkArgument(isNotBlank(externalId));
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(account.getStudyId(), externalId);
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = getExternalId(studyId, externalId);
         
-        // Don't throw an exception if the identifier doesn't exist, we don't care.
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        if (identifier != null) {
-            identifier.setHealthCode(null);
-            mapper.save(identifier);
-            account.setExternalId(null);
-            if (identifier.getSubstudyId() != null) {
-                AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                        identifier.getSubstudyId(), account.getId());
-                account.getAccountSubstudies().remove(acctSubstudy);
-            }
+        if (identifier == null || identifier.getHealthCode() == null) {
+            return;
+        }
+        identifier.setHealthCode(null);
+        mapper.save(identifier); // , getHealthCodeAssignedExpression(true)
+        account.setExternalId(null);
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            account.getAccountSubstudies().remove(acctSubstudy);
         }
     }
     
@@ -256,21 +252,15 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
     private void addAssignmentFilter(DynamoDBQueryExpression<DynamoExternalIdentifier> query, boolean isAssigned) {
         ComparisonOperator healthCodeOp = (isAssigned) ? NOT_NULL : NULL;
-        
         Condition healthCodeCondition = new Condition().withComparisonOperator(healthCodeOp);
         query.withQueryFilterEntry(HEALTH_CODE, healthCodeCondition);
     }
     
-    /**
-     * Save the record with the user's healthCode.  
-     */
-    private DynamoDBSaveExpression getAssignmentExpression() {
-        Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
+    private DynamoDBSaveExpression getHealthCodeAssignedExpression(boolean healthCodeAssigned) {
+        Map<String, ExpectedAttributeValue> map = ImmutableMap.of(
+                HEALTH_CODE, new ExpectedAttributeValue().withExists(healthCodeAssigned));
 
-        DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
-        saveExpression.setExpected(map);
-        return saveExpression;
+        return new DynamoDBSaveExpression().withExpected(map);
     }
     
 }

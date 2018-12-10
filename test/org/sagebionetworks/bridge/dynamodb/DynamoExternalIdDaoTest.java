@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -75,6 +75,7 @@ public class DynamoExternalIdDaoTest {
     
     private Account createAccount(String healthCode) {
         Account account = Account.create();
+        account.setId(BridgeUtils.generateGuid());
         account.setStudyId(studyId.getIdentifier());
         account.setHealthCode(healthCode);
         return account;
@@ -122,15 +123,26 @@ public class DynamoExternalIdDaoTest {
     }
 
     @Test
-    public void identifierCanBeUnassigned() {
-        Account account = createAccount("healthCode");
-        dao.assignExternalId(account, "AAA");
-        
-        dao.unassignExternalId(account, "AAA");
-        
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId.getIdentifier(), "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertNull(identifier.getHealthCode());
+    public void identifierCanBeUnassigned() throws Exception {
+        ExternalIdentifier extId = ExternalIdentifier.create(studyId, "AAA");
+        try {
+            dao.createExternalIdentifier(extId);
+            
+            Account account = createAccount("healthCode");
+            dao.assignExternalId(account, "AAA");
+            Thread.sleep(1000);
+            DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId.getIdentifier(), "AAA");
+            DynamoExternalIdentifier identifier = mapper.load(keyObject);
+            assertNotNull(identifier.getHealthCode());
+            
+            dao.unassignExternalId(account, "AAA");
+            
+            keyObject = new DynamoExternalIdentifier(studyId.getIdentifier(), "AAA");
+            identifier = mapper.load(keyObject);
+            assertNull(identifier.getHealthCode());
+        } finally {
+            dao.deleteExternalIdentifier(extId);
+        }
     }
     
     @Test
