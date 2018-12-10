@@ -1022,13 +1022,17 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestEmailSignIn() throws Exception {
+        // Mock.
         study.setEmailSignInEnabled(true);
         when(mockAccountDao.getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         when(service.getNextToken()).thenReturn(TOKEN);
-        
-        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
-        
+
+        // Execute.
+        String userId = service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        assertEquals(USER_ID, userId);
+
+        // Verify dependent services.
         verify(mockCacheProvider).getObject(keyCaptor.capture(), eq(String.class));
         assertEquals(EMAIL_SIGNIN_CACHE_KEY, keyCaptor.getValue());
         
@@ -1111,10 +1115,16 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
 
-        // Throttle limit is 2. Request 3 times. Get 2 emails.
-        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
-        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
-        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        // Throttle limit is 2. Request 3 times. Get 2 emails. (Each call should still return userId.
+        String userId = service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        assertEquals(USER_ID, userId);
+
+        userId = service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        assertEquals(USER_ID, userId);
+
+        userId = service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        assertEquals(USER_ID, userId);
+
         verify(mockSendMailService, times(2)).sendEmail(any());
     }
     
@@ -1148,12 +1158,16 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void requestEmailSignInEmailNotRegistered() {
+        // Mock.
         study.setEmailSignInEnabled(true);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(null);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
 
+        // Execute. Returns null userId.
+        String userId = service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        assertNull(userId);
+
+        // Verify dependent services are never called.
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockSendMailService, never()).sendEmail(any());
         verifyNoMoreInteractions(mockCacheProvider);
@@ -1161,14 +1175,18 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestPhoneSignIn() {
+        // Mock.
         study.setPhoneSignInEnabled(true);
         study.setShortName("AppName");
         when(mockAccountDao.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
         when(service.getNextPhoneToken()).thenReturn("123456");
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        
+
+        // Execute.
+        String userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        assertEquals(USER_ID, userId);
+
+        // Verify dependent services.
         verify(mockCacheProvider).getObject(PHONE_SIGNIN_CACHE_KEY, String.class);
         verify(mockCacheProvider).setObject(PHONE_SIGNIN_CACHE_KEY, "123456", AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
@@ -1185,10 +1203,11 @@ public class AccountWorkflowServiceTest {
     public void requestPhoneSignInFails() {
         study.setPhoneSignInEnabled(true);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        
+
         // This should fail silently, or we risk giving away information about accounts in the system.
-        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        
+        String userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        assertNull(userId);
+
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockSmsService, never()).sendSmsMessage(any(),any());
         verifyNoMoreInteractions(mockCacheProvider);
@@ -1200,10 +1219,16 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
 
-        // This is currently disabled. Request 3 times, get 3 texts.
-        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        // This is currently disabled. Request 3 times, get 3 texts. (Each call should still return the user ID.)
+        String userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        assertEquals(USER_ID, userId);
+
+        userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        assertEquals(USER_ID, userId);
+
+        userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        assertEquals(USER_ID, userId);
+
         verify(mockSmsService, times(3)).sendSmsMessage(any(), any());
     }
 
