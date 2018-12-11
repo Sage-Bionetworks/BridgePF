@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,13 +74,14 @@ public final class StudyParticipant implements BridgeEntity {
     private final DateTimeZone timeZone;
     private final JsonNode clientData;
     private final Set<String> substudyIds;
+    private final Set<String> externalIds;
     
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
             Set<String> dataGroups, String healthCode, Map<String, String> attributes,
             Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
             List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
-            JsonNode clientData, Set<String> substudyIds) {
+            JsonNode clientData, Set<String> substudyIds, Set<String> externalIds) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -110,13 +109,14 @@ public final class StudyParticipant implements BridgeEntity {
         this.consentHistories = immutableConsentsBuilder.build();
         this.consented = consented;
         this.roles = BridgeUtils.nullSafeImmutableSet(roles);
-        this.languages = (languages == null) ? new ArrayList<>() : languages;
+        this.languages = BridgeUtils.nullSafeImmutableList(languages);
         this.status = status;
         this.createdOn = createdOn;
         this.id = id;
         this.timeZone = timeZone;
         this.clientData = clientData;
-        this.substudyIds = (substudyIds == null) ? new HashSet<>() : substudyIds;
+        this.substudyIds = BridgeUtils.nullSafeImmutableSet(substudyIds);
+        this.externalIds = BridgeUtils.nullSafeImmutableSet(externalIds);
     }
     
     public String getFirstName() {
@@ -198,12 +198,15 @@ public final class StudyParticipant implements BridgeEntity {
     public Set<String> getSubstudyIds() {
         return substudyIds;
     }
+    public Set<String> getExternalIds(){ 
+        return externalIds;
+    }
     
     @Override
     public int hashCode() {
         return Objects.hash(attributes, consentHistories, consented, createdOn, dataGroups, email, phone, emailVerified,
                 phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, password,
-                roles, sharingScope, status, timeZone, clientData, substudyIds);
+                roles, sharingScope, status, timeZone, clientData, substudyIds, externalIds);
     }
 
     @Override
@@ -226,7 +229,8 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status)
                 && Objects.equals(timeZone, other.timeZone)
                 && Objects.equals(clientData, other.clientData)
-                && Objects.equals(substudyIds, other.substudyIds);
+                && Objects.equals(substudyIds, other.substudyIds)
+                && Objects.equals(externalIds, other.externalIds);
     }
 
     public static class Builder {
@@ -253,6 +257,7 @@ public final class StudyParticipant implements BridgeEntity {
         private DateTimeZone timeZone;
         private JsonNode clientData;
         private Set<String> substudyIds;
+        private Set<String> externalIds;
         
         public Builder copyOf(StudyParticipant participant) {
             this.firstName = participant.getFirstName();
@@ -278,6 +283,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.timeZone = participant.getTimeZone();
             this.clientData = participant.getClientData();
             this.substudyIds = participant.getSubstudyIds();
+            this.externalIds = participant.getExternalIds();
             return this;
         }
         public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
@@ -349,6 +355,9 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("substudyIds")) {
                 withSubstudyIds(participant.getSubstudyIds());
+            }
+            if (fieldNames.contains("externalIds")) {
+                withExternalIds(participant.getExternalIds());
             }
             return this;
         }
@@ -458,6 +467,10 @@ public final class StudyParticipant implements BridgeEntity {
             this.substudyIds = substudyIds;
             return this;
         }
+        public Builder withExternalIds(Set<String> externalIds) {
+            this.externalIds = externalIds;
+            return this;
+        }
         public StudyParticipant build() {
             Boolean emailVerified = this.emailVerified;
             if (emailVerified == null) {
@@ -473,7 +486,7 @@ public final class StudyParticipant implements BridgeEntity {
             }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
                     password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, consented, roles,
-                    languages, status, createdOn, id, timeZone, clientData, substudyIds);
+                    languages, status, createdOn, id, timeZone, clientData, substudyIds, externalIds);
         }
     }
 

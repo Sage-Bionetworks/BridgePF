@@ -261,6 +261,8 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
+        builder.withExternalIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getExternalId)
+                .collect(BridgeCollectors.toImmutableSet()));
         builder.withSubstudyIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getSubstudyId)
                 .collect(BridgeCollectors.toImmutableSet()));
 
@@ -357,8 +359,8 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
+        externalIdService.assignExternalId(account, participant.getExternalId());
         accountDao.createAccount(study, account);
-        externalIdService.assignExternalId(account, participant.getExternalId());    
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
@@ -419,11 +421,10 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        accountDao.updateAccount(account);
-        
         if (assigningExternalId) {
             externalIdService.assignExternalId(account, account.getExternalId());
         }
+        accountDao.updateAccount(account);
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {

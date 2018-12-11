@@ -34,7 +34,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -350,12 +352,15 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        
+        // The order of these calls matters.
+        InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
+        inOrder.verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
+        inOrder.verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        inOrder.verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         
         Account account = accountCaptor.getValue();
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
     }
     
     @Test
@@ -899,7 +904,11 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        // The order here is significant.
+        InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
+        inOrder.verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        inOrder.verify(accountDao).updateAccount(accountCaptor.capture());
+        
         Account account = accountCaptor.getValue();
         assertEquals(FIRST_NAME, account.getFirstName());
         assertEquals(LAST_NAME, account.getLastName());
