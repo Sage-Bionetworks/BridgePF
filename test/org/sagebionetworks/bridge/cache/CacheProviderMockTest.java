@@ -167,42 +167,42 @@ public class CacheProviderMockTest {
     }
 
     @Test
-    public void newGetUserSessionTokenNotFound() {
+    public void getUserSessionTokenNotFound() {
         // When nothing is mocked, the session token is not found
         reset(jedisOps);
         
-        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
         assertNull(retrieved);
     }
     
     @Test
-    public void newGetUserSessionUserHasNoSession() {
+    public void getUserSessionUserHasNoSession() {
         // When token --> userId mapping is mocked, but there's no session, return null
-        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
         assertNull(retrieved);
     }
     
     @Test
-    public void newGetUserSessionSessionTokenMismatch() throws Exception {
+    public void getUserSessionSessionTokenMismatch() throws Exception {
         UserSession session = new UserSession(new StudyParticipant.Builder().build());
         session.setSessionToken("notTheSessionTokenWereLookingFor");
         
         when(jedisOps.get(USER_ID_TO_SESSION.toString()))
                 .thenReturn(BridgeObjectMapper.get().writeValueAsString(session));
 
-        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
         assertNull(retrieved);
     }
     
     @Test
-    public void newGetUserSessionSuccessful() throws Exception {
+    public void getUserSessionSuccessful() throws Exception {
         UserSession session = new UserSession(new StudyParticipant.Builder().build());
         session.setSessionToken(DECRYPTED_SESSION_TOKEN);
         
         when(jedisOps.get(USER_ID_TO_SESSION.toString()))
                 .thenReturn(BridgeObjectMapper.get().writeValueAsString(session));
 
-        UserSession retrieved = cacheProvider.getUserSessionNewVersion(DECRYPTED_SESSION_TOKEN);
+        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
         assertEquals(session.getSessionToken(), retrieved.getSessionToken());
     }
     
@@ -218,8 +218,6 @@ public class CacheProviderMockTest {
         
         verify(transaction).del(TOKEN_TO_USER_ID.toString());
         verify(transaction).del(USER_ID_TO_SESSION.toString());
-        verify(transaction).del(CacheKey.session(DECRYPTED_SESSION_TOKEN).toString());
-        verify(transaction).del(CacheKey.sessionByUserId(USER_ID).toString());
         verify(transaction).exec();
     }
 
@@ -234,8 +232,6 @@ public class CacheProviderMockTest {
         
         verify(transaction).del(TOKEN_TO_USER_ID.toString());
         verify(transaction).del(USER_ID_TO_SESSION.toString());
-        verify(transaction).del(CacheKey.session(DECRYPTED_SESSION_TOKEN).toString());
-        verify(transaction).del(CacheKey.sessionByUserId(USER_ID).toString());
         verify(transaction).exec();
     }
 
@@ -439,37 +435,9 @@ public class CacheProviderMockTest {
     }
     
     @Test
-    public void getUserSessionFallsbackToOldKeys() throws Exception {
-        UserSession session = createUserSession();
-        String ser = BridgeObjectMapper.get().writeValueAsString(session);
-        
-        // This is the old key... the new keys will not return anything.
-        CacheKey sessionKey = CacheKey.session(session.getSessionToken());
-        when(jedisOps.get(sessionKey.toString())).thenReturn(ser);
-
-        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
-        assertEquals(session.getSessionToken(), retrieved.getSessionToken());
-    }
-    
-    @Test
-    public void getUserSessionByUserIdFallsbackToOldKeys() throws Exception {
-        UserSession session = createUserSession();
-        String ser = BridgeObjectMapper.get().writeValueAsString(session);
-        
-        // These are the old key... the new keys will not return anything.
-        CacheKey sessionKey = CacheKey.session(session.getSessionToken());
-        CacheKey userKey = CacheKey.sessionByUserId(USER_ID);
-        when(jedisOps.get(userKey.toString())).thenReturn(DECRYPTED_SESSION_TOKEN);
-        when(jedisOps.get(sessionKey.toString())).thenReturn(ser);
-        
-        UserSession retrieved = cacheProvider.getUserSessionByUserId(USER_ID);
-        assertEquals(session.getSessionToken(), retrieved.getSessionToken());
-    }
-    
-    @Test
     public void getUserSessionByUserIdNewVersionUserHasNoSession() {
         // No session returned, null returned
-        UserSession retrieved = cacheProvider.getUserSessionByUserIdNewVersion(USER_ID);
+        UserSession retrieved = cacheProvider.getUserSessionByUserId(USER_ID);
         assertNull(retrieved);
     }
     
@@ -480,7 +448,7 @@ public class CacheProviderMockTest {
         String ser = BridgeObjectMapper.get().writeValueAsString(session);
         when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(ser);
         
-        UserSession retrieved = cacheProvider.getUserSessionByUserIdNewVersion(USER_ID);
+        UserSession retrieved = cacheProvider.getUserSessionByUserId(USER_ID);
         assertEquals(DECRYPTED_SESSION_TOKEN, retrieved.getSessionToken());
     }
     
