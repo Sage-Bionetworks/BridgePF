@@ -141,11 +141,11 @@ public class ExternalIdControllerTest {
         assertResult(result, 201, "External identifiers added.");
         
         verify(externalIdService).createExternalId(
-                ExternalIdentifier.create(study.getStudyIdentifier(), "AAA"));
+                ExternalIdentifier.create(study.getStudyIdentifier(), "AAA"), true);
         verify(externalIdService).createExternalId(
-                ExternalIdentifier.create(study.getStudyIdentifier(), "BBB"));
+                ExternalIdentifier.create(study.getStudyIdentifier(), "BBB"), true);
         verify(externalIdService).createExternalId(
-                ExternalIdentifier.create(study.getStudyIdentifier(), "CCC"));
+                ExternalIdentifier.create(study.getStudyIdentifier(), "CCC"), true);
     }
     
     @Test
@@ -155,7 +155,7 @@ public class ExternalIdControllerTest {
         Result result = controller.addExternalIds();
         assertResult(result, 201, "External identifiers added.");
         
-        verify(externalIdService, never()).createExternalId(any());        
+        verify(externalIdService, never()).createExternalId(any(), eq(true));        
     }
     
     @Test

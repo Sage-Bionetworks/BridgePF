@@ -119,7 +119,7 @@ public class ExternalIdControllerV4Test {
         Result result = controller.createExternalIdentifier();
         TestUtils.assertResult(result, 201, "External identifier created.");
         
-        verify(mockService).createExternalId(externalIdCaptor.capture());
+        verify(mockService).createExternalId(externalIdCaptor.capture(), eq(false));
         
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
         assertEquals(TestConstants.TEST_STUDY.getIdentifier(), retrievedId.getStudyId());

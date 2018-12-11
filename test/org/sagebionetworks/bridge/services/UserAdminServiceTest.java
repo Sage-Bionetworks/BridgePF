@@ -178,7 +178,7 @@ public class UserAdminServiceTest {
         
         ExternalIdentifier idForTest = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);
         idForTest.setSubstudyId(substudy.getId());
-        externalIdService.createExternalId(idForTest);
+        externalIdService.createExternalId(idForTest, false);
         try {
             study.setExternalIdValidationEnabled(true);
             session = userAdminService.createUser(study, participant, null, true, true);

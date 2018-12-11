@@ -134,7 +134,7 @@ public class ExternalIdServiceTest {
             .thenReturn(Substudy.create());
         
         EXT_ID.setSubstudyId(SUBSTUDY_ID);
-        externalIdService.createExternalId(EXT_ID);
+        externalIdService.createExternalId(EXT_ID, false);
         
         verify(externalIdDao).createExternalId(EXT_ID);
     }
@@ -146,7 +146,7 @@ public class ExternalIdServiceTest {
         
         EXT_ID.setSubstudyId(SUBSTUDY_ID);
         EXT_ID.setStudyId("some-dumb-id");
-        externalIdService.createExternalId(EXT_ID);
+        externalIdService.createExternalId(EXT_ID, false);
         
         // still matches and verifies
         verify(externalIdDao).createExternalId(EXT_ID);        
@@ -161,7 +161,7 @@ public class ExternalIdServiceTest {
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(SUBSTUDIES).build());
         
-        externalIdService.createExternalId(EXT_ID);
+        externalIdService.createExternalId(EXT_ID, false);
         
         // still matches and verifies
         verify(externalIdDao).createExternalId(EXT_ID);
@@ -176,12 +176,12 @@ public class ExternalIdServiceTest {
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID, "anotherSubstudy")).build());
         
-        externalIdService.createExternalId(EXT_ID);
+        externalIdService.createExternalId(EXT_ID, false);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void createExternalIdValidates() {
-        externalIdService.createExternalId(ExternalIdentifier.create(new StudyIdentifierImpl("nonsense"), "nonsense"));
+        externalIdService.createExternalId(ExternalIdentifier.create(new StudyIdentifierImpl("nonsense"), "nonsense"), false);
     }
     
     @Test(expected = EntityAlreadyExistsException.class)
@@ -191,7 +191,7 @@ public class ExternalIdServiceTest {
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
         EXT_ID.setSubstudyId(SUBSTUDY_ID);
         
-        externalIdService.createExternalId(EXT_ID);
+        externalIdService.createExternalId(EXT_ID, false);
     }
     
     @Test

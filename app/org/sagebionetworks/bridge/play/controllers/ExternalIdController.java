@@ -57,7 +57,7 @@ public class ExternalIdController extends BaseController {
         
         for (String externalIdentifier : identifiers) {
             ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);
-            externalIdService.createExternalId(extId);    
+            externalIdService.createExternalId(extId, true);    
         }
         return createdResult("External identifiers added.");
     }

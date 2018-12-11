@@ -44,7 +44,7 @@ public class ExternalIdControllerV4 extends BaseController {
         getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         ExternalIdentifier externalIdentifier = parseJson(request(), ExternalIdentifier.class);
-        externalIdService.createExternalId(externalIdentifier);
+        externalIdService.createExternalId(externalIdentifier, false);
         
         return createdResult("External identifier created.");
     }

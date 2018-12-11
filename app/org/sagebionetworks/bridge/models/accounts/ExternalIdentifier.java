@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public interface ExternalIdentifier extends BridgeEntity {
 
     static ExternalIdentifier create(StudyIdentifier studyId, String identifier) {
-        return new DynamoExternalIdentifier(studyId.getIdentifier(), identifier);
+        return new DynamoExternalIdentifier(studyId == null ? null : studyId.getIdentifier(), identifier);
     }
     
     String getStudyId();

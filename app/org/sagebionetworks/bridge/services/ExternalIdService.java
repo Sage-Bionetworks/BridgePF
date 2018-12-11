@@ -31,7 +31,7 @@ public class ExternalIdService {
     
     private ExternalIdDao externalIdDao;
     
-    private ExternalIdValidator validator;
+    private SubstudyService substudyService;
     
     @Autowired
     final void setExternalIdDao(ExternalIdDao externalIdDao) {
@@ -40,7 +40,7 @@ public class ExternalIdService {
     
     @Autowired
     final void setSubstudyService(SubstudyService substudyService) {
-        this.validator = new ExternalIdValidator(substudyService);
+        this.substudyService = substudyService;
     }
     
     public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
@@ -69,7 +69,7 @@ public class ExternalIdService {
         return externalIdDao.getExternalIds(studyId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
-    public void createExternalId(ExternalIdentifier externalId) {
+    public void createExternalId(ExternalIdentifier externalId, boolean isV3) {
         checkNotNull(externalId);
         
         StudyIdentifier studyId = BridgeUtils.getRequestContext().getCallerStudyIdentifier();
@@ -82,6 +82,7 @@ public class ExternalIdService {
             externalId.setSubstudyId( Iterables.getFirst(callerSubstudyIds, null) );
         }
         
+        ExternalIdValidator validator = new ExternalIdValidator(substudyService, isV3);
         Validate.entityThrowingException(validator, externalId);
         
         // Note that this external ID must be unique across the whole study, not just a substudy, or else
