@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import java.util.Objects;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -12,7 +14,7 @@ import org.sagebionetworks.bridge.models.substudies.AccountSubstudyId;
 @Entity
 @Table(name = "AccountsSubstudies")
 @IdClass(AccountSubstudyId.class)
-public class HibernateAccountSubstudy implements AccountSubstudy {
+public final class HibernateAccountSubstudy implements AccountSubstudy {
 
     @Id
     private String studyId;
@@ -48,4 +50,24 @@ public class HibernateAccountSubstudy implements AccountSubstudy {
     public void setExternalId(String externalId) {
         this.externalId = externalId;
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(accountId, externalId, studyId, substudyId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        HibernateAccountSubstudy other = (HibernateAccountSubstudy) obj;
+        return Objects.equals(accountId, other.accountId) && 
+               Objects.equals(externalId, other.externalId) && 
+               Objects.equals(studyId, other.studyId) && 
+               Objects.equals(substudyId, other.substudyId);
+    }
+    
+    
 }

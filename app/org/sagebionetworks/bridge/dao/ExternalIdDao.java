@@ -14,8 +14,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 public interface ExternalIdDao {
 
     String EXTERNAL_ID_GET_RATE = "external.id.get.rate";
-    String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
-    String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
     /**
      * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
@@ -33,22 +31,26 @@ public interface ExternalIdDao {
     /**
      * Create a new external identifier.
      */
-    void createExternalIdentifier(ExternalIdentifier externalIdentifier);
+    void createExternalId(ExternalIdentifier externalIdentifier);
     
     /**
      * Delete an external identifier.
      */
-    void deleteExternalIdentifier(ExternalIdentifier externalIdentifier);
+    void deleteExternalId(ExternalIdentifier externalIdentifier);
     
     /**
      * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 
-     * nothing happens.  
+     * nothing happens. Calling this method when the external identifier has been assigned to the account, but the 
+     * account has not been correctly updated, will adjust the account so it is correct and can be persisted. It is
+     * therefore safest to always update the account after calling this method. 
      */
     void assignExternalId(Account account, String externalIdentifier);
     
     /**
      * Unassign an external ID. This makes the identifier available again and adjusts the account object so it can 
-     * be persisted.
+     * be persisted. Calling this method when the external identifier is not assigned to the account, but the 
+     * account has not been correctly updated, will adjust the account so it is correct and can be persisted. It is
+     * therefore safest to always update the account after calling this method.
      */
     void unassignExternalId(Account account, String externalIdentifier);
     

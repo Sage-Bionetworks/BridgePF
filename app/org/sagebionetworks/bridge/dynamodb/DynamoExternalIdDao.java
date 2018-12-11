@@ -50,7 +50,6 @@ import com.google.common.collect.Lists;
 
 @Component
 public class DynamoExternalIdDao implements ExternalIdDao {
-//    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     static final int PAGE_SCAN_LIMIT = 200;
@@ -87,7 +86,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         return mapper.load(key);
     }
 
-
     @Override
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
@@ -106,6 +104,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                     createGetQuery(studyId, nextPageOffsetKey, PAGE_SCAN_LIMIT, idFilter, assignmentFilter, callerSubstudies));
             
             int limit = Math.min(pageSize - resultList.size(), queryResults.getResults().size());
+            
             queryResults.getResults().stream().limit(limit).forEach(id -> resultList.add(convertToInfo(id)));
             capacityConsumed = queryResults.getConsumedCapacity().getCapacityUnits().intValue();
 
@@ -114,7 +113,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
             nextPageOffsetKey = updateNextPageOffsetKey(queryResults, resultList, pageSize);
             
-        } while ((resultList.size() < pageSize) && (nextPageOffsetKey != null));
+        } while (resultList.size() < pageSize && nextPageOffsetKey != null);
 
         return new ForwardCursorPagedResourceList<>(resultList, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
@@ -141,28 +140,28 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     
     private String updateNextPageOffsetKey(QueryResultPage<DynamoExternalIdentifier> queryResults,
             List<ExternalIdentifierInfo> resultList, int pageSize) {
-        if (queryResults.getCount() > pageSize) {
-            // we retrieved more records from Dynamo than we are returning
+        if (queryResults.getCount() > pageSize && !resultList.isEmpty()) {
+            // we retrieved more records from Dynamo than we are returning, get the last identifier to page
             return resultList.get(pageSize - 1).getIdentifier();
         }
-        // This is the last key, not the next key of the next page of records. It only exists if there's a record
-        // beyond the records we've converted to a page. Then get the last key in the list.
+        // The page from DDB has returned a key for another page, and we haven't exceeded our page 
+        // size, so we need to page another set of records from DDB. 
         Map<String, AttributeValue> lastEvaluated = queryResults.getLastEvaluatedKey();
         return lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
     }
 
     @Override
-    public void createExternalIdentifier(ExternalIdentifier externalIdentifier) {
-        checkNotNull(externalIdentifier);
+    public void createExternalId(ExternalIdentifier externalId) {
+        checkNotNull(externalId);
         
-        mapper.save(externalIdentifier);
+        mapper.save(externalId);
     }
 
     @Override
-    public void deleteExternalIdentifier(ExternalIdentifier externalIdentifier) {
-        checkNotNull(externalIdentifier);
+    public void deleteExternalId(ExternalIdentifier externalId) {
+        checkNotNull(externalId);
         
-        mapper.delete(externalIdentifier);
+        mapper.delete(externalId);
     }
     
     @Override
@@ -173,22 +172,41 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
         ExternalIdentifier identifier = getExternalId(studyId, externalId);
         
-        // If the identifier doesn't exist, or a code has already been set, do nothing
-        if (identifier == null || account.getHealthCode().equals(identifier.getHealthCode())) {
+        // Validation should prevent this from happening
+        if (identifier == null) {
             return;
         }
+        // If this assignment has already occurred, update the account object in an idempotent
+        // manner incase we need to repair it after a failed distributed operation.
+        if (account.getHealthCode().equals(identifier.getHealthCode())) {
+            // Update the account and return, though this may be a no-op
+            updateAccountSubstudies(account, identifier);
+            return;
+        }
+        // has the identifier already been assigned to another account? This is handled by 
+        // a save expression passed to the save command, so we do not need to explicitly check
         try {
             identifier.setHealthCode(account.getHealthCode());
             mapper.save(identifier, getHealthCodeAssignedExpression(false));
-            account.setExternalId(externalId);
-            // This is currently optional.
-            if (identifier.getSubstudyId() != null) {
-                AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                        identifier.getSubstudyId(), account.getId());
-                account.getAccountSubstudies().add(acctSubstudy);
-            }
+            updateAccountSubstudies(account, identifier);
         } catch(ConditionalCheckFailedException e) {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, IDENTIFIER, identifier.getIdentifier());
+        }
+    }
+
+    private void updateAccountSubstudies(Account account, ExternalIdentifier identifier) {
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+            // For backwards compatibility while transitioning to multiple external IDs,
+            // assign the singular external ID field. This will be replaced by the 
+            // externalIds field which is based directly off the contents of the 
+            // accountSubstudies collection.
+            account.setExternalId(identifier.getIdentifier());
         }
     }
 
@@ -200,15 +218,19 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
         ExternalIdentifier identifier = getExternalId(studyId, externalId);
         
-        if (identifier == null || identifier.getHealthCode() == null) {
+        if (identifier == null) {
             return;
         }
-        identifier.setHealthCode(null);
-        mapper.save(identifier); // , getHealthCodeAssignedExpression(true)
+        if (account.getHealthCode().equals(identifier.getHealthCode())) {
+            identifier.setHealthCode(null);
+            mapper.save(identifier);
+        }
+        // For backwards compatibility while migrating to externalIds
         account.setExternalId(null);
         if (identifier.getSubstudyId() != null) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
                     identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
             account.getAccountSubstudies().remove(acctSubstudy);
         }
     }

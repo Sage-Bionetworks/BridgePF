@@ -136,7 +136,7 @@ public class ExternalIdServiceTest {
         EXT_ID.setSubstudyId(SUBSTUDY_ID);
         externalIdService.createExternalId(EXT_ID);
         
-        verify(externalIdDao).createExternalIdentifier(EXT_ID);
+        verify(externalIdDao).createExternalId(EXT_ID);
     }
     
     @Test
@@ -149,7 +149,7 @@ public class ExternalIdServiceTest {
         externalIdService.createExternalId(EXT_ID);
         
         // still matches and verifies
-        verify(externalIdDao).createExternalIdentifier(EXT_ID);        
+        verify(externalIdDao).createExternalId(EXT_ID);        
     }
     
     @Test
@@ -164,7 +164,7 @@ public class ExternalIdServiceTest {
         externalIdService.createExternalId(EXT_ID);
         
         // still matches and verifies
-        verify(externalIdDao).createExternalIdentifier(EXT_ID);
+        verify(externalIdDao).createExternalId(EXT_ID);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -200,7 +200,7 @@ public class ExternalIdServiceTest {
         
         externalIdService.deleteExternalIdPermanently(STUDY, EXT_ID);
         
-        verify(externalIdDao).deleteExternalIdentifier(EXT_ID);
+        verify(externalIdDao).deleteExternalId(EXT_ID);
     }
     
     @Test(expected = BadRequestException.class)

@@ -92,7 +92,7 @@ public class ExternalIdService {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier",
                     externalId.getIdentifier());
         }
-        externalIdDao.createExternalIdentifier(externalId);
+        externalIdDao.createExternalId(externalId);
     }
     
     public void deleteExternalIdPermanently(Study study, ExternalIdentifier externalId) {
@@ -107,7 +107,7 @@ public class ExternalIdService {
         if (existing == null ||  BridgeUtils.filterForSubstudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
-        externalIdDao.deleteExternalIdentifier(externalId);
+        externalIdDao.deleteExternalId(externalId);
     }
     
     public void assignExternalId(Account account, String externalId) {
