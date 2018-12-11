@@ -16,7 +16,8 @@ public class ExternalIdentifierTest {
 
     @Test
     public void hashCodeEquals() {
-        EqualsVerifier.forClass(DynamoExternalIdentifier.class).suppress(Warning.NONFINAL_FIELDS).verify();
+        EqualsVerifier.forClass(DynamoExternalIdentifier.class).allFieldsShouldBeUsed()
+                .suppress(Warning.NONFINAL_FIELDS).verify();
     }
     
     @Test

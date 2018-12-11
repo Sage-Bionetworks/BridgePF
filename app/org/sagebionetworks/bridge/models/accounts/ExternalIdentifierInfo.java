@@ -15,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class ExternalIdentifierInfo implements BridgeEntity {
 
     private final String identifier;
-    // We may remove this, but initially it's very helpful to see this
     private final String substudyId; 
     private final boolean isAssigned;
 
@@ -53,11 +52,5 @@ public final class ExternalIdentifierInfo implements BridgeEntity {
         ExternalIdentifierInfo other = (ExternalIdentifierInfo) obj;
         return Objects.equals(identifier, other.identifier) && Objects.equals(substudyId, other.substudyId)
                 && Objects.equals(isAssigned, other.isAssigned);
-    }
-
-    @Override
-    public String toString() {
-        return "ExternalIdentifierInfo [identifier=" + identifier + ", substudyId=" + substudyId + ", isAssigned="
-                + isAssigned + "]";
     }
 }

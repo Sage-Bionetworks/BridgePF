@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -45,7 +46,7 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
-    public void filterForSubstudyRemovesUnsharedSubstudyIds() {
+    public void filterForSubstudyAccountRemovesUnsharedSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA");
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(substudies).build());
@@ -58,43 +59,72 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForSubstudyReturnsAllUnsharedSubstudyIdsForNonSubstudyCaller() {
+    public void filterForSubstudyAccountReturnsAllUnsharedSubstudyIdsForNonSubstudyCaller() {
         Account account = BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyB", "substudyA"));
         assertEquals(2, account.getAccountSubstudies().size());
     }
     
     @Test
-    public void filterForSubstudyNullReturnsNull() {
+    public void filterForSubstudyAccountNullReturnsNull() {
         assertNull(BridgeUtils.filterForSubstudy((Account)null));
     }
     
     @Test
-    public void filterForSubstudyNoContextReturnsNormalAccount() {
+    public void filterForSubstudyAccountNoContextReturnsNormalAccount() {
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
     }
     
     @Test
-    public void filterForSubstudyNoContextReturnsSubstudyAccount() {
+    public void filterForSubstudyAccountNoContextReturnsSubstudyAccount() {
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
     @Test
-    public void filterForSubstudyWithSubstudiesHidesNormalAccount() {
+    public void filterForSubstudyAccountWithSubstudiesHidesNormalAccount() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
         BridgeUtils.setRequestContext(null);
     }
 
     @Test
-    public void filterForSubstudyWithMatchingSubstudiesReturnsSubstudyAccount() {
+    public void filterForSubstudyAccountWithMatchingSubstudiesReturnsSubstudyAccount() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
     @Test
-    public void filterForSubstudyWithMismatchedSubstudiesHidesSubstudyAccount() {
+    public void filterForSubstudyAccountWithMismatchedSubstudiesHidesSubstudyAccount() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("notSubstudyA")).build());
         assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+
+    @Test
+    public void filterForSubstudyExtIdNullReturnsNull() {
+        assertNull(BridgeUtils.filterForSubstudy((ExternalIdentifier)null));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdNoContextReturnsExtId() {
+        assertNotNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdWithSubstudiesHidesNormalExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy(null)));
+        BridgeUtils.setRequestContext(null);
+    }
+
+    @Test
+    public void filterForSubstudyExtIdWithMatchingSubstudiesReturnsExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNotNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdWithMismatchedSubstudiesHidesExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyB")));
     }
     
     private HibernateAccount getAccountWithSubstudy(String... substudyIds) {
@@ -105,6 +135,12 @@ public class BridgeUtilsTest {
         }).collect(BridgeCollectors.toImmutableSet());
         account.setAccountSubstudies(accountSubstudies);
         return account;
+    }
+    
+    private ExternalIdentifier getExternalIdentifierWithSubstudy(String substudyId) {
+        ExternalIdentifier id = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
+        id.setSubstudyId(substudyId);
+        return id;
     }
     
     @Test
