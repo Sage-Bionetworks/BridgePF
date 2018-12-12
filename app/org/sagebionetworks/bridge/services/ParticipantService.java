@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -261,10 +262,12 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
-        builder.withExternalIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getExternalId)
-                .collect(BridgeCollectors.toImmutableSet()));
         builder.withSubstudyIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getSubstudyId)
                 .collect(BridgeCollectors.toImmutableSet()));
+        Map<String, String> externalIds = account.getAccountSubstudies().stream()
+                .filter(acct -> acct.getExternalId() != null)
+                .collect(Collectors.toMap(AccountSubstudy::getSubstudyId, AccountSubstudy::getExternalId));
+        builder.withExternalIds(externalIds);
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -359,8 +362,9 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
-        externalIdService.assignExternalId(account, participant.getExternalId());
-        accountDao.createAccount(study, account);
+        accountDao.createAccount(study, account, (modifiedAccount) -> {
+            externalIdService.assignExternalId(modifiedAccount, participant.getExternalId());    
+        });
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {

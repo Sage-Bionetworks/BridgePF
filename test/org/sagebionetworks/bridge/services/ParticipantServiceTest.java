@@ -768,6 +768,13 @@ public class ParticipantServiceTest {
         account.setDataGroups(TestUtils.newLinkedHashSet("group1","group2"));
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
+        AccountSubstudy acctSubstudy1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ID);
+        acctSubstudy1.setExternalId("externalIdA");
+        AccountSubstudy acctSubstudy2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ID);
+        acctSubstudy2.setExternalId("externalIdB");
+        AccountSubstudy acctSubstudy3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", ID);
+        // no third external ID, this one is just not in the external IDs map
+        account.setAccountSubstudies(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
         
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE);
         
@@ -818,6 +825,9 @@ public class ParticipantServiceTest {
         assertEquals(USER_TIME_ZONE, participant.getTimeZone());
         assertEquals(USER_LANGUAGES, participant.getLanguages());
         assertEquals(TestUtils.getClientData(), participant.getClientData());
+        assertEquals(2, participant.getExternalIds().size());
+        assertEquals("externalIdA", participant.getExternalIds().get("substudyA"));
+        assertEquals("externalIdB", participant.getExternalIds().get("substudyB"));
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -1719,7 +1729,6 @@ public class ParticipantServiceTest {
             participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
-            verify(externalIdService, never()).assignExternalId(any(), any());    
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
     }

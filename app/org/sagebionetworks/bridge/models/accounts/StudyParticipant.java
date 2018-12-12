@@ -74,14 +74,14 @@ public final class StudyParticipant implements BridgeEntity {
     private final DateTimeZone timeZone;
     private final JsonNode clientData;
     private final Set<String> substudyIds;
-    private final Set<String> externalIds;
+    private final Map<String,String> externalIds;
     
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
             Set<String> dataGroups, String healthCode, Map<String, String> attributes,
             Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
             List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
-            JsonNode clientData, Set<String> substudyIds, Set<String> externalIds) {
+            JsonNode clientData, Set<String> substudyIds, Map<String,String> externalIds) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -116,7 +116,7 @@ public final class StudyParticipant implements BridgeEntity {
         this.timeZone = timeZone;
         this.clientData = clientData;
         this.substudyIds = BridgeUtils.nullSafeImmutableSet(substudyIds);
-        this.externalIds = BridgeUtils.nullSafeImmutableSet(externalIds);
+        this.externalIds = BridgeUtils.nullSafeImmutableMap(externalIds);
     }
     
     public String getFirstName() {
@@ -198,7 +198,7 @@ public final class StudyParticipant implements BridgeEntity {
     public Set<String> getSubstudyIds() {
         return substudyIds;
     }
-    public Set<String> getExternalIds(){ 
+    public Map<String,String> getExternalIds(){ 
         return externalIds;
     }
     
@@ -257,7 +257,7 @@ public final class StudyParticipant implements BridgeEntity {
         private DateTimeZone timeZone;
         private JsonNode clientData;
         private Set<String> substudyIds;
-        private Set<String> externalIds;
+        private Map<String,String> externalIds;
         
         public Builder copyOf(StudyParticipant participant) {
             this.firstName = participant.getFirstName();
@@ -467,7 +467,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.substudyIds = substudyIds;
             return this;
         }
-        public Builder withExternalIds(Set<String> externalIds) {
+        public Builder withExternalIds(Map<String,String> externalIds) {
             this.externalIds = externalIds;
             return this;
         }

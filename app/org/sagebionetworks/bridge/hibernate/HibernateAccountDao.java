@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -304,7 +305,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void createAccount(Study study, Account account) {
+    public void createAccount(Study study, Account account, Consumer<Account> consumer) {
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -313,7 +314,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account. We don't verify substudies because this is handled by validation
-        hibernateHelper.create(account);
+        hibernateHelper.create(account, consumer);
     }
 
     /** {@inheritDoc} */

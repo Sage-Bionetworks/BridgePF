@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -75,7 +76,7 @@ public interface AccountDao {
      * Create an account. The account object should initially be retrieved from the 
      * constructAccount() factory method.
      */
-    void createAccount(Study study, Account account);
+    void createAccount(Study study, Account account, Consumer<Account> consumer);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
