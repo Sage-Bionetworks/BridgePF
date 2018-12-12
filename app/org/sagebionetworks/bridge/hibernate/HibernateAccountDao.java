@@ -121,7 +121,7 @@ public class HibernateAccountDao implements AccountDao {
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
             hibernateAccount.setModifiedOn(DateUtils.getCurrentDateTime());
-            hibernateHelper.update(hibernateAccount);    
+            hibernateHelper.update(hibernateAccount, null);    
         }
     }
 
@@ -158,7 +158,7 @@ public class HibernateAccountDao implements AccountDao {
             // we will enable the account.
             hibernateAccount.setStatus(AccountStatus.ENABLED);
         }
-        hibernateHelper.update(hibernateAccount);
+        hibernateHelper.update(hibernateAccount, null);
     }
 
     /** {@inheritDoc} */
@@ -206,7 +206,7 @@ public class HibernateAccountDao implements AccountDao {
         boolean accountUpdated = validateHealthCode(hibernateAccount);
         accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
         if (accountUpdated) {
-            Account updated = hibernateHelper.update(hibernateAccount);
+            Account updated = hibernateHelper.update(hibernateAccount, null);
             hibernateAccount.setVersion(updated.getVersion());
         }
         return hibernateAccount;
@@ -220,7 +220,7 @@ public class HibernateAccountDao implements AccountDao {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
             if (accountUpdated) {
-                Account updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -237,7 +237,7 @@ public class HibernateAccountDao implements AccountDao {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
             hibernateAccount.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(hibernateAccount);
+            hibernateHelper.update(hibernateAccount, null);
         }
     }
     
@@ -313,7 +313,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account. We don't verify substudies because this is handled by validation
-        hibernateHelper.create(account);
+        hibernateHelper.create(account, null);
     }
 
     /** {@inheritDoc} */
@@ -339,7 +339,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify substudies because this is handled by validation
-        hibernateHelper.update(account);            
+        hibernateHelper.update(account, null);            
     }
     
     /** {@inheritDoc} */
@@ -361,7 +361,7 @@ public class HibernateAccountDao implements AccountDao {
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             if (accountUpdated) {
-                Account updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;

@@ -112,7 +112,7 @@ public class HibernateSubstudyDaoTest {
         VersionHolder holder = dao.createSubstudy(substudy);
         assertEquals(new Long(2), holder.getVersion());
         
-        verify(hibernateHelper).create(substudyCaptor.capture());
+        verify(hibernateHelper).create(substudyCaptor.capture(), eq(null));
         
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(new Long(2), persisted.getVersion());
@@ -126,7 +126,7 @@ public class HibernateSubstudyDaoTest {
         VersionHolder holder = dao.updateSubstudy(substudy);
         assertEquals(new Long(2), holder.getVersion());
         
-        verify(hibernateHelper).update(substudyCaptor.capture());
+        verify(hibernateHelper).update(substudyCaptor.capture(), eq(null));
         
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(new Long(2), persisted.getVersion());
