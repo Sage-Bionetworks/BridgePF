@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
@@ -27,8 +28,14 @@ public class HibernateHelper {
      * Creates (inserts) an object through Hibernate. Throws a ConcurrentModificationException if creating the object
      * would violate a key constraint, most commonly if the row already exists.
      */
-    public void create(Object obj) {
-        executeWithExceptionHandling(obj, session -> session.save(obj));
+    public <T> void create(T obj, Consumer<T> consumer) {
+        executeWithExceptionHandling(obj, session -> {
+            session.save(obj);
+            if (consumer != null) {
+                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
+            return obj;
+        });
     }
 
     /** Deletes the given object. */
@@ -110,9 +117,12 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public <T> T update(T obj) {
+    public <T> T update(T obj, Consumer<T> consumer) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
+            if (consumer != null) {
+                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
             return obj;
         });
     }
