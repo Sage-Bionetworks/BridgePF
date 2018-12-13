@@ -40,6 +40,7 @@ public class AuthenticationController extends BaseController {
     
     public Result requestEmailSignIn() { 
         SignIn signInRequest = parseJson(request(), SignIn.class);
+        getMetrics().setStudy(signInRequest.getStudyId());
 
         String userId = accountWorkflowService.requestEmailSignIn(signInRequest);
         if (userId != null) {
@@ -55,6 +56,8 @@ public class AuthenticationController extends BaseController {
         if (isBlank(signInRequest.getStudyId())) {
             throw new BadRequestException("Study identifier is required.");
         }
+        getMetrics().setStudy(signInRequest.getStudyId());
+
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
@@ -73,6 +76,7 @@ public class AuthenticationController extends BaseController {
 
     public Result requestPhoneSignIn() {
         SignIn signInRequest = parseJson(request(), SignIn.class);
+        getMetrics().setStudy(signInRequest.getStudyId());
 
         String userId = accountWorkflowService.requestPhoneSignIn(signInRequest);
         if (userId != null) {
@@ -88,6 +92,8 @@ public class AuthenticationController extends BaseController {
         if (isBlank(signInRequest.getStudyId())) {
             throw new BadRequestException("Study identifier is required.");
         }
+        getMetrics().setStudy(signInRequest.getStudyId());
+
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
@@ -107,6 +113,8 @@ public class AuthenticationController extends BaseController {
     
     public Result signIn() throws Exception {
         SignIn signIn = parseJson(request(), SignIn.class);
+        getMetrics().setStudy(signIn.getStudyId());
+
         Study study = studyService.getStudy(signIn.getStudyId());
         verifySupportedVersionOrThrowException(study);
 
@@ -130,6 +138,8 @@ public class AuthenticationController extends BaseController {
         if (isBlank(signInRequest.getStudyId())) {
             throw new BadRequestException("Study identifier is required.");
         }
+        getMetrics().setStudy(signInRequest.getStudyId());
+
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
@@ -183,6 +193,7 @@ public class AuthenticationController extends BaseController {
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         
         String studyId = JsonUtils.asText(node, BridgeConstants.STUDY_PROPERTY);
+        getMetrics().setStudy(studyId);
         Study study = getStudyOrThrowException(studyId);
         authenticationService.signUp(study, participant);
         return createdResult("Signed up.");

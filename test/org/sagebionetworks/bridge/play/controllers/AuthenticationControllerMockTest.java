@@ -79,6 +79,7 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("unchecked")
 public class AuthenticationControllerMockTest {
     private static final String DOMAIN = "ws-test.sagebridge.org";
     private static final DateTime NOW = DateTime.now();
@@ -200,6 +201,7 @@ public class AuthenticationControllerMockTest {
         assertEquals("study-key", signInCaptor.getValue().getStudyId());
         assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
 
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
         verify(metrics).setUserId(TEST_ACCOUNT_ID);
     }
 
@@ -218,6 +220,7 @@ public class AuthenticationControllerMockTest {
         assertEquals("study-key", signInCaptor.getValue().getStudyId());
         assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
 
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
         verify(metrics, never()).setUserId(any());
     }
 
@@ -249,7 +252,25 @@ public class AuthenticationControllerMockTest {
         mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
         controller.emailSignIn();
     }
-    
+
+    @Test
+    public void failedEmailSignInStillLogsStudyId() throws Exception {
+        // Set up test.
+        mockPlayContextWithJson(EMAIL_SIGN_IN_REQUEST);
+        when(authenticationService.emailSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+
+        // Execute.
+        try {
+            controller.emailSignIn();
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            // expected exception
+        }
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
+    }
+
     @Test(expected = BadRequestException.class)
     public void reauthenticateWithoutStudyThrowsException() throws Exception {
         mockPlayContextWithJson(TestUtils.createJson(
@@ -276,8 +297,6 @@ public class AuthenticationControllerMockTest {
             assertEquals("email@email.com", signIn.getEmail());
             assertEquals("abc", signIn.getReauthToken());
             
-            verifyCommonLoggingForSignIns();
-            
             JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
             assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
             
@@ -286,7 +305,26 @@ public class AuthenticationControllerMockTest {
             DateTimeUtils.setCurrentMillisSystem();
         }
     }
-    
+
+    @Test
+    public void failedReauthStillLogsStudyId() throws Exception {
+        // Set up test.
+        mockPlayContextWithJson(TestUtils.createJson(
+                "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
+        when(authenticationService.reauthenticate(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+
+        // Execute.
+        try {
+            controller.reauthenticate();
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            // expected exception
+        }
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
+    }
+
     @Test
     public void getSessionIfItExistsNullToken() {
         doReturn(null).when(controller).getSessionToken();
@@ -406,6 +444,9 @@ public class AuthenticationControllerMockTest {
         assertEquals(originalParticipant.getDataGroups(), persistedParticipant.getDataGroups());
         assertEquals(originalParticipant.getAttributes(), persistedParticipant.getAttributes());
         assertEquals(originalParticipant.getLanguages(), persistedParticipant.getLanguages());
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
     }
 
     @Test(expected = UnsupportedVersionException.class)
@@ -905,6 +946,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
 
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
         verify(metrics).setUserId(TEST_ACCOUNT_ID);
     }
 
@@ -925,6 +967,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
 
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
         verify(metrics, never()).setUserId(any());
     }
 
@@ -974,7 +1017,25 @@ public class AuthenticationControllerMockTest {
         
         controller.phoneSignIn();
     }
-    
+
+    @Test
+    public void failedPhoneSignInStillLogsStudyId() throws Exception {
+        // Set up test.
+        mockPlayContextWithJson(PHONE_SIGN_IN);
+        when(authenticationService.phoneSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+
+        // Execute.
+        try {
+            controller.phoneSignIn();
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            // expected exception
+        }
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
+    }
+
     @SuppressWarnings("deprecation")
     @Test(expected = EntityNotFoundException.class)
     public void signInV3ThrowsNotFound() throws Exception {
@@ -984,7 +1045,26 @@ public class AuthenticationControllerMockTest {
         
         controller.signInV3();
     }
-    
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void failedSignInV3StillLogsStudyId() throws Exception {
+        // Set up test.
+        mockPlayContextWithJson(EMAIL_PASSWORD_SIGN_IN_REQUEST);
+        when(authenticationService.signIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+
+        // Execute.
+        try {
+            controller.signInV3();
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            // expected exception
+        }
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
+    }
+
     @Test(expected = UnauthorizedException.class)
     public void signInV4ThrowsUnauthoried() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN);
@@ -993,7 +1073,25 @@ public class AuthenticationControllerMockTest {
         
         controller.signIn();
     }
-    
+
+    @Test
+    public void failedSignInV4StillLogsStudyId() throws Exception {
+        // Set up test.
+        mockPlayContextWithJson(EMAIL_PASSWORD_SIGN_IN_REQUEST);
+        when(authenticationService.signIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+
+        // Execute.
+        try {
+            controller.signIn();
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            // expected exception
+        }
+
+        // Verify metrics.
+        verify(metrics).setStudy(TEST_STUDY_ID_STRING);
+    }
+
     @Test
     public void unconsentedSignInSetsCookie() throws Exception {
         response = mockPlayContextWithJson(EMAIL_PASSWORD_SIGN_IN_REQUEST);
