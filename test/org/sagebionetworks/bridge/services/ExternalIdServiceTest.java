@@ -1,9 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Set;
 
@@ -28,14 +33,18 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExternalIdServiceTest {
 
     private static final String ID = "AAA";
+    private static final String USER_ID = "userId";
     private static final String SUBSTUDY_ID = "substudyId";
     private static final Set<String> SUBSTUDIES = ImmutableSet.of(SUBSTUDY_ID);
     private static final String HEALTH_CODE = "healthCode";
@@ -227,27 +236,131 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void assignExternalId() {
+    public void beginAssignExternalId() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        
+        ExternalIdentifier existing = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        existing.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(existing);
+        
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, ID);
+        
+        assertEquals(ID, externalId.getIdentifier());
+        assertEquals(HEALTH_CODE, externalId.getHealthCode());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalId.getStudyId());
+        assertEquals(SUBSTUDY_ID, externalId.getSubstudyId());
+        
+        assertEquals(ID, account.getExternalId());
+        assertEquals(1, account.getAccountSubstudies().size());
+        
+        AccountSubstudy accountSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
+        assertEquals(USER_ID, accountSubstudy.getAccountId());
+        assertEquals(ID, accountSubstudy.getExternalId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountSubstudy.getStudyId());
+        assertEquals(SUBSTUDY_ID, accountSubstudy.getSubstudyId());
+    }
+    
+    @Test
+    public void beginAssignExternalIdIdentifierMissing() {
         Account account = Account.create();
         account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setHealthCode(HEALTH_CODE);
         
-        externalIdService.assignExternalId(account, ID);
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, null);
+        assertNull(externalId);
+    }
+    
+    @Test
+    public void beginAssignExternalIdIdentifierObjectMissing() {
+        Account account = Account.create();
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
         
-        verify(externalIdDao).assignExternalId(account, ID);
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, ID);
+        assertNull(externalId);
+    }
+    
+    @Test
+    public void beginAssignExternalIdHealthCodeExistsEqual() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        
+        ExternalIdentifier existing = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        existing.setSubstudyId(SUBSTUDY_ID);
+        existing.setHealthCode(HEALTH_CODE); // despite assignment, we update everything
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(existing);
+        
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, ID);
+        
+        assertEquals(ID, externalId.getIdentifier());
+        assertEquals(HEALTH_CODE, externalId.getHealthCode());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalId.getStudyId());
+        assertEquals(SUBSTUDY_ID, externalId.getSubstudyId());
+        
+        assertEquals(ID, account.getExternalId());
+        assertEquals(1, account.getAccountSubstudies().size());
+        
+        AccountSubstudy accountSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
+        assertEquals(USER_ID, accountSubstudy.getAccountId());
+        assertEquals(ID, accountSubstudy.getExternalId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountSubstudy.getStudyId());
+        assertEquals(SUBSTUDY_ID, accountSubstudy.getSubstudyId());
+    }
+
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void beginAssignExternalIdHealthCodeExistsNotEqual() {
+        Account account = Account.create();
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        
+        ExternalIdentifier existing = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        existing.setHealthCode("anotherHealthCode");
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(existing);
+        
+        externalIdService.beginAssignExternalId(account, ID);
+    }
+    
+    @Test
+    public void beginAssignExternalIdWithoutSubstudy() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        
+        ExternalIdentifier existing = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(existing);
+        
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, ID);
+        
+        assertEquals(ID, externalId.getIdentifier());
+        assertEquals(HEALTH_CODE, externalId.getHealthCode());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalId.getStudyId());
+        assertEquals(ID, account.getExternalId());
+        assertNull(externalId.getSubstudyId());
+        assertTrue(account.getAccountSubstudies().isEmpty());
+    }
+    
+    @Test
+    public void commitAssignExternalId() {
+        ExternalIdentifier externalId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        
+        externalIdService.commitAssignExternalId(externalId);
+        
+        verify(externalIdDao).commitAssignExternalId(externalId);
     }
 
     @Test
-    public void assignExternalIdNullDoesNothing() {
-        Account account = Account.create();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
+    public void commitAssignExternalIdNullId() {
+        externalIdService.commitAssignExternalId(null);
         
-        externalIdService.assignExternalId(account, null);
-        
-        verify(externalIdDao, never()).assignExternalId(account, ID);
-    }    
-    
+        verify(externalIdDao, never()).commitAssignExternalId(any());
+    }
+
     @Test
     public void unassignExternalId() {
         Account account = Account.create();

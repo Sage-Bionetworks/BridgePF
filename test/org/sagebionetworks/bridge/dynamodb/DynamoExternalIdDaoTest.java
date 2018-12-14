@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -33,6 +34,8 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -86,7 +89,8 @@ public class DynamoExternalIdDaoTest {
         DynamoDBMapper spiedMapper = Mockito.spy(mapper);
         
         Account account = createAccount("healthCode");
-        dao.assignExternalId(account, "missing");
+        ExternalIdentifier externalId = setupExternalIdentifier(account, "missing");
+        dao.commitAssignExternalId(externalId);
         
         verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
@@ -94,11 +98,14 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void matchingHealthCodeDoesNothing() {
         Account account = createAccount("healthCode");
-        dao.assignExternalId(account, "AAA");
+        
+        ExternalIdentifier externalId = setupExternalIdentifier(account, "missing");
+        dao.commitAssignExternalId(externalId);
         
         DynamoDBMapper spiedMapper = Mockito.spy(mapper);
         
-        dao.assignExternalId(account, "AAA");
+        externalId = setupExternalIdentifier(account, "AAA");
+        dao.commitAssignExternalId(externalId);
         
         verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
@@ -106,9 +113,11 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void availableExternalIdIsAssigned() {
         Account account = createAccount("healthCode");
-        dao.assignExternalId(account, "AAA");
         
-        ExternalIdentifier externalId = dao.getExternalId(studyId, "AAA");
+        ExternalIdentifier externalId = setupExternalIdentifier(account, "AAA");
+        dao.commitAssignExternalId(externalId);
+        
+        externalId = dao.getExternalId(studyId, "AAA");
         assertEquals("AAA", externalId.getIdentifier());
         assertEquals("healthCode", externalId.getHealthCode());
         assertEquals(studyId.getIdentifier(), externalId.getStudyId());
@@ -118,8 +127,11 @@ public class DynamoExternalIdDaoTest {
     public void assignedExternalIdThrowsException() {
         Account account1 = createAccount("healthCode");
         Account account2 = createAccount("differentHealthCode");
-        dao.assignExternalId(account1, "AAA");
-        dao.assignExternalId(account2, "AAA");
+        ExternalIdentifier externalId = setupExternalIdentifier(account1, "AAA");
+        dao.commitAssignExternalId(externalId);
+
+        externalId = setupExternalIdentifier(account2, "AAA");
+        dao.commitAssignExternalId(externalId);
     }
 
     @Test
@@ -129,7 +141,9 @@ public class DynamoExternalIdDaoTest {
             dao.createExternalId(extId);
             
             Account account = createAccount("healthCode");
-            dao.assignExternalId(account, "AAA");
+            
+            ExternalIdentifier externalId = setupExternalIdentifier(account, "AAA");
+            dao.commitAssignExternalId(externalId);
             Thread.sleep(1000);
             DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId.getIdentifier(), "AAA");
             DynamoExternalIdentifier identifier = mapper.load(keyObject);
@@ -185,8 +199,10 @@ public class DynamoExternalIdDaoTest {
             
             Account account1 = createAccount("healthCode1");
             Account account2 = createAccount("healthCode2");
-            dao.assignExternalId(account1, "AAA");
-            dao.assignExternalId(account2, "BBB");
+            ExternalIdentifier id1 = setupExternalIdentifier(account1, "AAA");
+            dao.commitAssignExternalId(id1);
+            ExternalIdentifier id2 = setupExternalIdentifier(account2, "BBB");
+            dao.commitAssignExternalId(id2);
 
             page = dao.getExternalIds(studyId, null, 10, null, Boolean.TRUE);
             assertEquals(2, page.getItems().size());
@@ -297,8 +313,12 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void retrieveUnassignedExcludesReserved() throws Exception {
         Account account = createAccount("healthCode1");
-        dao.assignExternalId(account, "AAA");
-        dao.assignExternalId(account, "BBB");
+        
+        ExternalIdentifier externalId1 = setupExternalIdentifier(account, "AAA");
+        dao.commitAssignExternalId(externalId1);
+        
+        externalId1 = setupExternalIdentifier(account, "BBB");
+        dao.commitAssignExternalId(externalId1);
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
@@ -314,8 +334,10 @@ public class DynamoExternalIdDaoTest {
     public void getNextAvailableID() {
         Account account = createAccount("healthCode");
         // We should skip over reserved and assigned IDs to find a free one
-        dao.assignExternalId(account, "AAA");
-        dao.assignExternalId(account, "BBB");
+        ExternalIdentifier externalId1 = setupExternalIdentifier(account, "AAA");
+        ExternalIdentifier externalId2 = setupExternalIdentifier(account, "BBB");
+        dao.commitAssignExternalId(externalId1);
+        dao.commitAssignExternalId(externalId2);
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         
@@ -343,4 +365,24 @@ public class DynamoExternalIdDaoTest {
         return set; 
     }
     
+    // Pretty similar to ExternalIdService.beginAssignExternalId()
+    private ExternalIdentifier setupExternalIdentifier(Account account, String externalId) {
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = dao.getExternalId(studyId, externalId);
+        if (identifier == null) {
+            return null;
+        }        
+        //ExternalIdentifier identifier = ExternalIdentifier.create(TestConstants.TEST_STUDY, externalId);
+        identifier.setHealthCode(account.getHealthCode());
+        account.setExternalId(identifier.getIdentifier());
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
+    }
 }

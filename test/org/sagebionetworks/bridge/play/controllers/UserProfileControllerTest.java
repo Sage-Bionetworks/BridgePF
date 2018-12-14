@@ -262,7 +262,8 @@ public class UserProfileControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
-        verify(externalIdService).assignExternalId(account, "ABC-123-XYZ");
+        verify(externalIdService).beginAssignExternalId(account, "ABC-123-XYZ");
+        verify(externalIdService).commitAssignExternalId(any());
     }
 
     @Test

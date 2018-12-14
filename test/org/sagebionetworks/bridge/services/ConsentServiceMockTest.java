@@ -187,7 +187,7 @@ public class ConsentServiceMockTest {
         consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
 
         // verify consents were set on account properly
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
 
         Account updatedAccount = accountCaptor.getValue();
         List<ConsentSignature> updatedConsentList = updatedAccount.getConsentSignatureHistory(SUBPOP_GUID);
@@ -286,7 +286,7 @@ public class ConsentServiceMockTest {
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
         verify(accountDao).getAccount(CONTEXT.getAccountId());
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
         Account account = accountCaptor.getValue();
@@ -322,7 +322,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest();
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
         
-        verify(accountDao).updateAccount(account);
+        verify(accountDao).updateAccount(account, null);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
 
         // Contents of call are tested in prior test where participant is used
@@ -335,7 +335,7 @@ public class ConsentServiceMockTest {
         
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -375,7 +375,7 @@ public class ConsentServiceMockTest {
         
         consentService.withdrawFromStudy(study, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
         

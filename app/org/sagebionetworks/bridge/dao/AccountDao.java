@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -82,7 +81,7 @@ public interface AccountDao {
      * Save account changes. Account should have been retrieved from the getAccount() method 
      * (constructAccount() is not sufficient).
      */
-    void updateAccount(Account account);
+    void updateAccount(Account account, Consumer<Account> consumer);
     
     /**
      * Load, and if it exists, edit and save an account. 

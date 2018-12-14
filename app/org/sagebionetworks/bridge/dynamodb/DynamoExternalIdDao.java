@@ -165,48 +165,13 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     @Override
-    public void assignExternalId(Account account, String externalId) {
-        checkNotNull(account);
-        checkArgument(isNotBlank(externalId));
-        
-        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = getExternalId(studyId, externalId);
-        
-        // Validation should prevent this from happening
-        if (identifier == null) {
-            return;
-        }
-        // If this assignment has already occurred, update the account object in an idempotent
-        // manner incase we need to repair it after a failed distributed operation.
-        if (account.getHealthCode().equals(identifier.getHealthCode())) {
-            // Update the account and return, though this may be a no-op
-            updateAccountSubstudies(account, identifier);
-            return;
-        }
-        // has the identifier already been assigned to another account? This is handled by 
-        // a save expression passed to the save command, so we do not need to explicitly check
-        try {
-            identifier.setHealthCode(account.getHealthCode());
-            mapper.save(identifier, getHealthCodeAssignedExpression(false));
-            updateAccountSubstudies(account, identifier);
-        } catch(ConditionalCheckFailedException e) {
-            throw new EntityAlreadyExistsException(ExternalIdentifier.class, IDENTIFIER, identifier.getIdentifier());
-        }
-    }
-
-    private void updateAccountSubstudies(Account account, ExternalIdentifier identifier) {
-        if (identifier.getSubstudyId() != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                    identifier.getSubstudyId(), account.getId());
-            acctSubstudy.setExternalId(identifier.getIdentifier());
-            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
-                account.getAccountSubstudies().add(acctSubstudy);    
+    public void commitAssignExternalId(ExternalIdentifier externalId) {
+        if (externalId != null) {
+            try {
+                mapper.save(externalId, getHealthCodeAssignedExpression(false));
+            } catch(ConditionalCheckFailedException e) {
+                throw new EntityAlreadyExistsException(ExternalIdentifier.class, IDENTIFIER, externalId.getIdentifier());
             }
-            // For backwards compatibility while transitioning to multiple external IDs,
-            // assign the singular external ID field. This will be replaced by the 
-            // externalIds field which is based directly off the contents of the 
-            // accountSubstudies collection.
-            account.setExternalId(identifier.getIdentifier());
         }
     }
 

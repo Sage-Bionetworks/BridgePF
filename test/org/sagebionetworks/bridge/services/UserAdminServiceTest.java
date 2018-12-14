@@ -82,16 +82,16 @@ public class UserAdminServiceTest {
         
         substudy = Substudy.create();
         substudy.setName("Test Substudy");
-        substudy.setId("test-substudy");;
+        substudy.setId(TestUtils.randomName(UserAdminServiceTest.class));
         substudyService.createSubstudy(TestConstants.TEST_STUDY, substudy);
     }
 
     @After
     public void after() {
-        substudyService.deleteSubstudyPermanently(TestConstants.TEST_STUDY, substudy.getId());
         if (session != null) {
             userAdminService.deleteUser(study, session.getId());
         }
+        substudyService.deleteSubstudyPermanently(TestConstants.TEST_STUDY, substudy.getId());
         BridgeUtils.setRequestContext(null);
     }
 
@@ -172,7 +172,7 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void creatingUserThenDeletingRemovesExternalIdAssignment() {
+    public void creatingUserThenDeletingRemovesExternalIdAssignment() throws Exception {
         String externalId = BridgeUtils.generateGuid();
         participant = new StudyParticipant.Builder().copyOf(participant).withExternalId(externalId).build();
         
@@ -197,7 +197,8 @@ public class UserAdminServiceTest {
             account.setId(BridgeUtils.generateGuid());
             account.setStudyId(session.getStudyIdentifier().getIdentifier());
             account.setHealthCode(session.getHealthCode());
-            externalIdService.assignExternalId(account, externalId);
+            ExternalIdentifier extIdObj = externalIdService.beginAssignExternalId(account, externalId);
+            externalIdService.commitAssignExternalId(extIdObj);
         } finally {
             session = null;
             // this is a cheat, for sure, but allow deletion

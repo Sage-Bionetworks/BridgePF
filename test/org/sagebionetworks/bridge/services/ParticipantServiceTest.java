@@ -292,11 +292,11 @@ public class ParticipantServiceTest {
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
         
         // suppress email (true) == sendEmail (false)
         verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, EMAIL);
         
         Account account = accountCaptor.getValue();
@@ -317,7 +317,7 @@ public class ParticipantServiceTest {
         // don't update cache
         verify(cacheProvider, never()).removeSessionByUserId(ID);
     }
-    
+
     @Test
     public void createParticipantTransfersSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
@@ -326,7 +326,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(2, accountSubstudies.size());
@@ -343,7 +343,7 @@ public class ParticipantServiceTest {
         assertEquals("substudyB", substudyB.getSubstudyId());
         assertEquals(ID, substudyB.getAccountId());
     }
-    
+
     @Test
     public void createParticipantWithExternalIdValidation() {
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
@@ -356,13 +356,13 @@ public class ParticipantServiceTest {
         // The order of these calls matters.
         InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
         inOrder.verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        inOrder.verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
-        inOrder.verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        inOrder.verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
+        inOrder.verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account account = accountCaptor.getValue();
         assertEquals(EXTERNAL_ID, account.getExternalId());
     }
-    
+
     @Test
     public void createParticipantWithInvalidParticipant() {
         // It doesn't get more invalid than this...
@@ -916,8 +916,8 @@ public class ParticipantServiceTest {
         
         // The order here is significant.
         InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
-        inOrder.verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
-        inOrder.verify(accountDao).updateAccount(accountCaptor.capture());
+        inOrder.verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
+        inOrder.verify(accountDao).updateAccount(accountCaptor.capture(), any());
         
         Account account = accountCaptor.getValue();
         assertEquals(FIRST_NAME, account.getFirstName());
@@ -932,7 +932,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getTimeZone());
     }
-    
+
     @Test
     public void updateParticipantDoesNotTransferSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
@@ -944,7 +944,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(2, accountSubstudies.size());
@@ -960,7 +960,7 @@ public class ParticipantServiceTest {
         assertEquals(STUDY.getIdentifier(), substudyB.getStudyId());
         assertEquals(ID, substudyB.getAccountId());
     }
-    
+
     @Test
     public void updateParticipantTransfersSubstudyIdsForAdmins() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
@@ -972,7 +972,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(2, accountSubstudies.size());
@@ -983,16 +983,7 @@ public class ParticipantServiceTest {
         accountSubstudies.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
     }
-    
-    @Test
-    public void updateParticipantWithSameExternalIdDoesntAssignExtId() {
-        mockHealthCodeAndAccountRetrieval();
-        
-        // account and participant have the same ID, so externalIdService is not called
-        participantService.updateParticipant(STUDY, PARTICIPANT);
-        verify(externalIdService, never()).assignExternalId(any(), any());
-    }
-    
+
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
         mockHealthCodeAndAccountRetrieval();
@@ -1011,7 +1002,7 @@ public class ParticipantServiceTest {
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
-        verify(accountDao, never()).updateAccount(any());
+        verify(accountDao, never()).updateAccount(any(), any());
         verifyNoMoreInteractions(externalIdService);
     }
     
@@ -1052,7 +1043,7 @@ public class ParticipantServiceTest {
 
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         Account account = accountCaptor.getValue();
         assertEquals(AccountStatus.ENABLED, account.getStatus());
     }
@@ -1424,7 +1415,6 @@ public class ParticipantServiceTest {
     }
 
     // Creating an account and supplying an externalId
-    
     @Test
     public void callsExternalIdService() {
         STUDY.setExternalIdValidationEnabled(true);
@@ -1435,7 +1425,7 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         // Validated and required, use reservation service and don't set as option
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
     }
 
     @Test
@@ -1472,7 +1462,6 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
     }
     
-
     @Test
     public void updateIdentifiersEmailSignInUpdatePhone() {
         // Verifies email-based sign in, phone update, account update, and an updated 
@@ -1488,11 +1477,11 @@ public class ParticipantServiceTest {
         assertEquals(TestConstants.PHONE, account.getPhone());
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
         verify(accountDao).authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN);
-        verify(accountDao).updateAccount(account);
+        verify(accountDao).updateAccount(eq(account), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(PARTICIPANT.getId(), returned.getId());
     }
-    
+
     @Test
     public void updateIdentifiersPhoneSignInUpdateEmail() {
         // This flips the method of sign in to use a phone, and sends an email update. 
@@ -1511,7 +1500,7 @@ public class ParticipantServiceTest {
         assertEquals("email@email.com", account.getEmail());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         verify(accountDao).authenticate(STUDY, PHONE_PASSWORD_SIGN_IN);
-        verify(accountDao).updateAccount(account);
+        verify(accountDao).updateAccount(eq(account), any());
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, "email@email.com");
         assertEquals(PARTICIPANT.getId(), returned.getId());
     }
@@ -1587,7 +1576,7 @@ public class ParticipantServiceTest {
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
     }
-    
+
     @Test
     public void updateIdentifiersCreatesExternalIdWithAssignment() {
         mockAccountNoEmail();
@@ -1601,9 +1590,9 @@ public class ParticipantServiceTest {
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         assertEquals("extid", account.getExternalId());
-        verify(externalIdService).assignExternalId(account, "extid");
+        verify(externalIdService).beginAssignExternalId(account, "extid");
     }
-    
+
     @Test
     public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
         // This ID does not match the ID in the request's context, and that will fail
@@ -1616,12 +1605,12 @@ public class ParticipantServiceTest {
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
-            verify(accountDao, never()).updateAccount(any());
+            verify(accountDao, never()).updateAccount(any(), any());
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-            verify(externalIdService, never()).assignExternalId(any(), any());
+            verify(externalIdService, never()).beginAssignExternalId(any(), any());
         }
     }
-    
+
     @Test
     public void updateIdentifiersDoNotOverwriteExistingIdentifiers() {
         mockHealthCodeAndAccountRetrieval();
@@ -1642,9 +1631,9 @@ public class ParticipantServiceTest {
         assertEquals(TestConstants.PHONE, account.getPhone());
         assertEquals(Boolean.TRUE, account.getPhoneVerified());
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(accountDao, never()).updateAccount(any());
+        verify(accountDao, never()).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
     
     @Test
@@ -1660,11 +1649,11 @@ public class ParticipantServiceTest {
         
         // External ID not changed, externalIdService not called
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(accountDao).updateAccount(any());
+        verify(accountDao).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(account, EXTERNAL_ID);
     }
-    
+
     @Test(expected = InvalidEntityException.class)
     public void createRequiredExternalIdValidated() {
         mockHealthCodeAndAccountRetrieval();
@@ -1695,9 +1684,9 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
     }
-    
+
     @Test
     public void badManagedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
@@ -1708,12 +1697,12 @@ public class ParticipantServiceTest {
             participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            verify(accountDao, never()).createAccount(any(), any());
-            verify(externalIdService, never()).assignExternalId(any(), any());    
+            verify(accountDao, never()).createAccount(any(), any(), any());
+            verify(externalIdService, never()).beginAssignExternalId(any(), any());    
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
     }
-    
+
     @Test
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
@@ -1724,7 +1713,7 @@ public class ParticipantServiceTest {
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
         doThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null))
-                .when(accountDao).createAccount(any(), any());
+                .when(accountDao).createAccount(any(), any(), any());
         try {
             participantService.createParticipant(STUDY, PARTICIPANT, false);
             fail("Should have thrown exception");
@@ -1732,7 +1721,7 @@ public class ParticipantServiceTest {
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
     }
-    
+
     @Test(expected = InvalidEntityException.class)
     public void updateMissingManagedExternalIdFails() {
         // In this case the ID is not in the external IDs table, so it fails validation.
@@ -1755,9 +1744,9 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
     }
-    
+
     @Test
     public void updatingBlankExternalIdFails() {
         mockHealthCodeAndAccountRetrieval();
@@ -1771,9 +1760,9 @@ public class ParticipantServiceTest {
         } catch(InvalidEntityException e) {
             
         }
-        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
-    
+
     @Test
     public void changingManagedExternalIdWorks() {
         mockHealthCodeAndAccountRetrieval();
@@ -1788,9 +1777,9 @@ public class ParticipantServiceTest {
         
         assertEquals("newExternalId", account.getExternalId());
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, "newExternalId");
+        verify(externalIdService).beginAssignExternalId(account, "newExternalId");
     }
-    
+
     @Test
     public void updateParticipantWithNoExternalIdUnassignsExistingId() {
         mockHealthCodeAndAccountRetrieval();
@@ -1800,9 +1789,9 @@ public class ParticipantServiceTest {
                 .withExternalId(null).build();
         participantService.updateParticipant(STUDY, participant);
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, null);
+        verify(externalIdService).beginAssignExternalId(account, null);
     }
-    
+
     @Test
     public void sameManagedExternalIdOnUpdateIgnored() {
         mockHealthCodeAndAccountRetrieval();
@@ -1813,9 +1802,9 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
-    
+
     @Test
     public void removingManagedExternalIdWorks() {
         mockHealthCodeAndAccountRetrieval();
@@ -1830,9 +1819,9 @@ public class ParticipantServiceTest {
         
         assertEquals(null, account.getExternalId());
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, null);
+        verify(externalIdService).beginAssignExternalId(account, null);
     }
-    
+
     @Test
     public void createUnmanagedExternalIdWillAssign() {
         mockHealthCodeAndAccountRetrieval();
@@ -1841,9 +1830,9 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
     }
-    
+
     @Test
     public void addingUnmanagedExternalIdOnUpdateOK() {
         mockHealthCodeAndAccountRetrieval();
@@ -1853,7 +1842,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService).assignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService).beginAssignExternalId(account, EXTERNAL_ID);
     }
 
     @Test
@@ -1864,7 +1853,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(any(), any());
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
     
     @Test
@@ -1878,9 +1867,9 @@ public class ParticipantServiceTest {
         
         assertEquals("newExternalId", account.getExternalId());
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, "newExternalId");
+        verify(externalIdService).beginAssignExternalId(account, "newExternalId");
     }
-    
+
     @Test
     public void removingUnmanagedExternalIdIgnored() {
         mockHealthCodeAndAccountRetrieval();
@@ -1892,7 +1881,7 @@ public class ParticipantServiceTest {
         
         assertEquals(null, account.getExternalId());
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, null);
+        verify(externalIdService).beginAssignExternalId(account, null);
     }
     
     @Test
@@ -1909,7 +1898,7 @@ public class ParticipantServiceTest {
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any());
-        verify(externalIdService, never()).assignExternalId(any(), any());
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
     
     @Test
@@ -1926,7 +1915,7 @@ public class ParticipantServiceTest {
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any());
-        verify(externalIdService, never()).assignExternalId(any(), any());
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
     }
     
     @Test
@@ -1988,7 +1977,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
     }
     
@@ -2003,7 +1992,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
     }
     
@@ -2016,11 +2005,11 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
         
         verify(externalIdService).unassignExternalId(account, EXTERNAL_ID);
-        verify(externalIdService).assignExternalId(account, "newExternalId");
+        verify(externalIdService).beginAssignExternalId(account, "newExternalId");
     }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
@@ -2035,7 +2024,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         Account account = accountCaptor.getValue();
 
         if (canSetStatus) {
@@ -2056,7 +2045,7 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, participant, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
         Account account = accountCaptor.getValue();
         
         if (rolesThatAreSet != null) {
@@ -2075,7 +2064,7 @@ public class ParticipantServiceTest {
                 .withRoles(rolesThatAreSet).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), any());
         Account account = accountCaptor.getValue();
         
         if (expected != null) {

@@ -117,14 +117,6 @@ public class CacheProvider {
     }
     
     public UserSession getUserSession(String sessionToken) {
-        UserSession session = getUserSessionNewVersion(sessionToken);
-        if (session == null) {
-            session = getUserSessionOldVersion(sessionToken);
-        }
-        return session;
-    }
-    
-    UserSession getUserSessionNewVersion(String sessionToken) {
         checkNotNull(sessionToken);
         try {
             CacheKey tokenToUserIdKey = CacheKey.tokenToUserId(sessionToken);
@@ -153,35 +145,7 @@ public class CacheProvider {
         }
     }
     
-    /**
-     *  This is the original method for saving a session which we can leave in place until 
-     *  all sessions have been rotated to storage under the new keys (a day will do).
-     */
-    @SuppressWarnings("deprecation")
-    UserSession getUserSessionOldVersion(final String sessionToken) {
-        checkNotNull(sessionToken);
-        try {
-            final CacheKey sessionKey = CacheKey.session(sessionToken);
-            String ser = jedisOps.get(sessionKey.toString());
-            if (ser == null) {
-                return null;
-            }
-            return BridgeObjectMapper.get().readValue(ser, UserSession.class);
-        } catch (Throwable e) {
-            promptToStartRedisIfLocal(e);
-            throw new BridgeServiceException(e);
-        }
-    }
-    
     public UserSession getUserSessionByUserId(String userId) {
-        UserSession session = getUserSessionByUserIdNewVersion(userId);
-        if (session == null) {
-            session = getUserSessionByUserIdOldVersion(userId);
-        }
-        return session;
-    }
-    
-    UserSession getUserSessionByUserIdNewVersion(final String userId) {
         checkNotNull(userId);
         
         try {
@@ -197,22 +161,6 @@ public class CacheProvider {
         }
     }
     
-    @SuppressWarnings("deprecation")
-    private UserSession getUserSessionByUserIdOldVersion(final String userId) {
-        checkNotNull(userId);
-        
-        try {
-            final CacheKey userKey = CacheKey.sessionByUserId(userId);
-            // This key isn't stored as a JSON string, retrieve it directly
-            String sessionToken = jedisOps.get(userKey.toString());
-            return (sessionToken == null) ? null : getUserSession(sessionToken);
-        } catch(Throwable e) {
-            promptToStartRedisIfLocal(e);
-            throw new BridgeServiceException(e);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
     public void removeSession(UserSession session) {
         checkNotNull(session);
         checkNotNull(session.getSessionToken());
@@ -220,15 +168,11 @@ public class CacheProvider {
         
         CacheKey tokenToUserIdKey = CacheKey.tokenToUserId(session.getSessionToken());
         CacheKey userIdToSessionKey = CacheKey.userIdToSession(session.getId());
-        CacheKey sessionKey = CacheKey.session(session.getSessionToken());
-        CacheKey userKey = CacheKey.sessionByUserId(session.getId());
         
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
             transaction
                 .del(tokenToUserIdKey.toString())
                 .del(userIdToSessionKey.toString())
-                .del(sessionKey.toString()) // old key, will be removed
-                .del(userKey.toString()) // old key, will be removed
                 .exec();
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);

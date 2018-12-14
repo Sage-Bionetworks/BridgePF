@@ -37,6 +37,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -55,8 +56,10 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
+import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -318,78 +321,30 @@ public class DynamoExternalIdDaoMockTest {
         verify(mapper).delete(idCaptor.capture());
         assertEquals(EXTERNAL_ID, idCaptor.getValue());
     }
-
+    
     @Test
-    public void assignExternalId() {
-        EXTERNAL_ID.setSubstudyId(SUBSTUDY_ID);
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
-        account.setId(USER_ID);
+    public void commitAssignExternalId() { 
+        dao.commitAssignExternalId(EXTERNAL_ID);
+        
+        verify(mapper).save(eq(EXTERNAL_ID), saveExpressionCaptor.capture());
 
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
-
-        dao.assignExternalId(account, ID);
-
-        verify(mapper).save(idCaptor.capture(), saveExpressionCaptor.capture());
-
-        ExternalIdentifier externalId = idCaptor.getValue();
-        assertEquals(HEALTH_CODE, externalId.getHealthCode());
-        assertAccountHasCorrectSubstudy(account);
-
-        DynamoDBSaveExpression saveExpr = saveExpressionCaptor.getValue();
-        assertFalse(saveExpr.getExpected().get(DynamoExternalIdDao.HEALTH_CODE).getExists());
+        DynamoDBSaveExpression expr = saveExpressionCaptor.getValue();
+        assertFalse(expr.getExpected().get(HEALTH_CODE).getExists());
     }
-
+    
     @Test
-    public void assignExternalIdMissingIdDoesNothing() {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
-
-        when(mapper.load(any())).thenReturn(null);
-
-        dao.assignExternalId(account, ID);
-
-        assertNull(account.getExternalId());
-        assertTrue(account.getAccountSubstudies().isEmpty());
-        verify(mapper, never()).save(any(), any(DynamoDBSaveExpression.class));
+    public void commitAssignExternalIdNullDoesNothing() { 
+        dao.commitAssignExternalId(null);
+        
+        verify(mapper, never()).save(any());
     }
-
-    // This could be the result of a data integrity issue, so although we don't update externalId,
-    // we do update the account to match it.
-    @Test
-    public void assignExternalIdAlreadySetUpdatesAccountOnly() {
-        EXTERNAL_ID.setHealthCode(HEALTH_CODE);
-        EXTERNAL_ID.setSubstudyId("substudyA");
-
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
-        account.setId(USER_ID);
-
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
-
-        dao.assignExternalId(account, ID);
-
-        assertEquals(ID, account.getExternalId()); // legacy
-
-        verify(mapper, never()).save(any(), any(DynamoDBSaveExpression.class));
-    }
-
+    
     @Test(expected = EntityAlreadyExistsException.class)
-    public void assignExistingExternalIdThrows() {
-        EXTERNAL_ID.setHealthCode("someOtherHealthCode");
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
-        account.setId(USER_ID);
-
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
+    public void commitAssignExternalIdThrows() {
         doThrow(new ConditionalCheckFailedException("message")).when(mapper).save(any(),
                 any(DynamoDBSaveExpression.class));
 
-        dao.assignExternalId(account, ID);
+        dao.commitAssignExternalId(EXTERNAL_ID);
     }
 
     @Test

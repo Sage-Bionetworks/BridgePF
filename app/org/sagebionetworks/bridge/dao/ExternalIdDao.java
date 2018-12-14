@@ -39,12 +39,9 @@ public interface ExternalIdDao {
     void deleteExternalId(ExternalIdentifier externalIdentifier);
     
     /**
-     * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 
-     * nothing happens. Calling this method when the external identifier has been assigned to the account, but the 
-     * account has not been correctly updated, will adjust the account so it is correct and can be persisted. It is
-     * therefore safest to always update the account after calling this method. 
+     * Complete the external ID assignment. 
      */
-    void assignExternalId(Account account, String externalIdentifier);
+    void commitAssignExternalId(ExternalIdentifier externalId);
     
     /**
      * Unassign an external ID. This makes the identifier available again and adjusts the account object so it can 

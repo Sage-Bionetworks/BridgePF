@@ -82,5 +82,4 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
                Objects.equals(studyId, other.studyId) &&
                Objects.equals(substudyId, other.substudyId);
     }
-    
 }

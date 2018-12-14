@@ -138,7 +138,8 @@ public class UserProfileController extends BaseController {
         externalId.setStudyId(accountId.getStudyId());
         
         Account account = accountDao.getAccount(accountId);
-        externalIdService.assignExternalId(account, externalId.getIdentifier());
+        ExternalIdentifier extIdObj = externalIdService.beginAssignExternalId(account, externalId.getIdentifier());
+        externalIdService.commitAssignExternalId(extIdObj);
         
         sessionUpdateService.updateExternalId(session, externalId);
         

@@ -184,19 +184,43 @@ public class AuthenticationControllerMockTest {
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
     }
-    
+
     @Test
     public void requestEmailSignIn() throws Exception {
+        // Mock.
         mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com'}"));
-        
+        when(accountWorkflowService.requestEmailSignIn(any())).thenReturn(TEST_ACCOUNT_ID);
+
+        // Execute.
         Result result = controller.requestEmailSignIn();
         assertResult(result, 202, "Email sent.");
-     
+
+        // Verify.
         verify(accountWorkflowService).requestEmailSignIn(signInCaptor.capture());
         assertEquals("study-key", signInCaptor.getValue().getStudyId());
         assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
+
+        verify(metrics).setUserId(TEST_ACCOUNT_ID);
     }
-    
+
+    @Test
+    public void requestEmailSignIn_NoUser() throws Exception {
+        // Mock.
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com'}"));
+        when(accountWorkflowService.requestEmailSignIn(any())).thenReturn(null);
+
+        // Execute.
+        Result result = controller.requestEmailSignIn();
+        assertResult(result, 202, "Email sent.");
+
+        // Verify.
+        verify(accountWorkflowService).requestEmailSignIn(signInCaptor.capture());
+        assertEquals("study-key", signInCaptor.getValue().getStudyId());
+        assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
+
+        verify(metrics, never()).setUserId(any());
+    }
+
     @Test
     public void emailSignIn() throws Exception {
         response = mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
@@ -863,21 +887,47 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
     }
-    
+
     @Test
     public void requestPhoneSignIn() throws Exception {
+        // Mock.
         mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
-        
+        when(accountWorkflowService.requestPhoneSignIn(any())).thenReturn(TEST_ACCOUNT_ID);
+
+        // Execute.
         Result result = controller.requestPhoneSignIn();
         assertResult(result, 202, "Message sent.");
-        
+
+        // Verify.
         verify(accountWorkflowService).requestPhoneSignIn(signInCaptor.capture());
-        
+
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
+
+        verify(metrics).setUserId(TEST_ACCOUNT_ID);
     }
-    
+
+    @Test
+    public void requestPhoneSignIn_NoUser() throws Exception {
+        // Mock.
+        mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
+        when(accountWorkflowService.requestPhoneSignIn(any())).thenReturn(null);
+
+        // Execute.
+        Result result = controller.requestPhoneSignIn();
+        assertResult(result, 202, "Message sent.");
+
+        // Verify.
+        verify(accountWorkflowService).requestPhoneSignIn(signInCaptor.capture());
+
+        SignIn captured = signInCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
+        assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
+
+        verify(metrics, never()).setUserId(any());
+    }
+
     @Test
     public void phoneSignIn() throws Exception {
         response = mockPlayContextWithJson(PHONE_SIGN_IN);

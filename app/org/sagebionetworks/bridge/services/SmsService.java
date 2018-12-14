@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SmsMessageDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -120,7 +121,8 @@ public class SmsService {
         PublishResult result = snsClient.publish(provider.getSmsRequest());
         messageId = result.getMessageId();
 
-        LOG.debug("Sent SMS message, study=" + study.getIdentifier() + ", message ID=" + messageId);
+        LOG.debug("Sent SMS message, study=" + study.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
+                BridgeUtils.getRequestContext().getId());
 
         // Log SMS message.
         DateTime sentOn = DateTime.now();

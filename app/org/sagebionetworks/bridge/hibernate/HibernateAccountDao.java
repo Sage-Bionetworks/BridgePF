@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -122,7 +121,7 @@ public class HibernateAccountDao implements AccountDao {
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
             hibernateAccount.setModifiedOn(DateUtils.getCurrentDateTime());
-            hibernateHelper.update(hibernateAccount);    
+            hibernateHelper.update(hibernateAccount, null);    
         }
     }
 
@@ -159,7 +158,7 @@ public class HibernateAccountDao implements AccountDao {
             // we will enable the account.
             hibernateAccount.setStatus(AccountStatus.ENABLED);
         }
-        hibernateHelper.update(hibernateAccount);
+        hibernateHelper.update(hibernateAccount, null);
     }
 
     /** {@inheritDoc} */
@@ -207,7 +206,7 @@ public class HibernateAccountDao implements AccountDao {
         boolean accountUpdated = validateHealthCode(hibernateAccount);
         accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
         if (accountUpdated) {
-            Account updated = hibernateHelper.update(hibernateAccount);
+            Account updated = hibernateHelper.update(hibernateAccount, null);
             hibernateAccount.setVersion(updated.getVersion());
         }
         return hibernateAccount;
@@ -221,7 +220,7 @@ public class HibernateAccountDao implements AccountDao {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
             if (accountUpdated) {
-                Account updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -238,7 +237,7 @@ public class HibernateAccountDao implements AccountDao {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
             hibernateAccount.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(hibernateAccount);
+            hibernateHelper.update(hibernateAccount, null);
         }
     }
     
@@ -319,7 +318,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account) {
+    public void updateAccount(Account account, Consumer<Account> consumer) {
         String accountId = account.getId();
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
@@ -340,7 +339,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify substudies because this is handled by validation
-        hibernateHelper.update(account);            
+        hibernateHelper.update(account, consumer);            
     }
     
     /** {@inheritDoc} */
@@ -350,8 +349,7 @@ public class HibernateAccountDao implements AccountDao {
         Account account = getAccount(accountId);
         
         if (account != null) {
-            accountEdits.accept(account);
-            updateAccount(account);
+            updateAccount(account, accountEdits);
         }
     }
 
@@ -362,7 +360,7 @@ public class HibernateAccountDao implements AccountDao {
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             if (accountUpdated) {
-                Account updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;

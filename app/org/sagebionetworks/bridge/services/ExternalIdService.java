@@ -17,6 +17,8 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +36,12 @@ public class ExternalIdService {
     private SubstudyService substudyService;
     
     @Autowired
-    final void setExternalIdDao(ExternalIdDao externalIdDao) {
+    public final void setExternalIdDao(ExternalIdDao externalIdDao) {
         this.externalIdDao = externalIdDao;
     }
     
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
+    public final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
     
@@ -111,13 +113,44 @@ public class ExternalIdService {
         externalIdDao.deleteExternalId(externalId);
     }
     
-    public void assignExternalId(Account account, String externalId) {
+    public ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
         checkNotNull(account);
         checkNotNull(account.getStudyId());
         checkNotNull(account.getHealthCode());
         
+        if (externalId == null) {
+            return null;
+        }
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = externalIdDao.getExternalId(studyId, externalId);
+        if (identifier == null) {
+            return null;
+        }        
+        if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
+        }
+        // Whether already assigned or not, we will adjust the account, in case we are repairing
+        // an existing broken data association
+        identifier.setHealthCode(account.getHealthCode());
+        // For backwards compatibility while transitioning to multiple external IDs,
+        // assign the singular external ID field. This will be replaced by the 
+        // externalIds field which is based directly off the contents of the 
+        // accountSubstudies collection.
+        account.setExternalId(identifier.getIdentifier());
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
+    }
+    
+    public void commitAssignExternalId(ExternalIdentifier externalId) {
         if (externalId != null) {
-            externalIdDao.assignExternalId(account, externalId);
+            externalIdDao.commitAssignExternalId(externalId);    
         }
     }
     

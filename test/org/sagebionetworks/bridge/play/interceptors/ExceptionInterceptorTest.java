@@ -104,7 +104,6 @@ public class ExceptionInterceptorTest {
         TestUtils.assertResult(result, 412);
         
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
-        System.out.println(node);
         assertTrue(node.get("authenticated").booleanValue());
         assertFalse(node.get("consented").booleanValue());
         assertFalse(node.get("signedMostRecentConsent").booleanValue());

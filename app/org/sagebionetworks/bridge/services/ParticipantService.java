@@ -362,9 +362,10 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
-        accountDao.createAccount(study, account, (modifiedAccount) -> {
-            externalIdService.assignExternalId(modifiedAccount, participant.getExternalId());    
-        });
+        final ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account,
+                participant.getExternalId());
+        accountDao.createAccount(study, account,
+                (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
@@ -426,9 +427,13 @@ public class ParticipantService {
             }
         }
         if (assigningExternalId) {
-            externalIdService.assignExternalId(account, account.getExternalId());
+            final ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account,
+                    participant.getExternalId());
+            accountDao.updateAccount(account,
+                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+        } else {
+            accountDao.updateAccount(account, null);    
         }
-        accountDao.updateAccount(account);
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
@@ -700,17 +705,18 @@ public class ParticipantService {
             accountUpdated = true;
             assignExternalId = true;
         }
-        // save. if this throws a constraint exception, further services are not called
         if (accountUpdated) {
-            accountDao.updateAccount(account);   
+            if (assignExternalId) {
+                ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, account.getExternalId());
+                accountDao.updateAccount(account, (oneAccount) -> externalIdService.commitAssignExternalId(externalId));
+            } else {
+                accountDao.updateAccount(account, null);
+            }
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 
             !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
-        }
-        if (assignExternalId) {
-            externalIdService.assignExternalId(account, account.getExternalId());
         }
         
         // return updated StudyParticipant to update and return session

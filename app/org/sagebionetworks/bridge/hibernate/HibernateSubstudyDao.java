@@ -52,7 +52,7 @@ public class HibernateSubstudyDao implements SubstudyDao {
     public VersionHolder createSubstudy(Substudy substudy) {
         checkNotNull(substudy);
         
-        hibernateHelper.create(substudy);
+        hibernateHelper.create(substudy, null);
         return new VersionHolder(substudy.getVersion());
     }
 
@@ -60,7 +60,7 @@ public class HibernateSubstudyDao implements SubstudyDao {
     public VersionHolder updateSubstudy(Substudy substudy) {
         checkNotNull(substudy);
         
-        hibernateHelper.update(substudy);
+        hibernateHelper.update(substudy, null);
         return new VersionHolder(substudy.getVersion());
     }
 

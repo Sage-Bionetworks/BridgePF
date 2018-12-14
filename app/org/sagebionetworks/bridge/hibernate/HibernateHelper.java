@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -33,10 +32,10 @@ public class HibernateHelper {
      */
     public <T> void create(T obj, Consumer<T> consumer) {
         executeWithExceptionHandling(obj, session -> {
-            if (consumer != null) {
-                consumer.accept(obj);    
-            }
             session.save(obj);
+            if (consumer != null) {
+                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
             return obj;
         });
     }
@@ -120,9 +119,12 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public <T> T update(T obj) {
+    public <T> T update(T obj, Consumer<T> consumer) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
+            if (consumer != null) {
+                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
             return obj;
         });
     }
