@@ -84,7 +84,7 @@ public class ParticipantService {
     private ConsentService consentService;
 
     private ExternalIdService externalIdService;
-
+    
     private CacheProvider cacheProvider;
 
     private ScheduledActivityDao activityDao;
@@ -131,7 +131,7 @@ public class ParticipantService {
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
-
+    
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;

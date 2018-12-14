@@ -4,11 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Set;
 
@@ -36,7 +34,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -80,15 +77,20 @@ public class ExternalIdServiceTest {
     public void getExternalId() {
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
         
-        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);
+        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
         assertEquals(EXT_ID, retrieved);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getExternalIdNoExtIdThrows() {
-        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);
+        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
     }
 
+    @Test
+    public void getExternalIdNoExtIdReturnsNull() {
+        assertNull(externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, false));
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void getExternalIdExtIdOutsideSubstudiesThrows() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -97,7 +99,18 @@ public class ExternalIdServiceTest {
         EXT_ID.setSubstudyId("someOtherSubstudy");
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
         
-        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);   
+        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);   
+    }
+    
+    @Test
+    public void getExternalIdExtIdOutsideSubstudiesReturnsNull() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(TestConstants.TEST_STUDY)
+                .withCallerSubstudies(SUBSTUDIES).build());
+        EXT_ID.setSubstudyId("someOtherSubstudy");
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
+        
+        assertNull(externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, false));   
     }
     
     @Test
@@ -108,7 +121,7 @@ public class ExternalIdServiceTest {
         EXT_ID.setSubstudyId(SUBSTUDY_ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
         
-        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);
+        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
         assertEquals(EXT_ID, retrieved);   
     }
     

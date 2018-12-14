@@ -149,7 +149,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdValidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID, false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
@@ -161,7 +161,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdInvalidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(null);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID, false)).thenReturn(null);
         study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)

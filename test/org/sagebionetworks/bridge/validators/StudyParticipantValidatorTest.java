@@ -257,7 +257,7 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void createWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("foo");
 
@@ -266,7 +266,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void createWithExternalIdManagedInvalid() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("wrong-external-id");
         
@@ -283,7 +283,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void createWithoutExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withEmail("email@email.com");
         
@@ -292,7 +292,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void createWithoutExternalIdManagedInvalid() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         StudyParticipant participant = withEmail("email@email.com");
@@ -321,7 +321,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void updateWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalIdAndId("foo");
         
@@ -330,7 +330,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void updateWithExternalIdManagedInvalid() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("does-not-exist");
         
@@ -347,7 +347,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void updateWithoutExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withEmailAndId("email@email.com");
         

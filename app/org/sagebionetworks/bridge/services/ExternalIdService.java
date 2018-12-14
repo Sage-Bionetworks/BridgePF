@@ -45,13 +45,14 @@ public class ExternalIdService {
         this.substudyService = substudyService;
     }
     
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
+    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId, boolean throwException) {
         checkNotNull(studyId);
         checkNotNull(externalId);
         
         ExternalIdentifier existing = externalIdDao.getExternalId(studyId, externalId);
+        existing = BridgeUtils.filterForSubstudy(existing);
         
-        if (existing == null ||  BridgeUtils.filterForSubstudy(existing) == null) {
+        if (throwException && existing == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         return existing;
