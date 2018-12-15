@@ -304,7 +304,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void createAccount(Study study, Account account, Consumer<Account> consumer) {
+    public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -313,12 +313,12 @@ public class HibernateAccountDao implements AccountDao {
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account. We don't verify substudies because this is handled by validation
-        hibernateHelper.create(account, consumer);
+        hibernateHelper.create(account, afterPersistConsumer);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account, Consumer<Account> consumer) {
+    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
         String accountId = account.getId();
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
@@ -339,7 +339,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify substudies because this is handled by validation
-        hibernateHelper.update(account, consumer);            
+        hibernateHelper.update(account, afterPersistConsumer);            
     }
     
     /** {@inheritDoc} */
@@ -349,7 +349,8 @@ public class HibernateAccountDao implements AccountDao {
         Account account = getAccount(accountId);
         
         if (account != null) {
-            updateAccount(account, accountEdits);
+            accountEdits.accept(account);
+            updateAccount(account, null);
         }
     }
 

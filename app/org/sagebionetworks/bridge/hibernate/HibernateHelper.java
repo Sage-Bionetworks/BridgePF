@@ -119,11 +119,11 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public <T> T update(T obj, Consumer<T> consumer) {
+    public <T> T update(T obj, Consumer<T> afterPersistConsumer) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
-            if (consumer != null) {
-                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            if (afterPersistConsumer != null) {
+                afterPersistConsumer.accept(obj); // if this throws, changes to account are abandoned    
             }
             return obj;
         });

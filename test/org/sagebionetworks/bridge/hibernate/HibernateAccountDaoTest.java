@@ -36,6 +36,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -111,6 +114,9 @@ public class HibernateAccountDaoTest {
     
     @Captor
     ArgumentCaptor<Map<String,Object>> paramCaptor;
+    
+    @Mock
+    Consumer<Account> accountConsumer;
     
     private Study study;
     private HibernateAccountDao dao;
@@ -1672,11 +1678,12 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate
-        Consumer<Account> accountConsumer = (acct) -> {};
         dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, accountConsumer);
         
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).update(updatedAccountCaptor.capture(), eq(accountConsumer));
+        InOrder inOrder = Mockito.inOrder(accountConsumer, mockHibernateHelper);
+        inOrder.verify(accountConsumer).accept(hibernateAccount);
+        inOrder.verify(mockHibernateHelper).update(updatedAccountCaptor.capture(), eq(null));
     }
     
     @Test
@@ -1686,6 +1693,7 @@ public class HibernateAccountDaoTest {
         
         dao.editAccount(TestConstants.TEST_STUDY, "bad-health-code", account -> account.setEmail("JUNK"));
         
+        verify(accountConsumer, never()).accept(any());
         verify(mockHibernateHelper, never()).update(any(), eq(null));
     }
 

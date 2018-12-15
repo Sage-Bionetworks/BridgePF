@@ -73,15 +73,19 @@ public interface AccountDao {
     
     /**
      * Create an account. The account object should initially be retrieved from the 
-     * constructAccount() factory method.
+     * constructAccount() factory method. If the optional consumer is passed to this method and 
+     * it throws an exception, the account will not be persisted (the consumer is executed after 
+     * the persist is executed in a transaction, however).
      */
-    void createAccount(Study study, Account account, Consumer<Account> consumer);
+    void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
-     * (constructAccount() is not sufficient).
+     * (constructAccount() is not sufficient). If the optional consumer is passed to this method and 
+     * it throws an exception, the account will not be persisted (the consumer is executed after 
+     * the persist is executed in a transaction, however).
      */
-    void updateAccount(Account account, Consumer<Account> consumer);
+    void updateAccount(Account account, Consumer<Account> afterPersistConsumer);
     
     /**
      * Load, and if it exists, edit and save an account. 

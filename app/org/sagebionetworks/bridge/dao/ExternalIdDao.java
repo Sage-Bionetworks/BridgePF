@@ -39,7 +39,9 @@ public interface ExternalIdDao {
     void deleteExternalId(ExternalIdentifier externalIdentifier);
     
     /**
-     * Complete the external ID assignment. 
+     * Complete the external ID assignment. This operation has to be orchestrated with the persistence of an 
+     * account, and is similar to a create operation except that DynamoDB will enforce a check that the 
+     * externalIdentifier has not been assigned a health code.
      */
     void commitAssignExternalId(ExternalIdentifier externalId);
     

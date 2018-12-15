@@ -487,8 +487,6 @@ public class AuthenticationServiceMockTest {
         
         service.signUp(study, participant);
         
-        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
-        
         verify(participantService).createParticipant(eq(study), any(), eq(true));
         verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
         
@@ -507,8 +505,6 @@ public class AuthenticationServiceMockTest {
                 .createParticipant(study, participant, true);
         
         service.signUp(study, participant);
-        
-        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         
         verify(participantService).createParticipant(eq(study), any(), eq(true));
         verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
