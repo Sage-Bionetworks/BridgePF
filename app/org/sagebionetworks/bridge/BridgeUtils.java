@@ -81,11 +81,26 @@ public class BridgeUtils {
     }
     
     public static boolean isExternalIdAccount(StudyParticipant participant) {
+        // We do not look at externalIds because it is a read-only reflection of the substudies
+        // a user is associated to. It cannot be submitted by the caller.
         return (StringUtils.isNotBlank(participant.getExternalId()) && 
                 StringUtils.isBlank(participant.getEmail()) && 
                 participant.getPhone() == null);
     }
 
+    public static Set<String> collectExternalIds(Account account) {
+        ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
+        for (AccountSubstudy accountSubstudy: account.getAccountSubstudies()) {
+            if (accountSubstudy.getExternalId() != null) {
+                builder.add(accountSubstudy.getExternalId());
+            }
+        }
+        if (account.getExternalId() != null) {
+            builder.add(account.getExternalId());
+        }
+        return builder.build();
+    }
+    
     /** Gets the request context for the current thread. See also RequestInterceptor. */
     public static RequestContext getRequestContext() {
         RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();

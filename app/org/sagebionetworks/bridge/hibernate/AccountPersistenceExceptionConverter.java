@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -46,8 +47,18 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 // "Duplicate entry 'api-ext' for key 'Accounts-StudyId-ExternalId-Index'" 
                 EntityAlreadyExistsException eae = null;
                 if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
-                    eae = createEntityAlreadyExistsException("External ID",
-                            AccountId.forExternalId(account.getStudyId(), account.getExternalId()));
+                    // We do not know which external ID is the conflict without parsing the error message. 
+                    // Try them until we find one. This external ID could be in a sub-study the caller is 
+                    // not associated to, but this is because external IDs have to be unique at the scope 
+                    // of the study, in order to identify substudy membership FROM the external ID.
+                    account = (HibernateAccount)BridgeUtils.filterForSubstudy(account);
+                    for (String externalId : BridgeUtils.collectExternalIds(account)) {
+                        eae = createEntityAlreadyExistsException("External ID",
+                                AccountId.forExternalId(account.getStudyId(), externalId));
+                        if (eae != null) {
+                            break;
+                        }
+                    }
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {
                     eae = createEntityAlreadyExistsException("Email address",
                             AccountId.forEmail(account.getStudyId(), account.getEmail()));

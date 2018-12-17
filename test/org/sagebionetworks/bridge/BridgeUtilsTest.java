@@ -46,6 +46,27 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
+    public void collectExternalIds() {
+        Account account = Account.create();
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        as1.setExternalId("subAextId");
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+        as2.setExternalId("subBextId");
+        AccountSubstudy as3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "userId");
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
+        account.setExternalId("subDextId");
+        
+        Set<String> externalIds = BridgeUtils.collectExternalIds(account);
+        assertEquals(ImmutableSet.of("subAextId","subBextId","subDextId"), externalIds);
+    }
+    
+    @Test
+    public void collectExternalIdsNullsAreIgnored() {
+        Set<String> externalIds = BridgeUtils.collectExternalIds(Account.create());
+        assertEquals(ImmutableSet.of(), externalIds);
+    }    
+    
+    @Test
     public void filterForSubstudyAccountRemovesUnsharedSubstudyIds() {
         Set<String> substudies = ImmutableSet.of("substudyA");
         BridgeUtils.setRequestContext(new RequestContext.Builder()

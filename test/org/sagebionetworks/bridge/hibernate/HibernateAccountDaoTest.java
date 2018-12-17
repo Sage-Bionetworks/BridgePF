@@ -1639,14 +1639,27 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON);
         hibernateAccount.setStatus(AccountStatus.ENABLED);
+        
+        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ACCOUNT_ID);
+        as1.setExternalId("externalIdA");
+        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ACCOUNT_ID);
+        as2.setExternalId("externalIdB");
 
+        when(mockHibernateHelper.queryGet("FROM HibernateAccountSubstudy WHERE accountId=:accountId", 
+                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, 
+                HibernateAccountSubstudy.class)).thenReturn(ImmutableList.of(as1, as2));
+        
+        Set<String> finalExternalIdSet = ImmutableSet.of(EXTERNAL_ID, "externalIdA", "externalIdB");
+        
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
         assertEquals(ACCOUNT_ID, accountSummary.getId());
         assertEquals(TestConstants.TEST_STUDY, accountSummary.getStudyIdentifier());
         assertEquals(EMAIL, accountSummary.getEmail());
         assertEquals(TestConstants.PHONE, accountSummary.getPhone());
-        assertEquals(EXTERNAL_ID, accountSummary.getExternalId());
+        assertEquals(finalExternalIdSet, accountSummary.getExternalIds());
         assertEquals(FIRST_NAME, accountSummary.getFirstName());
         assertEquals(LAST_NAME, accountSummary.getLastName());
         assertEquals(AccountStatus.ENABLED, accountSummary.getStatus());

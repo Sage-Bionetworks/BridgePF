@@ -312,8 +312,7 @@ public class ConsentServiceMockTest {
         assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
-        assertEquals("<p>User   &lt;" + EMAIL + "&gt; (external ID: " + EXTERNAL_ID +
-                        ")  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
+        assertEquals("<p>User   &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
                 email.getMessageParts().get(0).getContent());
     }
     
@@ -347,8 +346,7 @@ public class ConsentServiceMockTest {
         assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
-        assertEquals("<p>User   &lt;" + EMAIL + "&gt; (external ID: " + EXTERNAL_ID +
-                        ")  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
+        assertEquals("<p>User   &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
                 email.getMessageParts().get(0).getContent());
 
         Account updatedAccount = accountCaptor.getValue();

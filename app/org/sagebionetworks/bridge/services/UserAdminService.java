@@ -5,9 +5,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -202,11 +204,8 @@ public class UserAdminService {
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-
-            // Remove the externalId from the table even if validation is not enabled. If the study
-            // turns it off/back on again, we want to track what has changed
-            if (account.getExternalId() != null) {
-                externalIdService.unassignExternalId(account, account.getExternalId());    
+            for (String externalId : BridgeUtils.collectExternalIds(account)) {
+                externalIdService.unassignExternalId(account, externalId);
             }
             accountDao.deleteAccount(accountId);
         }

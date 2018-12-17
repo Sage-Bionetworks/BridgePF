@@ -129,8 +129,8 @@ public class ParticipantControllerTest {
     private static final Set<String> EMPTY_SET = new HashSet<>();
     
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email",
-            TestConstants.PHONE, "externalId", "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY,
-            ImmutableSet.of());
+            TestConstants.PHONE, ImmutableSet.of("externalId"), "id", DateTime.now(), AccountStatus.ENABLED,
+            TestConstants.TEST_STUDY, ImmutableSet.of());
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(TestConstants.EMAIL).withPassword(TestConstants.PASSWORD).build();

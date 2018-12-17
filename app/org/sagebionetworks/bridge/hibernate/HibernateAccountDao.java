@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelT
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -22,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -559,18 +558,27 @@ public class HibernateAccountDao implements AccountDao {
         // this would leak our partners and this is not desirable).
         Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
         
-        Set<String> substudyIds = ImmutableSet.of();
+        Set<String> substudyIds = new HashSet<>();
+        Set<String> externalIds = new HashSet<>();
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                     ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            substudyIds = accountSubstudies.stream()
-                    .map(AccountSubstudy::getSubstudyId)
-                    .filter(substudyId -> callerSubstudyIds.isEmpty() || callerSubstudyIds.contains(substudyId))
-                    .collect(BridgeCollectors.toImmutableSet());
+            for (AccountSubstudy acctSubstudy : accountSubstudies) {
+                if (callerSubstudyIds.isEmpty() || callerSubstudyIds.contains(acctSubstudy.getSubstudyId())) {
+                    substudyIds.add(acctSubstudy.getSubstudyId());
+                    if (acctSubstudy.getExternalId() != null) {
+                        externalIds.add(acctSubstudy.getExternalId());
+                    }
+                }
+            }
         }
+        if (hibernateAccount.getExternalId() != null) {
+            externalIds.add(hibernateAccount.getExternalId());
+        }
+        
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), externalIds,
                 hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 
                 studyId, substudyIds);
     }

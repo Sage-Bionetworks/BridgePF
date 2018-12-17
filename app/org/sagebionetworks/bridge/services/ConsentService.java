@@ -291,7 +291,7 @@ public class ConsentService {
         }
         accountDao.updateAccount(account, null);
         
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
 
         return statuses;
     }
@@ -313,7 +313,7 @@ public class ConsentService {
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
         
         // Forget this person. If the user registers again at a later date, it is as if they have created
         // a new account. But we hold on to this record so we can still retrieve the consent records for a 
@@ -331,7 +331,7 @@ public class ConsentService {
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.
-    private void sendWithdrawEmail(Study study, String externalId, Account account, Withdrawal withdrawal,
+    private void sendWithdrawEmail(Study study, Account account, Withdrawal withdrawal,
             long withdrewOn) {
         if (account.getEmail() == null) {
             // Withdraw email provider currently doesn't support non-email accounts. Skip.
@@ -341,7 +341,7 @@ public class ConsentService {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }
-        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account,
+        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, account,
                 withdrawal, withdrewOn);
         if (!consentEmail.getRecipients().isEmpty()) {
             sendMailService.sendEmail(consentEmail);    
