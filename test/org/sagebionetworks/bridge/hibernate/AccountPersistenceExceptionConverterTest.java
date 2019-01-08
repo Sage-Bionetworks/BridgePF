@@ -39,12 +39,13 @@ public class AccountPersistenceExceptionConverterTest {
     
     @Before
     public void before() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         converter = new AccountPersistenceExceptionConverter(accountDao);
     }
     
     @After
-    public void after() { 
-        BridgeUtils.setRequestContext(null);
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
     
     @Test

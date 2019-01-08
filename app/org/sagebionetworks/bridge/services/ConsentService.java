@@ -19,7 +19,6 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -335,6 +334,7 @@ public class ConsentService {
                 externalIdService.unassignExternalId(account, as.getExternalId());
             }
         }
+        account.setExternalId(null);
         account.setSharingScope(SharingScope.NO_SHARING);
         account.setNotifyByEmail(false);
         account.setEmail(null);

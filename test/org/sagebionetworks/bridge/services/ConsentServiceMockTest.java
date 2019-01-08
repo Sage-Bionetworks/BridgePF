@@ -338,7 +338,6 @@ public class ConsentServiceMockTest {
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(externalIdService).unassignExternalId(account, "externalId");
         verify(externalIdService).unassignExternalId(account, "asExternalId");
         
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
@@ -363,6 +362,7 @@ public class ConsentServiceMockTest {
         assertFalse(account.getEmailVerified());
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
+        assertNull(account.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());

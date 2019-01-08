@@ -1893,6 +1893,7 @@ public class ParticipantServiceTest {
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
     @Test
@@ -1918,7 +1919,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).beginAssignExternalId(account, null);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
     @Test
@@ -1936,6 +1938,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any());
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
     @Test
@@ -1953,6 +1956,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).unassignExternalId(any(), any());
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
     private StudyParticipant.Builder withParticipant() {
@@ -2051,6 +2055,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
         assertNull(account.getExternalId());
     }
@@ -2080,7 +2085,8 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(externalIdService, never()).beginAssignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
         assertEquals(EXTERNAL_ID, account.getExternalId()); // not erased
     }
@@ -2098,7 +2104,8 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(externalIdService, never()).beginAssignExternalId(account, EXTERNAL_ID);
+        verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
         assertEquals(EXTERNAL_ID, account.getExternalId()); // not changed
     }
@@ -2113,6 +2120,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
         assertNull(account.getExternalId());
     }
@@ -2160,6 +2168,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(externalIdService, never()).beginAssignExternalId(any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
         // not changed. Not added from accountSubstudies, for example
         assertNull(account.getExternalId());
