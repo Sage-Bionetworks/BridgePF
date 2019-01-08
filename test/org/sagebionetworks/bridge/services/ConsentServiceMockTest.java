@@ -118,8 +118,6 @@ public class ConsentServiceMockTest {
     private Subpopulation subpopulation;
     @Mock
     private StudyConsentView studyConsentView;
-    @Mock
-    private ExternalIdService externalIdService;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
@@ -143,7 +141,6 @@ public class ConsentServiceMockTest {
         consentService.setS3Helper(s3Helper);
         consentService.setUrlShortenerService(urlShortenerService);
         consentService.setNotificationsService(notificationsService);
-        consentService.setExternalIdService(externalIdService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
@@ -338,8 +335,6 @@ public class ConsentServiceMockTest {
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(externalIdService).unassignExternalId(account, "asExternalId");
-        
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
 
@@ -352,17 +347,19 @@ public class ConsentServiceMockTest {
         assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
-        assertEquals("<p>User   &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
+        assertEquals("<p>User Allen Wrench &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
                 email.getMessageParts().get(0).getContent());
 
         Account updatedAccount = accountCaptor.getValue();
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertNull(account.getFirstName());
+        assertNull(account.getLastName());
         assertFalse(account.getNotifyByEmail());
         assertNull(account.getEmail());
         assertFalse(account.getEmailVerified());
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
-        assertNull(account.getExternalId());
+        assertEquals("externalId", account.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());
@@ -850,6 +847,8 @@ public class ConsentServiceMockTest {
     }
     
     private void setupWithdrawTest() {
+        account.setFirstName("Allen");
+        account.setLastName("Wrench");
         account.setEmail(EMAIL);
         account.setExternalId("externalId");
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);

@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -52,7 +51,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.HttpMethod;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +64,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsentService {
     
-    protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
+    protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig()
+            .get("usersigned.consents.bucket");
     private AccountDao accountDao;
     private SendMailService sendMailService;
     private SmsService smsService;
@@ -74,7 +73,6 @@ public class ConsentService {
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
-    private ExternalIdService externalIdService;
     private String xmlTemplateWithSignatureBlock;
     private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
@@ -121,10 +119,6 @@ public class ConsentService {
     @Autowired
     final void setUrlShortenerService(UrlShortenerService urlShortenerService) {
         this.urlShortenerService = urlShortenerService;
-    }
-    @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
     }
     
     /**
@@ -324,18 +318,11 @@ public class ConsentService {
         
         // Forget this person. If the user registers again at a later date, it is as if they have 
         // created a new account. But we hold on to this record so we can still retrieve the consent 
-        // records for a given healthCode.
-        
-        // This will remove the related AccountSubstudy records and clear the externalId field.
-        // Create collection copy so you don't get concurrent modification exception.
-        Set<AccountSubstudy> substudies = ImmutableSet.copyOf(account.getAccountSubstudies());
-        for (AccountSubstudy as : substudies) {
-            if (as.getExternalId() != null) {
-                externalIdService.unassignExternalId(account, as.getExternalId());
-            }
-        }
-        account.setExternalId(null);
+        // records for a given healthCode. We also don't delete external ID/substudy releationships
+        // so substudies can continue to view withdrawals by health code.
         account.setSharingScope(SharingScope.NO_SHARING);
+        account.setFirstName(null);
+        account.setLastName(null);
         account.setNotifyByEmail(false);
         account.setEmail(null);
         account.setEmailVerified(false);
