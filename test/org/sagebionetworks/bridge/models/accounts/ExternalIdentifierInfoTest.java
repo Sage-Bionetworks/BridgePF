@@ -18,7 +18,7 @@ public class ExternalIdentifierInfoTest {
     }
 
     @Test
-    public void canSerialize() throws Exception {
+    public void canSerializeWithNoSubstudy() throws Exception {
         ExternalIdentifierInfo info = new ExternalIdentifierInfo("AAA", null, true);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
@@ -31,4 +31,18 @@ public class ExternalIdentifierInfoTest {
         assertEquals(info, resInfo);
     }
     
+    @Test
+    public void canSerializeWithSubstudy() throws Exception {
+        ExternalIdentifierInfo info = new ExternalIdentifierInfo("AAA", "oneSubstudy", false);
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(info);
+        assertEquals("AAA", node.get("identifier").asText());
+        assertEquals(false, node.get("assigned").asBoolean());
+        assertEquals("oneSubstudy", node.get("substudyId").asText());
+        assertEquals("ExternalIdentifier", node.get("type").asText());
+        assertEquals(4, node.size());
+        
+        ExternalIdentifierInfo resInfo = BridgeObjectMapper.get().treeToValue(node, ExternalIdentifierInfo.class);
+        assertEquals(info, resInfo);
+    }
 }

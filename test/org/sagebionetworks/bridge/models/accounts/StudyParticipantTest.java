@@ -269,6 +269,10 @@ public class StudyParticipantTest {
     public void canCopySubstudiesVerified() {
         assertCopyField("substudyIds", (builder)-> verify(builder).withSubstudyIds(any()));
     }
+    @Test
+    public void canCopyExternalIdsVerified() { 
+        assertCopyField("externalIds", (builder)-> verify(builder).withExternalIds(any()));
+    }
     
     @Test
     public void testNullResiliency() {

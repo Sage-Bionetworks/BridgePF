@@ -3,12 +3,16 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
+import static org.sagebionetworks.bridge.BridgeUtils.substudyIdsVisibleToCaller;
+import static org.sagebionetworks.bridge.BridgeUtils.externalIdsVisibleToCaller;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -49,7 +53,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -414,13 +417,11 @@ public class HibernateAccountDao implements AccountDao {
         
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            hibernateAccount = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-            // Verify the sub-study rules are matched  
-            return BridgeUtils.filterForSubstudy(hibernateAccount);
+            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
         }
         
         QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
-        
+
         List<HibernateAccount> accountList = hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
@@ -553,33 +554,19 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
-        
-        // Further, we do not return any substudy IDs that the caller is not associated with (because
-        // this would leak our partners and this is not desirable).
-        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
-        
         Set<String> substudyIds = new HashSet<>();
-        Set<String> externalIds = new HashSet<>();
+        Map<String, String> externalIds = new HashMap<>();
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                     ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            for (AccountSubstudy acctSubstudy : accountSubstudies) {
-                if (callerSubstudyIds.isEmpty() || callerSubstudyIds.contains(acctSubstudy.getSubstudyId())) {
-                    substudyIds.add(acctSubstudy.getSubstudyId());
-                    if (acctSubstudy.getExternalId() != null) {
-                        externalIds.add(acctSubstudy.getExternalId());
-                    }
-                }
-            }
-        }
-        if (hibernateAccount.getExternalId() != null) {
-            externalIds.add(hibernateAccount.getExternalId());
+            substudyIds = substudyIdsVisibleToCaller(accountSubstudies);
+            externalIds = externalIdsVisibleToCaller(accountSubstudies);
         }
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), externalIds,
-                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 
-                studyId, substudyIds);
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(), externalIds,
+                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), studyId,
+                substudyIds);
     }
 }

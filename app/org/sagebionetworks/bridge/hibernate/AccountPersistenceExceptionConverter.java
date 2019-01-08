@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.hibernate.NonUniqueObjectException;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -18,8 +19,11 @@ import com.google.common.collect.ImmutableMap;
 
 @Component
 public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
-    private final AccountDao accountDao;
+
+    static final String NON_UNIQUE_MSG = "This account has already been associated to the substudy (possibly through another external ID).";
     
+    private final AccountDao accountDao;
+
     @Autowired
     public AccountPersistenceExceptionConverter(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -27,11 +31,20 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
     
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
+        // Some of these exceptions subclass PersistenceException, and some are wrapped by 
+        // PersistenceException (such as org.hibernate.exception.ConstraintViolationException). I 
+        // do not know the logic behind this. 
+        
         // The sequence of type-checking and unwrapping of this exception is significant as unfortunately, 
         // the hierarchy of wrapped exceptions is very specific. 
         if (exception instanceof OptimisticLockException) {
             return new ConcurrentModificationException(
                     "Account has the wrong version number; it may have been saved in the background.");
+        }
+        // You can reliably trigger this exception by assigning a second external ID from a substudy 
+        // that an account is already associated to.
+        if (exception instanceof NonUniqueObjectException) {
+            return new ConstraintViolationException.Builder().withMessage(NON_UNIQUE_MSG).build();
         }
         if (exception.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
             // The specific error message is buried in the root MySQLIntegrityConstraintViolationException
@@ -52,11 +65,13 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                     // not associated to, but this is because external IDs have to be unique at the scope 
                     // of the study, in order to identify substudy membership FROM the external ID.
                     account = (HibernateAccount)BridgeUtils.filterForSubstudy(account);
-                    for (String externalId : BridgeUtils.collectExternalIds(account)) {
-                        eae = createEntityAlreadyExistsException("External ID",
-                                AccountId.forExternalId(account.getStudyId(), externalId));
-                        if (eae != null) {
-                            break;
+                    if (account != null) {
+                        for (String externalId : BridgeUtils.collectExternalIds(account)) {
+                            eae = createEntityAlreadyExistsException("External ID",
+                                    AccountId.forExternalId(account.getStudyId(), externalId));
+                            if (eae != null) {
+                                break;
+                            }
                         }
                     }
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {

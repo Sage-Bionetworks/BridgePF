@@ -35,8 +35,10 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -58,7 +60,6 @@ import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
@@ -70,14 +71,11 @@ public class DynamoExternalIdDaoMockTest {
     private static final String USER_ID = "userId";
     private static final String ID = "external-id";
     private static final String SUBSTUDY_ID = "substudy-id";
-    private static final ExternalIdentifier EXTERNAL_ID = ExternalIdentifier.create(TEST_STUDY, ID);
 
     @Mock
     private RateLimiter rateLimiter;
     @Mock
     private DynamoDBMapper mapper;
-    @Captor
-    private ArgumentCaptor<ExternalIdentifier> idCaptor;
     @Captor
     private ArgumentCaptor<DynamoDBQueryExpression<DynamoExternalIdentifier>> queryCaptor;
     @Captor
@@ -85,10 +83,11 @@ public class DynamoExternalIdDaoMockTest {
 
     private DynamoExternalIdDao dao;
 
+    private ExternalIdentifier externalId;
+    
     @Before
     public void setupTest() {
-        EXTERNAL_ID.setHealthCode(null);
-        EXTERNAL_ID.setSubstudyId(null);
+        externalId = ExternalIdentifier.create(TEST_STUDY, ID);
         dao = new DynamoExternalIdDao();
         dao.setMapper(mapper);
         dao.setGetExternalIdRateLimiter(rateLimiter);
@@ -101,13 +100,12 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void getExternalId() {
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
+        when(mapper.load(any())).thenReturn(externalId);
 
         ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
 
-        verify(mapper).load(idCaptor.capture());
-        assertEquals(EXTERNAL_ID, idCaptor.getValue());
-        assertEquals(retrieved, EXTERNAL_ID);
+        verify(mapper).load(externalId);
+        assertEquals(retrieved, externalId);
     }
 
     @Test
@@ -116,8 +114,7 @@ public class DynamoExternalIdDaoMockTest {
 
         ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
 
-        verify(mapper).load(idCaptor.capture());
-        assertEquals(EXTERNAL_ID, idCaptor.getValue());
+        verify(mapper).load(externalId);
         assertNull(retrieved);
     }
 
@@ -127,6 +124,10 @@ public class DynamoExternalIdDaoMockTest {
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY,
                 "offsetKey", 50, "offset", true);
+        
+        assertEquals("foo1", results.getItems().get(0).getIdentifier());
+        assertEquals("foo2", results.getItems().get(1).getIdentifier());
+        assertEquals(2, results.getItems().size());
         
         Map<String,Object> paramsMap = results.getRequestParams();
         assertEquals(50, (int) paramsMap.get(ResourceList.PAGE_SIZE));
@@ -158,15 +159,25 @@ public class DynamoExternalIdDaoMockTest {
         assertNull(id.getIdentifier());
     }
 
+    @Test(expected = BadRequestException.class)
+    public void pageSizeCannotBeLessThanMin() {
+        dao.getExternalIds(TEST_STUDY, null, -2, null, null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void pageSizeCannotBeGreaterThanMax() {
+        dao.getExternalIds(TEST_STUDY, null, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null, null);
+    }
+    
     @Test
     public void getExternalIdsNullValues() {
         setupQuery(ImmutableList.of("foo1", "foo2"));
 
         // Note that the page size is enforced in the service, and should never be 0
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY,
-                null, 0, null, null);
+                null, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null);
         Map<String,Object> paramsMap = results.getRequestParams();
-        assertEquals(0, (int) paramsMap.get(ResourceList.PAGE_SIZE));
+        assertEquals(BridgeConstants.API_MINIMUM_PAGE_SIZE, (int) paramsMap.get(ResourceList.PAGE_SIZE));
         assertNull(paramsMap.get(ResourceList.ASSIGNMENT_FILTER));
         assertNull(paramsMap.get(ResourceList.ID_FILTER));
         assertNull(paramsMap.get(ResourceList.OFFSET_KEY));
@@ -216,9 +227,9 @@ public class DynamoExternalIdDaoMockTest {
         List<AttributeValue> substudyAttList = substudies.stream().map(substudyId -> new AttributeValue(substudyId))
                 .collect(Collectors.toList());
 
-        Condition anotherRangeCondition = query.getRangeKeyConditions().get(DynamoExternalIdDao.SUBSTUDY_ID);
-        assertEquals(ComparisonOperator.CONTAINS.toString(), anotherRangeCondition.getComparisonOperator());
-        assertEquals(substudyAttList, anotherRangeCondition.getAttributeValueList());
+        Condition substudyCondition = query.getQueryFilter().get(DynamoExternalIdDao.SUBSTUDY_ID);
+        assertEquals(ComparisonOperator.IN.toString(), substudyCondition.getComparisonOperator());
+        assertEquals(substudyAttList, substudyCondition.getAttributeValueList());
     }
 
     @Test
@@ -305,25 +316,26 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void createExternalId() {
-        dao.createExternalId(EXTERNAL_ID);
+        dao.createExternalId(externalId);
 
-        verify(mapper).save(idCaptor.capture());
-        assertEquals(EXTERNAL_ID, idCaptor.getValue());
+        verify(mapper).save(externalId);
     }
 
     @Test
     public void deleteExternalId() {
-        dao.deleteExternalId(EXTERNAL_ID);
+        dao.deleteExternalId(externalId);
 
-        verify(mapper).delete(idCaptor.capture());
-        assertEquals(EXTERNAL_ID, idCaptor.getValue());
+        verify(mapper).delete(externalId);
     }
     
     @Test
-    public void commitAssignExternalId() { 
-        dao.commitAssignExternalId(EXTERNAL_ID);
+    public void commitAssignExternalId() {
+        when(mapper.load(any())).thenReturn(externalId);
+        externalId.setHealthCode(HEALTH_CODE);
         
-        verify(mapper).save(eq(EXTERNAL_ID), saveExpressionCaptor.capture());
+        dao.commitAssignExternalId(externalId);
+        
+        verify(mapper).save(eq(externalId), saveExpressionCaptor.capture());
 
         DynamoDBSaveExpression expr = saveExpressionCaptor.getValue();
         assertFalse(expr.getExpected().get(HEALTH_CODE).getExists());
@@ -338,17 +350,31 @@ public class DynamoExternalIdDaoMockTest {
     
     @Test(expected = EntityAlreadyExistsException.class)
     public void commitAssignExternalIdThrows() {
+        when(mapper.load(any())).thenReturn(externalId);
         doThrow(new ConditionalCheckFailedException("message")).when(mapper).save(any(),
                 any(DynamoDBSaveExpression.class));
+        externalId.setHealthCode(HEALTH_CODE);
+        
+        dao.commitAssignExternalId(externalId);
+    }
+    
+    @Test(expected = IllegalStateException.class)
+    public void commitAssignExternalWithoutHealthCodeThrows() {
+        dao.commitAssignExternalId(externalId);
+    }
 
-        dao.commitAssignExternalId(EXTERNAL_ID);
+    @Test(expected = IllegalStateException.class)
+    public void commitAssignExternalNewThrows() { 
+        externalId.setHealthCode(HEALTH_CODE);
+        
+        dao.commitAssignExternalId(externalId);
     }
 
     @Test
     public void unassignExternalId() {
-        EXTERNAL_ID.setHealthCode(HEALTH_CODE);
-        EXTERNAL_ID.setSubstudyId(SUBSTUDY_ID);
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
+        externalId.setHealthCode(HEALTH_CODE);
+        externalId.setSubstudyId(SUBSTUDY_ID);
+        when(mapper.load(any())).thenReturn(externalId);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
@@ -389,8 +415,8 @@ public class DynamoExternalIdDaoMockTest {
     // This could result from a data integrity issue. We will allow unassignment to clear account
     @Test
     public void unassignExternalIdNotAssignedJustUpdatesAccount() {
-        EXTERNAL_ID.setSubstudyId(SUBSTUDY_ID);
-        when(mapper.load(any())).thenReturn(EXTERNAL_ID);
+        externalId.setSubstudyId(SUBSTUDY_ID);
+        when(mapper.load(any())).thenReturn(externalId);
 
         AccountSubstudy as = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
@@ -453,12 +479,6 @@ public class DynamoExternalIdDaoMockTest {
         DynamoExternalIdentifier id = query.getHashKeyValues();
         assertEquals(TEST_STUDY_IDENTIFIER, id.getStudyId());
         assertNull(id.getIdentifier());
-    }
-
-    private void assertAccountHasCorrectSubstudy(Account account) {
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
-        acctSubstudy.setExternalId(ID);
-        assertEquals(acctSubstudy, Iterables.getFirst(account.getAccountSubstudies(), null));
     }
 
     @SuppressWarnings("unchecked")

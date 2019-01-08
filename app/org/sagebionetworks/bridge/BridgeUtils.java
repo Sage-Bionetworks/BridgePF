@@ -133,7 +133,33 @@ public class BridgeUtils {
         }
         return null;
     }
-
+    
+    /**
+     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
+     * substudy memberships (then they are global and see everything).
+     */
+    public static Set<String> substudyIdsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
+        if (accountSubstudies == null) {
+            return ImmutableSet.of();
+        }
+        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
+        return accountSubstudies.stream()
+                .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
+                .map(AccountSubstudy::getSubstudyId)
+                .collect(BridgeCollectors.toImmutableSet());
+    }
+    
+    public static Map<String, String> externalIdsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) { 
+        if (accountSubstudies == null) {
+            return ImmutableMap.of();
+        }
+        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
+        return accountSubstudies.stream()
+                .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
+                .filter(as -> as.getExternalId() != null)
+                .collect(Collectors.toMap(AccountSubstudy::getSubstudyId, AccountSubstudy::getExternalId));
+    }
+    
     public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {
         if (externalId != null) {
             RequestContext context = getRequestContext();

@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableSet;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExternalIdValidatorTest {
-
-    
     
     private ExternalIdValidator validatorV4;
     
@@ -142,13 +140,6 @@ public class ExternalIdValidatorTest {
         id.setSubstudyId("substudy-id");
         
         assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
-    }
-    
-    @Test
-    public void studyIdCannotBeNull() { 
-        ExternalIdentifier id = ExternalIdentifier.create(null, "one-id");
-        
-        assertValidatorMessage(validatorV4, id, "studyId", "cannot be null or blank");
     }
     
     @Test(expected = BadRequestException.class)

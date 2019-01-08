@@ -45,8 +45,9 @@ public class ExternalIdServiceTest {
     private static final String SUBSTUDY_ID = "substudyId";
     private static final Set<String> SUBSTUDIES = ImmutableSet.of(SUBSTUDY_ID);
     private static final String HEALTH_CODE = "healthCode";
-    private static final Study STUDY = new DynamoStudy();
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+    
+    private Study study;
+    private ExternalIdentifier extId;
     
     @Mock
     private ExternalIdDao externalIdDao;
@@ -60,7 +61,10 @@ public class ExternalIdServiceTest {
     public void before() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(TestConstants.TEST_STUDY).build());
-        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study = new DynamoStudy();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        extId.setSubstudyId(SUBSTUDY_ID);
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
         externalIdService.setSubstudyService(substudyService);
@@ -68,17 +72,15 @@ public class ExternalIdServiceTest {
     
     @After
     public void after() {
-        STUDY.setExternalIdValidationEnabled(false);
-        EXT_ID.setSubstudyId(null);
         BridgeUtils.setRequestContext(null);
     }
     
     @Test
     public void getExternalId() {
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
         
         ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
-        assertEquals(EXT_ID, retrieved);
+        assertEquals(extId, retrieved);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -89,40 +91,6 @@ public class ExternalIdServiceTest {
     @Test
     public void getExternalIdNoExtIdReturnsNull() {
         assertNull(externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, false));
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void getExternalIdExtIdOutsideSubstudiesThrows() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TestConstants.TEST_STUDY)
-                .withCallerSubstudies(SUBSTUDIES).build());
-        EXT_ID.setSubstudyId("someOtherSubstudy");
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
-        
-        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);   
-    }
-    
-    @Test
-    public void getExternalIdExtIdOutsideSubstudiesReturnsNull() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TestConstants.TEST_STUDY)
-                .withCallerSubstudies(SUBSTUDIES).build());
-        EXT_ID.setSubstudyId("someOtherSubstudy");
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
-        
-        assertNull(externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, false));   
-    }
-    
-    @Test
-    public void getExternalIdSubstudiesMatch() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TestConstants.TEST_STUDY)
-                .withCallerSubstudies(SUBSTUDIES).build());
-        EXT_ID.setSubstudyId(SUBSTUDY_ID);
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
-        
-        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
-        assertEquals(EXT_ID, retrieved);   
     }
     
     @Test
@@ -155,10 +123,9 @@ public class ExternalIdServiceTest {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
         
-        EXT_ID.setSubstudyId(SUBSTUDY_ID);
-        externalIdService.createExternalId(EXT_ID, false);
+        externalIdService.createExternalId(extId, false);
         
-        verify(externalIdDao).createExternalId(EXT_ID);
+        verify(externalIdDao).createExternalId(extId);
     }
     
     @Test
@@ -166,12 +133,12 @@ public class ExternalIdServiceTest {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
         
-        EXT_ID.setSubstudyId(SUBSTUDY_ID);
-        EXT_ID.setStudyId("some-dumb-id");
-        externalIdService.createExternalId(EXT_ID, false);
+        ExternalIdentifier newExtId = ExternalIdentifier.create(new StudyIdentifierImpl("some-dumb-id"), ID);
+        newExtId.setSubstudyId(SUBSTUDY_ID);
+        externalIdService.createExternalId(newExtId, false);
         
         // still matches and verifies
-        verify(externalIdDao).createExternalId(EXT_ID);        
+        verify(externalIdDao).createExternalId(extId);        
     }
     
     @Test
@@ -183,14 +150,17 @@ public class ExternalIdServiceTest {
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(SUBSTUDIES).build());
         
-        externalIdService.createExternalId(EXT_ID, false);
+        ExternalIdentifier newExtId = ExternalIdentifier.create(TestConstants.TEST_STUDY,
+                extId.getIdentifier());
+        externalIdService.createExternalId(newExtId, false);
         
         // still matches and verifies
-        verify(externalIdDao).createExternalId(EXT_ID);
+        verify(externalIdDao).createExternalId(extId);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void createExternalIdDoesNotSetSubstudyIdAmbiguous() {
+        extId.setSubstudyId(null); // not set by caller
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
         
@@ -198,7 +168,7 @@ public class ExternalIdServiceTest {
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID, "anotherSubstudy")).build());
         
-        externalIdService.createExternalId(EXT_ID, false);
+        externalIdService.createExternalId(extId, false);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -210,31 +180,31 @@ public class ExternalIdServiceTest {
     public void createExternalIdAlreadyExistsThrows() {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
-        EXT_ID.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
+        extId.setSubstudyId(SUBSTUDY_ID);
         
-        externalIdService.createExternalId(EXT_ID, false);
+        externalIdService.createExternalId(extId, false);
     }
     
     @Test
     public void deleteExternalIdPermanently() {
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
         
-        externalIdService.deleteExternalIdPermanently(STUDY, EXT_ID);
+        externalIdService.deleteExternalIdPermanently(study, extId);
         
-        verify(externalIdDao).deleteExternalId(EXT_ID);
+        verify(externalIdDao).deleteExternalId(extId);
     }
     
     @Test(expected = BadRequestException.class)
     public void deleteExternalIdPermanentlyThrowsIfValidationEnabled() {
-        STUDY.setExternalIdValidationEnabled(true);
+        study.setExternalIdValidationEnabled(true);
         
-        externalIdService.deleteExternalIdPermanently(STUDY, EXT_ID);
+        externalIdService.deleteExternalIdPermanently(study, extId);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyMissingThrows() {
-        externalIdService.deleteExternalIdPermanently(STUDY, EXT_ID);
+        externalIdService.deleteExternalIdPermanently(study, extId);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -242,10 +212,10 @@ public class ExternalIdServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(SUBSTUDIES).build());        
-        EXT_ID.setSubstudyId("someOtherId");
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(EXT_ID);
+        extId.setSubstudyId("someOtherId");
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
         
-        externalIdService.deleteExternalIdPermanently(STUDY, EXT_ID);
+        externalIdService.deleteExternalIdPermanently(study, extId);
     }
     
     @Test
@@ -356,6 +326,30 @@ public class ExternalIdServiceTest {
         assertEquals(ID, account.getExternalId());
         assertNull(externalId.getSubstudyId());
         assertTrue(account.getAccountSubstudies().isEmpty());
+    }
+    
+    @Test
+    public void beginAssignExternalIdAccountHasSingleSubstudyId() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setHealthCode(HEALTH_CODE);
+        account.setExternalId("legacyExternalId");
+        
+        ExternalIdentifier existing = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
+        existing.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(existing);
+        
+        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account, ID);
+        
+        assertEquals(HEALTH_CODE, externalId.getHealthCode());
+        
+        // Not changed, but the new external ID is still recorded along with the substudy association
+        assertEquals("legacyExternalId", account.getExternalId());
+        assertEquals(1, account.getAccountSubstudies().size());
+        
+        AccountSubstudy accountSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
+        assertEquals(ID, accountSubstudy.getExternalId());
     }
     
     @Test

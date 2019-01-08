@@ -20,11 +20,9 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -32,11 +30,9 @@ import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 import play.mvc.Result;
-import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExternalIdControllerV4Test {
@@ -140,21 +136,4 @@ public class ExternalIdControllerV4Test {
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
     
-    @Test
-    public void generatePassword() throws Exception {
-        GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");
-        when(authenticationService.generatePassword(study, "extid", false)).thenReturn(password);
-        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
-        
-        Result result = controller.generatePassword("extid", false);
-        TestUtils.assertResult(result, 200);
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("extid", node.get("externalId").textValue());
-        assertEquals("user-id", node.get("userId").textValue());
-        assertEquals("some-password", node.get("password").textValue());
-        assertEquals("GeneratedPassword", node.get("type").textValue());
-        
-        verify(authenticationService).generatePassword(eq(study), eq("extid"), eq(false));
-    }
 }

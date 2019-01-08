@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.junit.After;
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -44,6 +45,111 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test
+    public void substudyIdsVisibleToCallerFilters() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(accountSubstudies);
+        
+        assertEquals(ImmutableSet.of("substudyA", "substudyB"), visibles);
+    }
+    
+    @Test
+    public void substudyIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(accountSubstudies);
+        
+        assertEquals(ImmutableSet.of("substudyA", "substudyB", "substudyC"), visibles);
+    }
+    
+    @Test
+    public void substudyIdsVisibleToCallerEmpty() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(ImmutableSet.of());
+        
+        assertEquals(ImmutableSet.of(), visibles);
+    }    
+    
+    @Test
+    public void substudyIdsVisibleToCallerNull() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(null);
+        
+        assertEquals(ImmutableSet.of(), visibles);
+    }
+    
+    @Test
+    public void externalIdsVisibleToCaller() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        asA.setExternalId("extA");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        asB.setExternalId("extB");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        asC.setExternalId("extC");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(accountSubstudies);
+        
+        assertEquals(ImmutableMap.of("substudyA", "extA", "substudyB", "extB"), visibles);
+    }
+    
+    @Test
+    public void externalIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        asA.setExternalId("extA");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        asB.setExternalId("extB");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        asC.setExternalId("extC");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(accountSubstudies);
+        
+        assertEquals(ImmutableMap.of("substudyA", "extA", "substudyB", "extB", "substudyC", "extC"), visibles);
+    }    
+
+    @Test
+    public void externalIdsVisibleToCallerEmpty() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(ImmutableSet.of());
+        
+        assertEquals(ImmutableMap.of(), visibles);
+    }      
+    
+    @Test
+    public void externalIdsVisibleToCallerNull() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(ImmutableSet.of());
+        
+        assertEquals(ImmutableMap.of(), visibles);
+    }
     
     @Test
     public void collectExternalIds() {

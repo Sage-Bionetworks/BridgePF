@@ -26,6 +26,12 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Iterables;
 
+/**
+ * Service for managing external IDs. These methods can be called whether or not strict validation of IDs is enabled. 
+ * If it's enabled, reservation and assignment will work as expected, otherwise these silently do nothing. The external 
+ * ID will be associated via the AccountSubstudy collection, thus assignment of an external ID associates an account 
+ * to a substudy (and removing an external ID removes that assignment).
+ */
 @Component
 public class ExternalIdService {
     
@@ -49,8 +55,8 @@ public class ExternalIdService {
         checkNotNull(studyId);
         checkNotNull(externalId);
         
+        // Not filtered because there's no public API to retrieve an individual external ID.
         ExternalIdentifier existing = externalIdDao.getExternalId(studyId, externalId);
-        existing = BridgeUtils.filterForSubstudy(existing);
         
         if (throwException && existing == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
@@ -64,6 +70,8 @@ public class ExternalIdService {
         if (pageSize == null) {
             pageSize = BridgeConstants.API_DEFAULT_PAGE_SIZE;
         }
+        // Unlike other APIs that only accept API_MINIMUM_PAGE_SIZE, we have client use cases 
+        // where we just want to retrieve one external ID.
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
@@ -133,11 +141,12 @@ public class ExternalIdService {
         // Whether already assigned or not, we will adjust the account, in case we are repairing
         // an existing broken data association
         identifier.setHealthCode(account.getHealthCode());
-        // For backwards compatibility while transitioning to multiple external IDs,
-        // assign the singular external ID field. This will be replaced by the 
-        // externalIds field which is based directly off the contents of the 
-        // accountSubstudies collection.
-        account.setExternalId(identifier.getIdentifier());
+        // For backwards compatibility while transitioning to multiple external IDs, assign the singular 
+        // external ID field. But don't do this if we're adding a second external ID (we should be 
+        // entirely migrated to multiple external ID usage before we need to assign multiple IDs).
+        if (account.getExternalId() == null) {
+            account.setExternalId(identifier.getIdentifier());    
+        }
         if (identifier.getSubstudyId() != null) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
                     identifier.getSubstudyId(), account.getId());

@@ -29,7 +29,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -39,14 +38,15 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -79,9 +79,6 @@ public class UserProfileControllerTest {
     private CacheProvider cacheProvider;
     
     @Mock
-    private ExternalIdService externalIdService;
-    
-    @Mock
     private StudyService studyService;
     
     @Mock
@@ -101,6 +98,12 @@ public class UserProfileControllerTest {
     
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
+    
+    @Captor
+    private ArgumentCaptor<AccountId> accountIdCaptor;
+    
+    @Captor
+    private ArgumentCaptor<ExternalIdentifier> externalIdCaptor;
     
     private UserSession session;
     
@@ -128,7 +131,6 @@ public class UserProfileControllerTest {
         controller.setAccountDao(accountDao);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
-        controller.setExternalIdService(externalIdService);
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
         
@@ -250,20 +252,19 @@ public class UserProfileControllerTest {
     @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
         TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
-        
-        Account account = Account.create();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        account.setHealthCode(HEALTH_CODE);
-        when(accountDao.getAccount(any())).thenReturn(account);
-        
+
         Result result = controller.createExternalIdentifier();
         
         TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
-        verify(externalIdService).beginAssignExternalId(account, "ABC-123-XYZ");
-        verify(externalIdService).commitAssignExternalId(any());
+        verify(participantService).assignExternalId(accountIdCaptor.capture(), externalIdCaptor.capture());
+        
+        assertEquals(HEALTH_CODE, accountIdCaptor.getValue().getHealthCode());
+        assertEquals(TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals("ABC-123-XYZ", externalIdCaptor.getValue().getIdentifier());
+        assertEquals(TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
 
     @Test

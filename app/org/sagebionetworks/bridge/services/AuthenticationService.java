@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
@@ -338,11 +339,21 @@ public class AuthenticationService {
             throw new BadRequestException("External ID is required");
         }
         // Throws an EntityNotFoundException if the external ID does not exist.
-        externalIdService.getExternalId(study.getStudyIdentifier(), externalId, true);
+        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(), externalId, true);
+        
+        // The *caller* must be associated to the external IDs substudy, if any
+        if (BridgeUtils.filterForSubstudy(externalIdObj) == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
         AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
         Account account = accountDao.getAccount(accountId);
         
+        // The *target* must be associated to the substudy, if any
+        boolean existsButWrongSubstudy = account != null && BridgeUtils.filterForSubstudy(account) == null;
+        if (existsButWrongSubstudy) {
+            throw new EntityNotFoundException(Account.class);
+        }
         // No account and user doesn't want to create it, treat as a 404
         if (account == null && !createAccount) {
             throw new EntityNotFoundException(Account.class);

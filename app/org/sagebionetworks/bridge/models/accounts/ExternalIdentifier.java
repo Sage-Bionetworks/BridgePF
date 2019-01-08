@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -12,7 +14,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public interface ExternalIdentifier extends BridgeEntity {
 
     static ExternalIdentifier create(StudyIdentifier studyId, String identifier) {
-        return new DynamoExternalIdentifier(studyId == null ? null : studyId.getIdentifier(), identifier);
+        checkNotNull(studyId);
+        return new DynamoExternalIdentifier(studyId.getIdentifier(), identifier);
     }
     
     String getStudyId();

@@ -79,7 +79,6 @@ public class ExternalIdController extends BaseController {
         return okResult("External identifiers deleted.");
     }
     
-    @Deprecated
     @BodyParser.Of(BodyParser.Empty.class)
     public Result generatePassword(String externalId, boolean createAccount) throws Exception {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);

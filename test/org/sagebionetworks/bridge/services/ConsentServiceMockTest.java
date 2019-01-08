@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -117,6 +118,8 @@ public class ConsentServiceMockTest {
     private Subpopulation subpopulation;
     @Mock
     private StudyConsentView studyConsentView;
+    @Mock
+    private ExternalIdService externalIdService;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
@@ -140,11 +143,12 @@ public class ConsentServiceMockTest {
         consentService.setS3Helper(s3Helper);
         consentService.setUrlShortenerService(urlShortenerService);
         consentService.setNotificationsService(notificationsService);
+        consentService.setExternalIdService(externalIdService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
 
-        account = Account.create(); // mock(Account.class);
+        account = Account.create();
         account.setId(ID);
         
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
@@ -330,10 +334,13 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawFromStudyWithEmail() throws Exception {
         setupWithdrawTest();
-        TestUtils.mockEditAccount(accountDao, account);
-        
+        account.getAccountSubstudies().iterator().next().setExternalId("asExternalId");
+
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
+        verify(externalIdService).unassignExternalId(account, "externalId");
+        verify(externalIdService).unassignExternalId(account, "asExternalId");
+        
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
 
@@ -356,7 +363,6 @@ public class ConsentServiceMockTest {
         assertFalse(account.getEmailVerified());
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
-        assertNull(account.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());
@@ -845,6 +851,12 @@ public class ConsentServiceMockTest {
     
     private void setupWithdrawTest() {
         account.setEmail(EMAIL);
+        account.setExternalId("externalId");
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        account.setNotifyByEmail(true);
+        account.setExternalId("externalId");
+        AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
+        account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }
 }

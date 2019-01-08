@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.hibernate.NonUniqueObjectException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -190,6 +191,37 @@ public class AccountPersistenceExceptionConverterTest {
         
         verify(accountDao, never()).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
     }
+    
+    @Test
+    public void entityAlreadyExistsForExternalIdWhenNoSubstudyMatches() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        as1.setExternalId("externalIdA");
+        account.setAccountSubstudies(ImmutableSet.of(as1));
+        
+        Account existing = Account.create();
+        existing.setId("userId");
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setExternalId("substudyB");
+        
+        // Accept anything here, but verify that it is externalIdA (which won't match user calling method)
+        when(accountDao.getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA")))
+                .thenReturn(existing);
+        
+        org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
+                "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException result = converter.convert(pe, account);
+        assertEquals(ConstraintViolationException.class, result.getClass());
+        
+        verify(accountDao, never()).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
+    }
 
     // This should not happen, we're testing that not finding an account with this message doesn't break the converter.
     @Test
@@ -244,6 +276,18 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(ole, account);
         assertEquals(ConcurrentModificationException.class, result.getClass());
         assertEquals("Account has the wrong version number; it may have been saved in the background.", result.getMessage());
+    }
+    
+    @Test
+    public void nonUniqueObjectException() {
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        NonUniqueObjectException nuoe = new NonUniqueObjectException("message", null, null);
+        
+        RuntimeException result = converter.convert(nuoe, account);
+        assertEquals(ConstraintViolationException.class, result.getClass());
+        assertEquals(AccountPersistenceExceptionConverter.NON_UNIQUE_MSG, result.getMessage());
     }
     
 }
