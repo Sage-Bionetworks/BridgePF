@@ -309,8 +309,6 @@ public class AppConfigServiceTest {
         
         AppConfig appConfig = service.getAppConfigForUser(context, false);
 
-        verify(service).logError("CriteriaContext matches more than one app config: criteriaContext=" + 
-                context + ", appConfigs=" + Lists.newArrayList(appConfig2, appConfig1));
         assertEquals(appConfig2, appConfig);
     }
     

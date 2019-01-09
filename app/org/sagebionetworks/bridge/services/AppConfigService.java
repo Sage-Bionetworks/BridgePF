@@ -118,7 +118,7 @@ public class AppConfigService {
             }
         } else if (matches.size() != 1) {
             // If there is more than one match, return the one created first, but log an error
-            logError("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
+            LOG.warn("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
         }
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
