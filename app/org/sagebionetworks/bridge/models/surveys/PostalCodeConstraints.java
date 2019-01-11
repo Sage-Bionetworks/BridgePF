@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
  * @see http://www.ehealthinformation.ca/faq/can-postal-codes-re-identify-individuals/
  * @see https://academic.oup.com/jamia/article/16/2/256/960457
  * @see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4707567/
+ * @see https://www.johndcook.com/blog/2016/06/29/sparsely-populated-zip-codes/
  */
 public class PostalCodeConstraints extends Constraints {
     
@@ -53,7 +54,7 @@ public class PostalCodeConstraints extends Constraints {
     }
 
     public void setSparseZipCodePrefixes(List<String> unused) {
-        // no op. This allows deserialization of sparseZipCodePrefixes if this array is sent back 
+        // noop. This allows deserialization of sparseZipCodePrefixes if this array is sent back 
         // by the client. We ignore it. I cannot find a more elegant way to do this with Jackson. 
     }
     

@@ -1146,16 +1146,6 @@ public class SurveySaveValidatorTest {
         assertValidatorMessage(validator, survey, "elements[10].constraints.postalCode", "is required");
     }
     
-    @Test
-    public void validatesPostalCodeCountryCodeMustBeSupported() {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        PostalCodeConstraints pcc = (PostalCodeConstraints)TestSurvey.selectBy(survey, DataType.POSTALCODE).getConstraints();
-        pcc.setCountryCode(CountryCode.CA);
-        
-        assertValidatorMessage(validator, survey, "elements[10].constraints.postalCode", "is not a supported country");
-    }
-
     private Survey updateSurveyWithBeforeRulesInOneQuestion(SurveyRule... rules) {
         survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         

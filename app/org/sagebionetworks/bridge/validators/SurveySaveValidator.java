@@ -23,7 +23,6 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.surveys.Constraints;
-import org.sagebionetworks.bridge.models.surveys.CountryCode;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
@@ -437,8 +436,6 @@ public class SurveySaveValidator implements Validator {
     private void doValidateConstraintsType(Errors errors, UIHint hint, PostalCodeConstraints con) {
         if (con.getCountryCode() == null) {
             errors.rejectValue("postalCode", "is required");
-        } else if (con.getCountryCode() != CountryCode.US) {
-            errors.rejectValue("postalCode", "is not a supported country");
         }
     }
 

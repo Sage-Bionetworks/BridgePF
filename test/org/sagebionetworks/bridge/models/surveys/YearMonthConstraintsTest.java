@@ -28,7 +28,9 @@ public class YearMonthConstraintsTest {
         assertTrue(node.get("allowFuture").booleanValue());
         assertEquals("YearMonthConstraints", node.get("type").textValue());
         
-        YearMonthConstraints deser = BridgeObjectMapper.get().readValue(node.toString(), YearMonthConstraints.class);
+        // Deserialize as a Constraints object to verify the right subtype is selected.
+        YearMonthConstraints deser = (YearMonthConstraints) BridgeObjectMapper.get()
+                .readValue(node.toString(), Constraints.class);
         assertEquals(YearMonth.parse("2000-01"), deser.getEarliestValue());
         assertEquals(YearMonth.parse("2009-12"), deser.getLatestValue());
         assertTrue(deser.getAllowFuture());
