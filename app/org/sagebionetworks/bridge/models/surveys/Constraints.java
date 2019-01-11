@@ -22,7 +22,9 @@ import com.google.common.collect.Lists;
     @Type(name="duration", value=DurationConstraints.class),
     @Type(name="bloodpressure", value=BloodPressureConstraints.class),
     @Type(name="height", value=HeightConstraints.class),
-    @Type(name="weight",value=WeightConstraints.class)
+    @Type(name="weight",value=WeightConstraints.class),
+    @Type(name="yearmonth", value=YearMonthConstraints.class),
+    @Type(name="postalcode", value=PostalCodeConstraints.class)
 })
 public class Constraints {
 

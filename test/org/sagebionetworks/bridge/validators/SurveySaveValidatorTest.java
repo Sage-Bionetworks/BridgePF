@@ -9,6 +9,7 @@ import java.util.TreeSet;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,6 +18,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.surveys.CountryCode;
+import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
@@ -24,6 +27,7 @@ import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.PostalCodeConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -34,6 +38,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import com.google.common.collect.Lists;
@@ -116,7 +121,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setIdentifier("");
 
-        assertValidatorMessage(validator, survey, "elements[9].identifier", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].identifier", "is required");
     }
 
     @Test
@@ -126,7 +131,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setTitle("");
 
-        assertValidatorMessage(validator, survey, "elements[9].title", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].title", "is required");
     }
 
     @Test
@@ -136,7 +141,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setPrompt("");
 
-        assertValidatorMessage(validator, survey, "elements[9].prompt", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].prompt", "is required");
     }
 
     @Test
@@ -146,9 +151,9 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setImage(new Image("", 0, 0));
 
-        assertValidatorMessage(validator, survey, "elements[9].image.width", "is required");
-        assertValidatorMessage(validator, survey, "elements[9].image.height", "is required");
-        assertValidatorMessage(validator, survey, "elements[9].image.source", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].image.width", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].image.height", "is required");
+        assertValidatorMessage(validator, survey, "elements[11].image.source", "is required");
     }
 
     @Test
@@ -1120,6 +1125,37 @@ public class SurveySaveValidatorTest {
         assertValidatorMessage(validator, survey, "elements[1].identifier", "exists in an earlier survey element");
     }
     
+    @Test
+    public void validatesYearMonthEarliestValueBeforeLatest() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearMonthConstraints con = (YearMonthConstraints)TestSurvey.selectBy(survey, DataType.YEARMONTH).getConstraints(); 
+        con.setEarliestValue(YearMonth.parse("2012-05"));
+        con.setLatestValue(YearMonth.parse("2012-01"));
+        
+        assertValidatorMessage(validator, survey, "elements[9].constraints.earliestValue", "is after the latest value");
+    }
+
+    @Test
+    public void validatesPostalCodeCountryCodeRequired() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+
+        PostalCodeConstraints pcc = (PostalCodeConstraints)TestSurvey.selectBy(survey, DataType.POSTALCODE).getConstraints();
+        pcc.setCountryCode(null);
+        
+        assertValidatorMessage(validator, survey, "elements[10].constraints.postalCode", "is required");
+    }
+    
+    @Test
+    public void validatesPostalCodeCountryCodeMustBeSupported() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+
+        PostalCodeConstraints pcc = (PostalCodeConstraints)TestSurvey.selectBy(survey, DataType.POSTALCODE).getConstraints();
+        pcc.setCountryCode(CountryCode.CA);
+        
+        assertValidatorMessage(validator, survey, "elements[10].constraints.postalCode", "is not a supported country");
+    }
+
     private Survey updateSurveyWithBeforeRulesInOneQuestion(SurveyRule... rules) {
         survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         
