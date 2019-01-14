@@ -6,12 +6,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -69,7 +68,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
@@ -127,7 +125,6 @@ public class ParticipantServiceTest {
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final SubpopulationGuid SUBPOP_GUID_1 = SubpopulationGuid.create("guid1");
-    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("guid2");
     private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
@@ -259,7 +256,6 @@ public class ParticipantServiceTest {
     }
     
     private void mockHealthCodeAndAccountRetrieval(String email, Phone phone) {
-        TestUtils.mockEditAccount(accountDao, account);
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
         account.setEmail(email);
@@ -271,10 +267,8 @@ public class ParticipantServiceTest {
     }
     
     private void mockAccountNoEmail() {
-        TestUtils.mockEditAccount(accountDao, account);
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
-        when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
     }
     
@@ -732,8 +726,6 @@ public class ParticipantServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantAccountIdDoesNotExist() {
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        
         AccountId wrongAccountId = AccountId.forExternalId(STUDY.getIdentifier(), "some-junk");
         
         participantService.getParticipant(STUDY, wrongAccountId, false);
@@ -781,7 +773,6 @@ public class ParticipantServiceTest {
         when(subpopService.getSubpopulations(STUDY.getStudyIdentifier(), false)).thenReturn(subpopulations);
 
         when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_1)).thenReturn(subpop1);
-        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_2)).thenReturn(subpop2);
 
         // Mock CacheProvider to return request info.
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
@@ -884,19 +875,6 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         account.setExternalId(null); // account can be updated because it's null
 
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode(HEALTH_CODE)
-                .withEmail(EMAIL)
-                .withId(ID).build();
-        
-        UserSession oldSession = new UserSession(participant);
-        oldSession.setSessionToken("sessionToken");
-        oldSession.setInternalSessionToken("internalSessionToken");
-        oldSession.setEnvironment(Environment.DEV);
-        oldSession.setAuthenticated(true);
-        oldSession.setStudyIdentifier(STUDY.getStudyIdentifier());
-        doReturn(oldSession).when(cacheProvider).getUserSessionByUserId(ID);
-        
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
@@ -1081,10 +1059,6 @@ public class ParticipantServiceTest {
     @Test
     public void getParticipantWithoutHistories() {
         mockHealthCodeAndAccountRetrieval();
-        
-        doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
-        doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
@@ -1803,8 +1777,6 @@ public class ParticipantServiceTest {
     public void removingManagedExternalIdWorks() {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(true);
-        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId")).thenReturn(identifier);
         
         // This record has a different external ID than the mocked accound
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
@@ -1820,7 +1792,6 @@ public class ParticipantServiceTest {
     public void createUnmanagedExternalIdWillAssign() {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(false);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(null);
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
@@ -1953,10 +1924,6 @@ public class ParticipantServiceTest {
     
     @Test(expected = BadRequestException.class)
     public void sendSmsMessageThrowsIfBlankMessage() {
-        when(accountDao.getAccount(any())).thenReturn(account);
-        account.setPhone(TestConstants.PHONE);
-        account.setPhoneVerified(true);
-        
         SmsTemplate template = new SmsTemplate("    "); 
         
         participantService.sendSmsMessage(STUDY, ID, template);

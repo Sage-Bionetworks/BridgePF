@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -95,10 +94,6 @@ public class ExternalIdControllerTest {
         
         when(bridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("BBB").build();
-        
-        when(session.getParticipant()).thenReturn(participant);
         when(session.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
@@ -106,7 +101,7 @@ public class ExternalIdControllerTest {
         study = new DynamoStudy();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
     }
 
     @Test
@@ -132,7 +127,8 @@ public class ExternalIdControllerTest {
     @Test
     public void addExternalIds() throws Exception {
         List<String> identifiers = Lists.newArrayList("AAA", "BBB", "CCC");
-        TestUtils.mockPlayContextWithJson(MAPPER.writeValueAsString(identifiers));
+        
+        TestUtils.mockPlay().withJsonBody(MAPPER.writeValueAsString(identifiers)).mock();
         
         Result result = controller.addExternalIds();
         assertResult(result, 201, "External identifiers added.");
@@ -142,7 +138,7 @@ public class ExternalIdControllerTest {
     
     @Test
     public void noIdentifiers() throws Exception {
-        TestUtils.mockPlayContextWithJson("[]");
+        TestUtils.mockPlay().withJsonBody("[]").mock();
         
         Result result = controller.addExternalIds();
         assertResult(result, 201, "External identifiers added.");

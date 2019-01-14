@@ -188,7 +188,7 @@ public class ParticipantReportController extends BaseController {
     public Result saveParticipantReportForWorker(String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(WORKER);
         
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         if (!node.has("healthCode")) {
             throw new BadRequestException("A health code is required to save report data.");
         }

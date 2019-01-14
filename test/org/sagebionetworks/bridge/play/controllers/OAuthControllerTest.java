@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -87,8 +87,6 @@ public class OAuthControllerTest {
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
-        
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(mockStudy);
         when(mockStudyService.getStudy(TEST_STUDY.getIdentifier())).thenReturn(mockStudy);
     }
@@ -102,8 +100,10 @@ public class OAuthControllerTest {
     }
     
     @Test(expected = ConsentRequiredException.class)
-    public void requestAccessTokenMustBeConsented() {
+    public void requestAccessTokenMustBeConsented() throws Exception {
         session.setAuthenticated(true);
+        
+        TestUtils.mockPlay().withMockResponse().mock();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
         statuses.put(SubpopulationGuid.create("ABC"), TestConstants.REQUIRED_UNSIGNED);
@@ -118,7 +118,7 @@ public class OAuthControllerTest {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, AUTH_TOKEN);
-        TestUtils.mockPlayContextWithJson(authToken);
+        TestUtils.mockPlay().withBody(authToken).mock();
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
@@ -140,7 +140,7 @@ public class OAuthControllerTest {
     public void requestAccessTokenWithoutAccessToken() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        TestUtils.mockPlayContextWithJson("{}");
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))

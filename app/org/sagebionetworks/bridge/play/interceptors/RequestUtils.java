@@ -21,7 +21,7 @@ public final class RequestUtils {
     }
 
     public static String header(final Request request, final String name, final String defaultVal) {
-        final String[] values = request.headers().get(name);
-        return (values != null && values.length > 0) ? values[0] : defaultVal;
+        final String value = request.getHeader(name);
+        return (value != null) ? value : defaultVal;
     }
 }

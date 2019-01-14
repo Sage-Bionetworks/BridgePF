@@ -102,7 +102,7 @@ public class ParticipantController extends BaseController {
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
         // usage pattern in prior APIs and it will make refactoring to use this API easier.
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);

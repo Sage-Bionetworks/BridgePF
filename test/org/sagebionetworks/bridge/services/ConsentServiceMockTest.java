@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -331,7 +331,6 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawFromStudyWithEmail() throws Exception {
         setupWithdrawTest();
-        TestUtils.mockEditAccount(accountDao, account);
         
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
@@ -368,7 +367,6 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawFromStudyWithPhone() {
-        TestUtils.mockEditAccount(accountDao, account);
         account.setPhone(TestConstants.PHONE);
         account.setHealthCode(PARTICIPANT.getHealthCode());
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -590,8 +588,6 @@ public class ConsentServiceMockTest {
     public void emailConsentAgreementDoesNotSuppressEmailNotification() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
-        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
-        
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
         
         // Despite explicitly suppressing email, if the user makes this call, we will send the email.
@@ -615,7 +611,6 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         // easiest to test this if we null out the study consent email.
         study.setConsentNotificationEmail(null);
-        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
         
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
         try {

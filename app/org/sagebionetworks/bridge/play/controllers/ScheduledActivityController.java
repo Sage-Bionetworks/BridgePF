@@ -134,8 +134,8 @@ public class ScheduledActivityController extends BaseController {
     public Result updateScheduledActivities() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        List<ScheduledActivity> scheduledActivities = MAPPER.convertValue(requestToJSON(request()),
-                scheduledActivityTypeRef);
+        List<ScheduledActivity> scheduledActivities = MAPPER.convertValue(
+                parseJson(request(), JsonNode.class), scheduledActivityTypeRef);
         scheduledActivityService.updateScheduledActivities(session.getHealthCode(), scheduledActivities);
 
         return okResult("Activities updated.");

@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,7 +18,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -116,7 +116,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(cacheKey, keyCaptor.getValue());
 
-        verify(mockSmsService).sendSmsMessage(isNull(String.class), smsMessageProviderCaptor.capture());
+        verify(mockSmsService).sendSmsMessage(isNull(), smsMessageProviderCaptor.capture());
 
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         assertEquals(mockStudy, provider.getStudy());
@@ -167,7 +167,6 @@ public class IntentServiceTest {
                 TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("testStudy"));
-        when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
@@ -225,7 +224,6 @@ public class IntentServiceTest {
         CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
@@ -279,7 +277,6 @@ public class IntentServiceTest {
         CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(keyAAA, IntentToParticipate.class)).thenReturn(intentAAA);
@@ -320,15 +317,11 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        
         CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
-        when(mockParticipantService.getParticipant(any(Study.class), any(String.class), eq(false))).thenReturn(participant);
         
         service.registerIntentToParticipate(mockStudy, account);
         

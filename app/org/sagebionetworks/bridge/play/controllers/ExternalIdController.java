@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -51,7 +52,7 @@ public class ExternalIdController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        List<String> externalIdentifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
+        List<String> externalIdentifiers = MAPPER.convertValue(parseJson(request(), JsonNode.class), EXTERNAL_ID_TYPE_REF);
         externalIdService.addExternalIds(study, externalIdentifiers);
         
         return createdResult("External identifiers added.");

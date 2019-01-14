@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -56,7 +56,7 @@ public class ActivityEventControllerTest {
                 "   \"eventKey\":\"" + EVENT_KEY + "\",\n" +
                 "   \"timestamp\":\"" + EVENT_TIMESTAMP_STRING + "\"\n" +
                 "}";
-        TestUtils.mockPlayContextWithJson(jsonText);
+        TestUtils.mockPlay().withJsonBody(jsonText).mock();
 
         // Execute
         Result result = controller.createCustomActivityEvent();

@@ -17,7 +17,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -80,7 +80,7 @@ public class SchedulePlanControllerMockTest {
     
     @Test
     public void getSchedulePlansForWorker() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.WORKER);
         SchedulePlan plan = createSchedulePlan();
         when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
@@ -97,8 +97,7 @@ public class SchedulePlanControllerMockTest {
     public void testCreateSchedulePlan() throws Exception {
         SchedulePlan plan = createSchedulePlan();
 
-        String json = BridgeObjectMapper.get().writeValueAsString(plan);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withBody(plan).mock();
         
         when(mockSchedulePlanService.createSchedulePlan(eq(study), any())).thenReturn(plan);
         
@@ -114,8 +113,7 @@ public class SchedulePlanControllerMockTest {
     public void updateSchedulePlan() throws Exception {
         SchedulePlan plan = createSchedulePlan();
 
-        String json = BridgeObjectMapper.get().writeValueAsString(plan);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withBody(plan).mock();
         
         when(mockSchedulePlanService.updateSchedulePlan(eq(study), any())).thenReturn(plan);
         

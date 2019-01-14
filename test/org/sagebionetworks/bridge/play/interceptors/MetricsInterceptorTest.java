@@ -6,10 +6,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.play.interceptors.MetricsInterceptor;
 
@@ -26,11 +24,12 @@ public class MetricsInterceptorTest {
         when(mockRequest.method()).thenReturn("POST");
         when(mockRequest.path()).thenReturn("/v3/participants");
         when(mockRequest.version()).thenReturn("HTTP/1.1");
-        final Map<String, String[]> headerMap = new HashMap<>();
-        headerMap.put("X-Request-Id", new String[]{"12345"});
-        headerMap.put("X-Forwarded-For", new String[]{"1.2.3.4"});
-        headerMap.put("User-Agent", new String[]{"ifeng 6"});
-        when(mockRequest.headers()).thenReturn(headerMap);
+        
+        TestUtils.mockPlay().withRequest(mockRequest)
+            .withHeader("X-Request-Id", "12345")
+            .withHeader("X-Forwarded-For", "1.2.3.4")
+            .withHeader("User-Agent", "ifeng 6").mock();
+        
         // Mock context
         final Context mockContext = mock(Context.class);
         when(mockContext.request()).thenReturn(mockRequest);

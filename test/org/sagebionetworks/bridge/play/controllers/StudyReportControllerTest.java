@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -32,10 +32,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -65,16 +63,6 @@ public class StudyReportControllerTest {
     };
     
     private static final String REPORT_ID = "foo";
-
-    private static final String VALID_LANGUAGE_HEADER = "en-US";
-
-    private static final String VALID_USER_AGENT_HEADER = "Unknown Client/14 BridgeJavaSDK/10";
-
-    private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
-
-    private static final String OTHER_PARTICIPANT_ID = "userId";
-    
-    private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
 
     private static final String HEALTH_CODE = "healthCode";
     
@@ -131,8 +119,6 @@ public class StudyReportControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
-        
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -144,25 +130,14 @@ public class StudyReportControllerTest {
         session.setConsentStatuses(statuses);
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
-        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY.getIdentifier());
-        doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
-        doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(session).when(controller).getAuthenticatedSession();
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
+        //doReturn(session).when(controller).getAuthenticatedSession();
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
-        ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
-                Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
-        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         index = ReportIndex.create();
         index.setIdentifier("fofo");
-        list = new ReportTypeResourceList<>(Lists.newArrayList(index))
-                .withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
-        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         List<ReportData> reportList = Lists.newArrayList();
         page = new ForwardCursorPagedResourceList<ReportData>(reportList, "nextPageOffsetKey")
@@ -170,18 +145,6 @@ public class StudyReportControllerTest {
                 .withRequestParam(ResourceList.PAGE_SIZE, Integer.parseInt(PAGE_SIZE))
                 .withRequestParam(ResourceList.START_TIME, START_TIME)
                 .withRequestParam(ResourceList.END_TIME, END_TIME);
-    }
-    
-    private void setupContext() throws Exception {
-        setupContext(VALID_USER_AGENT_HEADER, VALID_LANGUAGE_HEADER);
-    }
-    
-    private void setupContext(String userAgent, String languages) throws Exception {
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("User-Agent", new String[] {userAgent});
-        headers.put("Accept-Language", new String[] {languages});
-
-        TestUtils.mockPlayContextWithJson("{}", headers);
     }
     
     @Test
@@ -208,6 +171,7 @@ public class StudyReportControllerTest {
     }
 
     private void getStudyReportIndex() throws Exception {
+        TestUtils.mockPlay().mock();
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(REPORT_ID);
         index.setPublic(true);
@@ -231,7 +195,7 @@ public class StudyReportControllerTest {
 
     @Test
     public void getStudyReportData() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 REPORT_ID, START_DATE, END_DATE);
         
@@ -241,7 +205,7 @@ public class StudyReportControllerTest {
     
     @Test
     public void getStudyReportDataWithNoDates() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
                 REPORT_ID, null, null);
         
@@ -250,18 +214,9 @@ public class StudyReportControllerTest {
     }
     
     @Test
-    public void getStudyReportDataWithNoUserAgentAsResearcherOK() throws Exception {
-        setupContext("", VALID_LANGUAGE_HEADER);
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
-                REPORT_ID, START_DATE, END_DATE);
-        
-        controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-    }    
-    
-    @Test
     public void saveStudyReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
                 
         Result result = controller.saveStudyReport(REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
@@ -301,8 +256,8 @@ public class StudyReportControllerTest {
     
     @Test
     public void canUpdateStudyReportIndex() throws Exception {
-        TestUtils.mockPlayContextWithJson("{\"public\":true}");
-        
+        TestUtils.mockPlay().withJsonBody("{\"public\":true}").mock();
+
         Result result = controller.updateStudyReportIndex(REPORT_ID);
         TestUtils.assertResult(result, 200, "Report index updated.");
         
@@ -357,9 +312,6 @@ public class StudyReportControllerTest {
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
-                REPORT_ID, START_DATE, END_DATE);
-        
         controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
@@ -377,7 +329,6 @@ public class StudyReportControllerTest {
         
         doReturn(page).when(mockReportService).getStudyReportV4(session.getStudyIdentifier(), REPORT_ID, START_TIME,
                 END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
-        doReturn(index).when(mockReportService).getReportIndex(key);
         
         Result result = controller.getStudyReportV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
         TestUtils.assertResult(result, 200);

@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -218,8 +218,9 @@ public class UserProfileControllerTest {
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
-                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}"));
+        TestUtils.mockPlay().withMockResponse().withJsonBody(
+                TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
+                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}")).mock();
         
         Result result = controller.updateUserProfile();
         
@@ -248,7 +249,7 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
-        TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
+        TestUtils.mockPlay().withJsonBody("{\"identifier\":\"ABC-123-XYZ\"}").mock();
                 
         Result result = controller.createExternalIdentifier();
         
@@ -276,8 +277,9 @@ public class UserProfileControllerTest {
         session.setParticipant(existing);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
-        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
-        
+        TestUtils.mockPlay().withMockResponse()
+                .withJsonBody("{\"dataGroups\":[\"group1\"]}").mock();
+
         Result result = controller.updateDataGroups();
         TestUtils.assertResult(result, 200);
         
@@ -311,7 +313,7 @@ public class UserProfileControllerTest {
         doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study),
                 any());
         
-        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
+        TestUtils.mockPlay().withJsonBody("{\"dataGroups\":[\"completelyInvalidGroup\"]}").mock();
         try {
             controller.updateDataGroups();
             fail("Should have thrown an exception");
@@ -352,7 +354,8 @@ public class UserProfileControllerTest {
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
-        TestUtils.mockPlayContextWithJson("{}");
+        
+        TestUtils.mockPlay().withJsonBody("{}").withMockResponse().mock();
         
         Result result = controller.updateDataGroups();
         TestUtils.assertResult(result, 200);

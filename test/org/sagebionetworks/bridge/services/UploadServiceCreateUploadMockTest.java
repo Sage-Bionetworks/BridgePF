@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -37,7 +37,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 
-@SuppressWarnings("unchecked")
 public class UploadServiceCreateUploadMockTest {
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_CONTENT_TYPE = "text/plain";

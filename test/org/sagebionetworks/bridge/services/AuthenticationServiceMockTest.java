@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -29,7 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -216,7 +216,6 @@ public class AuthenticationServiceMockTest {
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         // Does not throw consent required exception, despite being unconsented, because user has DEVELOPER role.
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
@@ -255,7 +254,6 @@ public class AuthenticationServiceMockTest {
                 .copyOf(PARTICIPANT).withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         // Does not throw consent required exception, despite being unconsented, because user has RESEARCHER role. 
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
@@ -340,7 +338,6 @@ public class AuthenticationServiceMockTest {
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         try {
             service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
@@ -358,7 +355,6 @@ public class AuthenticationServiceMockTest {
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         // Does not throw a consent required exception because the participant is an admin. 
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
@@ -426,7 +422,6 @@ public class AuthenticationServiceMockTest {
     public void reauthThrowsUnconsentedException() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
         
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
@@ -541,7 +536,6 @@ public class AuthenticationServiceMockTest {
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         try {
             service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
@@ -661,7 +655,6 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordNoAccountDoNotCreateAccount() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        doReturn(PASSWORD).when(service).generatePassword(anyInt());
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         
         service.generatePassword(study, EXTERNAL_ID, false);
@@ -714,9 +707,6 @@ public class AuthenticationServiceMockTest {
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         
         when(accountDao.getAccount(any())).thenReturn(account);
         account.setHealthCode(HEALTH_CODE);

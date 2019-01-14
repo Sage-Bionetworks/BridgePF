@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 
 import org.junit.Before;
@@ -12,7 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import play.mvc.Result;
 
@@ -50,7 +50,6 @@ public class UserDataDownloadControllerTest {
     public void before() throws Exception {
         controller.setUserDataDownloadService(mockService);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn("dummy-request-id").when(controller).getRequestId();
         doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
     }
     
@@ -137,6 +136,6 @@ public class UserDataDownloadControllerTest {
                 "   \"startDate\":\"" + START_DATE + "\",\n" +
                 "   \"endDate\":\"" + END_DATE + "\"\n" +
                 "}";
-        TestUtils.mockPlayContextWithJson(dateRangeJsonText);
+        TestUtils.mockPlay().withJsonBody(dateRangeJsonText).mock();
     }
 }

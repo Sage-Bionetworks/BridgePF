@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -54,8 +54,7 @@ public class EmailVerificationServiceAsyncHandlerTest {
         numSetBounceNotificationCalls = 0;
         numSetComplaintNotificationCalls = 0;
         when(mockSesClient.setIdentityNotificationTopic(any())).thenAnswer(invocation -> {
-            SetIdentityNotificationTopicRequest request = invocation.getArgumentAt(0,
-                    SetIdentityNotificationTopicRequest.class);
+            SetIdentityNotificationTopicRequest request = invocation.getArgument(0);
             boolean shouldThrow = false;
             switch (request.getNotificationType()) {
                 case "Bounce": {
