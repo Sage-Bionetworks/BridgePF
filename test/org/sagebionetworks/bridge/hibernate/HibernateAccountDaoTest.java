@@ -1700,6 +1700,7 @@ public class HibernateAccountDaoTest {
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
         assertEquals(ImmutableMap.of("substudyB", "externalIdB"), accountSummary.getExternalIds());
+        assertEquals(ImmutableSet.of("substudyB"), accountSummary.getSubstudyIds());
     }
     
     @Test

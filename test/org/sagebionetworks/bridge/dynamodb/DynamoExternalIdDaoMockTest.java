@@ -15,38 +15,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -63,6 +40,31 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
+
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DynamoExternalIdDaoMockTest {
@@ -358,12 +360,12 @@ public class DynamoExternalIdDaoMockTest {
         dao.commitAssignExternalId(externalId);
     }
     
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ConcurrentModificationException.class)
     public void commitAssignExternalWithoutHealthCodeThrows() {
         dao.commitAssignExternalId(externalId);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ConcurrentModificationException.class)
     public void commitAssignExternalNewThrows() { 
         externalId.setHealthCode(HEALTH_CODE);
         

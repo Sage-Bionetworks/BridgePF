@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
-import static org.sagebionetworks.bridge.BridgeUtils.substudyIdsVisibleToCaller;
-import static org.sagebionetworks.bridge.BridgeUtils.externalIdsVisibleToCaller;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,12 +24,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -172,7 +172,7 @@ public class ParticipantService {
     
     public void assignExternalId(AccountId accountId, ExternalIdentifier externalId) {
         Account account = getAccountThrowingException(accountId);
-        ExternalIdentifier extIdObj = externalIdService.beginAssignExternalId(account, externalId.getIdentifier());
+        ExternalIdentifier extIdObj = beginAssignExternalId(account, externalId.getIdentifier());
         externalIdService.commitAssignExternalId(extIdObj);
     }
     
@@ -271,8 +271,9 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
-        builder.withSubstudyIds(substudyIdsVisibleToCaller(account.getAccountSubstudies()));
-        builder.withExternalIds(externalIdsVisibleToCaller(account.getAccountSubstudies()));
+        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
+        builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -370,8 +371,7 @@ public class ParticipantService {
         // Set up the external ID object and the changes to the account, attempt to save the external ID 
         // within an account transaction, and roll back the account if the external ID save fails. If the 
         // account save fails, catch the exception and rollback the external ID save. 
-        final ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account,
-                participant.getExternalId());
+        final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
         try {
             accountDao.createAccount(study, account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
@@ -430,8 +430,8 @@ public class ParticipantService {
         
         // Legacy behavior: a user can add an external ID to their account on an update, we refer to 
         // this as a "simple add." A researcher can assign an external ID to any user if it has not yet 
-        // been assigned (if it has been assigned, externalIdService.beginAssignExternalId() throws an 
-        // exception and aborts this entire call).
+        // been assigned (if it has been assigned, beginAssignExternalId() throws an exception and 
+        // aborts this entire call).
         
         boolean isSimpleAdd = allExternalIds.isEmpty() && participant.getExternalId() != null;
         boolean isResearcherAdd = callerRoles.contains(Roles.RESEARCHER)
@@ -463,8 +463,7 @@ public class ParticipantService {
         // to the account, attempt to save the external ID within an account transaction, and roll back 
         // the account if the external ID save fails. If the account save fails, catch the exception and 
         // rollback the external ID save. 
-        ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account,
-                participant.getExternalId());
+        ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
         try {
             accountDao.updateAccount(account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
@@ -498,7 +497,7 @@ public class ParticipantService {
         // after the account is created, for admin accounts, it can create some very strange security behavior 
         // for that account if it is signed in, so we MUST destroy the session. 
         Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
-        if (isNew || callerIsAdmin(callerRoles)) {
+        if (isNew || callerRoles.contains(Roles.ADMIN)) {
             // Sign out the user if you make alterations that will change the security state of 
             // the account. Otherwise very strange bugs can results.
             boolean clearCache = false;
@@ -743,7 +742,6 @@ public class ParticipantService {
         } else {
             account = accountDao.authenticate(study, update.getSignIn());
         }
-        
         // Verify the account matches the current caller
         if (!account.getId().equals(context.getUserId())) {
             throw new EntityNotFoundException(Account.class);
@@ -775,8 +773,7 @@ public class ParticipantService {
         }
         if (accountUpdated) {
             if (assignExternalId) {
-                ExternalIdentifier externalId = externalIdService.beginAssignExternalId(account,
-                        account.getExternalId());
+                ExternalIdentifier externalId = beginAssignExternalId(account, account.getExternalId());
                 try {
                     accountDao.updateAccount(account, (oneAccount) -> externalIdService.commitAssignExternalId(externalId));
                     updateRequestContext(externalId);
@@ -798,6 +795,43 @@ public class ParticipantService {
         // return updated StudyParticipant to update and return session
         return getParticipant(study, account.getId(), false);
     }
+    
+    protected ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
+        checkNotNull(account);
+        checkNotNull(account.getStudyId());
+        checkNotNull(account.getHealthCode());
+        
+        if (externalId == null) {
+            return null;
+        }
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = externalIdService.getExternalId(studyId, externalId, false);
+        if (identifier == null) {
+            return null;
+        }        
+        if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
+        }
+        // Whether already assigned or not, we will adjust the account, in case we are repairing
+        // an existing broken data association
+        identifier.setHealthCode(account.getHealthCode());
+        // For backwards compatibility while transitioning to multiple external IDs, assign the singular 
+        // external ID field. But don't do this if we're adding a second external ID (we should be 
+        // entirely migrated to multiple external ID usage before we need to assign multiple IDs).
+        if (account.getExternalId() == null) {
+            account.setExternalId(identifier.getIdentifier());    
+        }
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
+    }
+
 
     /**
      * To see any new association to a substudy in the session that we return from the update identifiers call, 

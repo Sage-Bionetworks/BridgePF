@@ -68,6 +68,10 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
                Objects.equals(studyId, other.studyId) && 
                Objects.equals(substudyId, other.substudyId);
     }
-    
-    
+
+    @Override
+    public String toString() {
+        return "HibernateAccountSubstudy [studyId=" + studyId + ", substudyId=" + substudyId + ", accountId="
+                + accountId + ", externalId=" + externalId + "]";
+    }
 }

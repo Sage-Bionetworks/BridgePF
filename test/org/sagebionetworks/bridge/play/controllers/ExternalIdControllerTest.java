@@ -148,6 +148,17 @@ public class ExternalIdControllerTest {
                 ExternalIdentifier.create(study.getStudyIdentifier(), "CCC"), true);
     }
     
+    @Test(expected = BadRequestException.class)
+    public void addExternalIdsLimited() throws Exception {
+        List<String> identifiers = Lists.newArrayListWithCapacity(21);
+        for (int i=0; i < 21; i++) {
+            identifiers.add("id"+i);
+        }
+        TestUtils.mockPlayContextWithJson(MAPPER.writeValueAsString(identifiers));
+
+        controller.addExternalIds();
+    }
+
     @Test
     public void noIdentifiers() throws Exception {
         TestUtils.mockPlayContextWithJson("[]");

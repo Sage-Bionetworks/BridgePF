@@ -133,31 +133,45 @@ public class BridgeUtils {
         }
         return null;
     }
+
+    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
+            ImmutableMap.of());
+    
+    public static class SubstudyAssociations {
+        private final Set<String> substudyIdsVisibleToCaller;
+        private final Map<String, String> externalIdsVisibleToCaller;
+        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
+            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
+            this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
+        }
+        public Set<String> getSubstudyIdsVisibleToCaller() {
+            return substudyIdsVisibleToCaller;
+        }
+        public Map<String, String> getExternalIdsVisibleToCaller() {
+            return externalIdsVisibleToCaller;
+        }
+    }
     
     /**
      * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
      * substudy memberships (then they are global and see everything).
      */
-    public static Set<String> substudyIdsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
-        if (accountSubstudies == null) {
-            return ImmutableSet.of();
+    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
+        if (accountSubstudies == null || accountSubstudies.isEmpty()) {
+            return NO_ASSOCIATIONS;
         }
+        ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
+        ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        return accountSubstudies.stream()
-                .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
-                .map(AccountSubstudy::getSubstudyId)
-                .collect(BridgeCollectors.toImmutableSet());
-    }
-    
-    public static Map<String, String> externalIdsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) { 
-        if (accountSubstudies == null) {
-            return ImmutableMap.of();
+        for (AccountSubstudy acctSubstudy : accountSubstudies) {
+            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
+                substudyIds.add(acctSubstudy.getSubstudyId());
+                if (acctSubstudy.getExternalId() != null) {
+                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
+                }
+            }
         }
-        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        return accountSubstudies.stream()
-                .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
-                .filter(as -> as.getExternalId() != null)
-                .collect(Collectors.toMap(AccountSubstudy::getSubstudyId, AccountSubstudy::getExternalId));
+        return new SubstudyAssociations(substudyIds.build(), externalIds.build()); 
     }
     
     public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {

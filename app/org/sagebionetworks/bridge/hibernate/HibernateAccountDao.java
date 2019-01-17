@@ -3,16 +3,11 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
-import static org.sagebionetworks.bridge.BridgeUtils.substudyIdsVisibleToCaller;
-import static org.sagebionetworks.bridge.BridgeUtils.externalIdsVisibleToCaller;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -30,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -554,19 +550,20 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
-        Set<String> substudyIds = new HashSet<>();
-        Map<String, String> externalIds = new HashMap<>();
+        SubstudyAssociations assoc = null;
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                     ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            substudyIds = substudyIdsVisibleToCaller(accountSubstudies);
-            externalIds = externalIdsVisibleToCaller(accountSubstudies);
+            
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies);
+        } else {
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
         }
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(), externalIds,
-                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), studyId,
-                substudyIds);
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
+                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
+                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
     }
 }

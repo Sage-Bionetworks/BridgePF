@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,42 +120,13 @@ public class ExternalIdService {
         externalIdDao.deleteExternalId(externalId);
     }
     
-    public ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
-        checkNotNull(account);
-        checkNotNull(account.getStudyId());
-        checkNotNull(account.getHealthCode());
-        
-        if (externalId == null) {
-            return null;
-        }
-        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = externalIdDao.getExternalId(studyId, externalId);
-        if (identifier == null) {
-            return null;
-        }        
-        if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
-            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
-        }
-        // Whether already assigned or not, we will adjust the account, in case we are repairing
-        // an existing broken data association
-        identifier.setHealthCode(account.getHealthCode());
-        // For backwards compatibility while transitioning to multiple external IDs, assign the singular 
-        // external ID field. But don't do this if we're adding a second external ID (we should be 
-        // entirely migrated to multiple external ID usage before we need to assign multiple IDs).
-        if (account.getExternalId() == null) {
-            account.setExternalId(identifier.getIdentifier());    
-        }
-        if (identifier.getSubstudyId() != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                    identifier.getSubstudyId(), account.getId());
-            acctSubstudy.setExternalId(identifier.getIdentifier());
-            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
-                account.getAccountSubstudies().add(acctSubstudy);    
-            }
-        }
-        return identifier;
-    }
-    
+    /**
+     * There is a substantial amount of set-up that must occur before this call can be 
+     * made, and the associated account record must be updated as well. See 
+     * ParticipantService.beginAssignExternalId() which performs this setup, and is 
+     * always called before the participant service calls this method. This method is 
+     * not simply a method to update an external ID record.
+     */
     public void commitAssignExternalId(ExternalIdentifier externalId) {
         if (externalId != null) {
             externalIdDao.commitAssignExternalId(externalId);    

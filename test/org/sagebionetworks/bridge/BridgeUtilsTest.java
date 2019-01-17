@@ -61,7 +61,8 @@ public class BridgeUtilsTest {
         AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
-        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(accountSubstudies);
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getSubstudyIdsVisibleToCaller();
         
         assertEquals(ImmutableSet.of("substudyA", "substudyB"), visibles);
     }
@@ -73,7 +74,8 @@ public class BridgeUtilsTest {
         AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
-        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(accountSubstudies);
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getSubstudyIdsVisibleToCaller();
         
         assertEquals(ImmutableSet.of("substudyA", "substudyB", "substudyC"), visibles);
     }
@@ -83,7 +85,8 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
         
-        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(ImmutableSet.of());
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(ImmutableSet.of())
+                .getSubstudyIdsVisibleToCaller();
         
         assertEquals(ImmutableSet.of(), visibles);
     }    
@@ -93,7 +96,8 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
         
-        Set<String> visibles = BridgeUtils.substudyIdsVisibleToCaller(null);
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(null)
+                .getSubstudyIdsVisibleToCaller();
         
         assertEquals(ImmutableSet.of(), visibles);
     }
@@ -111,7 +115,8 @@ public class BridgeUtilsTest {
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
-        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(accountSubstudies);
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getExternalIdsVisibleToCaller();
         
         assertEquals(ImmutableMap.of("substudyA", "extA", "substudyB", "extB"), visibles);
     }
@@ -126,7 +131,8 @@ public class BridgeUtilsTest {
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
-        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(accountSubstudies);
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getExternalIdsVisibleToCaller();
         
         assertEquals(ImmutableMap.of("substudyA", "extA", "substudyB", "extB", "substudyC", "extC"), visibles);
     }    
@@ -136,7 +142,8 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
         
-        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(ImmutableSet.of());
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(ImmutableSet.of())
+                .getExternalIdsVisibleToCaller();
         
         assertEquals(ImmutableMap.of(), visibles);
     }      
@@ -146,7 +153,8 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
         
-        Map<String,String> visibles = BridgeUtils.externalIdsVisibleToCaller(ImmutableSet.of());
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(null)
+                .getExternalIdsVisibleToCaller();
         
         assertEquals(ImmutableMap.of(), visibles);
     }

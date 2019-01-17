@@ -54,6 +54,9 @@ public class ExternalIdController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         List<String> identifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
+        if (identifiers.size() > 20) {
+            throw new BadRequestException("Bulk identifier import limit is 20, " + identifiers.size() + " were submitted.");
+        }
         
         for (String externalIdentifier : identifiers) {
             ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);

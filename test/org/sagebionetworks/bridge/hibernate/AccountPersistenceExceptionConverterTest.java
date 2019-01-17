@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -190,11 +189,11 @@ public class AccountPersistenceExceptionConverterTest {
         assertEquals("External ID has already been used by another account.", result.getMessage());
         assertEquals("userId", ((EntityAlreadyExistsException)result).getEntityKeys().get("userId"));
         
-        verify(accountDao, never()).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
+        verify(accountDao).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
     }
     
     @Test
-    public void entityAlreadyExistsForExternalIdWhenNoSubstudyMatches() {
+    public void entityAlreadyExistsForExternalIdWhenSubstudyOutsideOfCallerSubstudy() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         
@@ -219,9 +218,9 @@ public class AccountPersistenceExceptionConverterTest {
         PersistenceException pe = new PersistenceException(cve);
         
         RuntimeException result = converter.convert(pe, account);
-        assertEquals(ConstraintViolationException.class, result.getClass());
+        assertEquals(EntityAlreadyExistsException.class, result.getClass());
         
-        verify(accountDao, never()).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
+        verify(accountDao).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "externalIdA"));
     }
 
     // This should not happen, we're testing that not finding an account with this message doesn't break the converter.

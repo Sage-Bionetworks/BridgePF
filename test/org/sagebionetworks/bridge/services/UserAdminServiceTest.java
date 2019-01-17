@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -197,7 +198,7 @@ public class UserAdminServiceTest {
             account.setId(BridgeUtils.generateGuid());
             account.setStudyId(session.getStudyIdentifier().getIdentifier());
             account.setHealthCode(session.getHealthCode());
-            ExternalIdentifier extIdObj = externalIdService.beginAssignExternalId(account, externalId);
+            ExternalIdentifier extIdObj = setupExternalId(account, externalId);
             externalIdService.commitAssignExternalId(extIdObj);
         } finally {
             session = null;
@@ -205,6 +206,27 @@ public class UserAdminServiceTest {
             study.setExternalIdValidationEnabled(false);
             externalIdService.deleteExternalIdPermanently(study, idForTest);
         }
+    }
+    
+    // This behavior is very similar to ParticipantService.beginAssignExternalId().
+    private ExternalIdentifier setupExternalId(Account account, String externalId) {
+        ExternalIdentifier identifier = externalIdService.getExternalId(TestConstants.TEST_STUDY, externalId, false);
+        if (identifier == null) {
+            return null;
+        }        
+        identifier.setHealthCode(account.getHealthCode());
+        if (account.getExternalId() == null) {
+            account.setExternalId(identifier.getIdentifier());    
+        }
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
     }
 
     private DynamoExternalIdentifier getDynamoExternalIdentifier(UserSession session, String externalId) {

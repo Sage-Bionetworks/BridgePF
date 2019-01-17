@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -104,9 +105,10 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             nextPageOffsetKey = null;
         }
         
-        QueryResultPage<DynamoExternalIdentifier> queryResultPage;
         List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
-
+        
+        // initial estimate: read capacity consumed will equal 1
+        // see https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/        
         int capacityAcquired = 1;
         int capacityConsumed = 0;
         do {
@@ -115,7 +117,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             DynamoDBQueryExpression<DynamoExternalIdentifier> query = createGetQuery(studyId, nextPageOffsetKey,
                     PAGE_SCAN_LIMIT, idFilter, assignmentFilter);
             
-            queryResultPage = mapper.queryPage(DynamoExternalIdentifier.class, query);
+            QueryResultPage<DynamoExternalIdentifier> queryResultPage = mapper.queryPage(
+                    DynamoExternalIdentifier.class, query);
             for (ExternalIdentifier id : queryResultPage.getResults()) {
                 if (externalIds.size() == pageSize) {
                     // return no more than pageSize externalIdentifiers
@@ -127,6 +130,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             }
             capacityConsumed = queryResultPage.getConsumedCapacity().getCapacityUnits().intValue();
             LOG.debug("Capacity acquired: " + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
+            
+            // use capacity consumed by last request to as our estimate for the next request
+            capacityAcquired = capacityConsumed;
             
             if (queryResultPage.getCount() > pageSize) {
                 // we retrieved more records from Dynamo than we are returning
@@ -175,7 +181,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             DynamoExternalIdentifier key = new DynamoExternalIdentifier(
                     externalId.getStudyId(), externalId.getIdentifier());
             if (externalId.getHealthCode() == null || mapper.load(key) == null) {
-                throw new IllegalStateException("Invalid external ID assignment.");
+                throw new ConcurrentModificationException("External ID was concurrently deleted or assigned");
             }
             try {
                 mapper.save(externalId, getHealthCodeAssignedExpression(false));
