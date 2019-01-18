@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -36,6 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
@@ -69,7 +68,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     final void setConfig(Config config) {
         setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
-
+    
     // allow unit test to mock this
     final void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
         this.getExternalIdRateLimiter = getExternalIdRateLimiter;
@@ -79,7 +78,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
-
+    
     @Override
     public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
         checkNotNull(studyId);
@@ -105,6 +104,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             nextPageOffsetKey = null;
         }
         
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        
         List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
         
         // initial estimate: read capacity consumed will equal 1
@@ -124,8 +125,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                     // return no more than pageSize externalIdentifiers
                     break;
                 }
+                
+                // Users see all external IDs, but they don't see the substudy membership of an external ID
+                // unless they meet the standard rules
+                boolean visible = callerSubstudies.isEmpty() || callerSubstudies.contains(id.getSubstudyId());
+                String substudyId = (visible) ? id.getSubstudyId() : null;
+                
                 ExternalIdentifierInfo info = new ExternalIdentifierInfo(
-                        id.getIdentifier(), id.getSubstudyId(), id.getHealthCode() != null);
+                        id.getIdentifier(), substudyId, id.getHealthCode() != null);
                 externalIds.add(info);
             }
             capacityConsumed = queryResultPage.getConsumedCapacity().getCapacityUnits().intValue();
@@ -167,13 +174,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     /**
-     * There are two methods in the ExternalIdService that are intended to be called in order: 
-     * beginAssignExternalId() which will return an external ID, and commitAssignExternalId() 
-     * which calls the DAO to persist that external ID in the context of an account transaction. 
-     * This allows us to abandon a database update if the DynamoDB update fails. The whole thing 
-     * is then wrapped in a catch statement that undoes the DynamoDB update if the database 
-     * update fails. This method also checks a couple of things before these persistence calls: 
-     * that a health code is assigned and that the external ID does exist.
+     * There is a substantial amount of set-up that must occur before this call can be 
+     * made, and the associated account record must be updated as well. See 
+     * ParticipantService.beginAssignExternalId() which performs this setup, and is 
+     * always called before the participant service calls this method. This method is 
+     * not simply a method to update an external ID record.
      */
     @Override
     public void commitAssignExternalId(ExternalIdentifier externalId) {
@@ -216,14 +221,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
     }
     
-    /**
-     * Get the count query (applies filters) and then sets an offset key and the limit to a page of records, 
-     * plus one, to determine if there are records beyond the current page. 
-     */
     private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId, String offsetKey,
             int pageSize, String idFilter, Boolean assignmentFilter) {
-
-        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        
         DynamoDBQueryExpression<DynamoExternalIdentifier> query =
                 new DynamoDBQueryExpression<DynamoExternalIdentifier>();
         if (idFilter != null) {
@@ -234,12 +234,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         if (assignmentFilter != null) {
             query.withQueryFilterEntry(HEALTH_CODE, new Condition()
                 .withComparisonOperator(assignmentFilter.booleanValue() ? NOT_NULL : NULL));
-        }
-        if (callerSubstudyIds != null && !callerSubstudyIds.isEmpty()) {
-            query.withQueryFilterEntry(SUBSTUDY_ID, new Condition()
-                .withAttributeValueList(callerSubstudyIds.stream()
-                        .map(id -> new AttributeValue(id)).collect(Collectors.toList()))
-                .withComparisonOperator(ComparisonOperator.IN));
         }
         query.withHashKeyValues(new DynamoExternalIdentifier(studyId.getIdentifier(), null)); // no healthCode.
 

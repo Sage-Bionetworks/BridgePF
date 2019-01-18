@@ -431,7 +431,7 @@ public class BridgeSpringConfig {
                                                                   DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
-
+    
     @Bean(name = "activitySchedulePlanGuidIndex")
     @Autowired
     public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDBClient dynamoDBClient,

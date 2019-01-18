@@ -55,6 +55,21 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
     
+    public static class SubstudyAssociations {
+        private final Set<String> substudyIdsVisibleToCaller;
+        private final Map<String, String> externalIdsVisibleToCaller;
+        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
+            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
+            this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
+        }
+        public Set<String> getSubstudyIdsVisibleToCaller() {
+            return substudyIdsVisibleToCaller;
+        }
+        public Map<String, String> getExternalIdsVisibleToCaller() {
+            return externalIdsVisibleToCaller;
+        }
+    }
+
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
@@ -65,6 +80,8 @@ public class BridgeUtils {
     private static final int ONE_MINUTE = 60;
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
+            ImmutableMap.of());
 
     // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
     // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
@@ -132,24 +149,6 @@ public class BridgeUtils {
             }
         }
         return null;
-    }
-
-    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
-            ImmutableMap.of());
-    
-    public static class SubstudyAssociations {
-        private final Set<String> substudyIdsVisibleToCaller;
-        private final Map<String, String> externalIdsVisibleToCaller;
-        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
-            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
-            this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
-        }
-        public Set<String> getSubstudyIdsVisibleToCaller() {
-            return substudyIdsVisibleToCaller;
-        }
-        public Map<String, String> getExternalIdsVisibleToCaller() {
-            return externalIdsVisibleToCaller;
-        }
     }
     
     /**

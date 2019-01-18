@@ -22,7 +22,6 @@ import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -30,7 +29,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
@@ -55,6 +53,7 @@ import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -122,7 +121,7 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void getExternalIds() {
-        setupQuery(ImmutableList.of("foo1", "foo2"));
+        setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY,
                 "offsetKey", 50, "offset", true);
@@ -173,7 +172,7 @@ public class DynamoExternalIdDaoMockTest {
     
     @Test
     public void getExternalIdsNullValues() {
-        setupQuery(ImmutableList.of("foo1", "foo2"));
+        setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         // Note that the page size is enforced in the service, and should never be 0
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY,
@@ -195,7 +194,7 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void getExternalIdsMismatchedIdFilterClearsOffsetKey() {
-        setupQuery(ImmutableList.of("foo1", "foo2"));
+        setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         dao.getExternalIds(TEST_STUDY, "offsetKey", 50, "foo", true);
 
@@ -215,29 +214,36 @@ public class DynamoExternalIdDaoMockTest {
     }
 
     @Test
-    public void getExternalIdsRespectsSubstudyFiltering() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        setupQuery(ImmutableList.of("foo1", "foo2"));
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(substudies).build());
-
-        dao.getExternalIds(TEST_STUDY, null, 50, null, false);
-
-        verify(mapper).queryPage(eq(DynamoExternalIdentifier.class), queryCaptor.capture());
-
-        DynamoDBQueryExpression<DynamoExternalIdentifier> query = queryCaptor.getValue();
-
-        List<AttributeValue> substudyAttList = substudies.stream().map(substudyId -> new AttributeValue(substudyId))
-                .collect(Collectors.toList());
-
-        Condition substudyCondition = query.getQueryFilter().get(DynamoExternalIdDao.SUBSTUDY_ID);
-        assertEquals(ComparisonOperator.IN.toString(), substudyCondition.getComparisonOperator());
-        assertEquals(substudyAttList, substudyCondition.getAttributeValueList());
+    public void getExternalIdsFiltersSubstudyInExternalIdentifierInfo() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
+        
+        // Verify here that prior to migration, a lack of association doesn't break anything
+        DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId1");
+        extId1.setSubstudyId(null); // Should see this substudy
+        DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId2");
+        extId2.setSubstudyId("substudyA");
+        DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId3");
+        extId3.setSubstudyId("substudyB");
+        DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId4");
+        extId4.setSubstudyId("substudyC");
+        DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId5");
+        extId5.setSubstudyId("substudyD");
+        setupQueryOfIds(ImmutableList.of(extId1, extId2, extId3, extId4, extId5));
+        
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> externalIds = dao.getExternalIds(TEST_STUDY, null, 10,
+                null, null);
+        assertNull(externalIds.getItems().get(0).getSubstudyId());
+        assertEquals("substudyA", externalIds.getItems().get(1).getSubstudyId());
+        assertEquals("substudyB", externalIds.getItems().get(2).getSubstudyId());
+        assertNull(externalIds.getItems().get(3).getSubstudyId());
+        assertNull(externalIds.getItems().get(4).getSubstudyId());
     }
-
+    
     @Test
     public void getExternalIdsPaged() throws Exception {
         int pageSize = 10;
-        setupQuery(ImmutableList.of("AAA", "BBB", "CCC"));
+        setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
                 .getExternalIds(new StudyIdentifierImpl("studyId"), null, pageSize, null, false);
@@ -255,7 +261,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIdsFirstOfTwoPages() throws Exception {
         // first page has 3 ids, so second page should not be retrieved
         int pageSize = 3;
-        setupQuery(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
+        setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
                 .getExternalIds(new StudyIdentifierImpl("studyId"), null, pageSize, null, false);
@@ -273,7 +279,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIdsAggregateTwoPages() throws Exception {
         // first page has 3 ids, second (and final) page has 2 ids, DAO should return 5 ids
         int pageSize = 10;
-        setupQuery(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
+        setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
                 .getExternalIds(new StudyIdentifierImpl("studyId"), null, pageSize, null, false);
@@ -291,7 +297,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIdsAggregateTwoPagesTruncated() throws Exception {
         // first page has 3 ids, second page has 2 ids. DAO should return 4 ids
         int pageSize = 4;
-        setupQuery(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
+        setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
                 .getExternalIds(new StudyIdentifierImpl("studyId"), null, pageSize, null, false);
@@ -308,7 +314,7 @@ public class DynamoExternalIdDaoMockTest {
     @Test
     public void getExternalIdsQueryResultsExceedPageSize() {
         int pageSize = 3;
-        setupQuery(ImmutableList.of("AAA", "BBB", "CCC", "DDD", "EEE"), ImmutableList.of("FFF", "GGG"));
+        setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC", "DDD", "EEE"), ImmutableList.of("FFF", "GGG"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao.getExternalIds(TEST_STUDY,
                 null, pageSize, null, false);
@@ -439,7 +445,7 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void pagingWithFilterShorterThanKeyWorks() {
-        setupQuery(ImmutableList.of("foo1", "foo2"));
+        setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY,
                 "CCCCC", 5, "CC", null);
@@ -463,7 +469,7 @@ public class DynamoExternalIdDaoMockTest {
 
     @Test
     public void pagingWithFilterLongerThanKeyWorks() {
-        setupQuery(ImmutableList.of("foo1", "foo2"));
+        setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_STUDY, "CCCCC", 5,
                 "CCCCCCCCCC", null);
@@ -482,10 +488,14 @@ public class DynamoExternalIdDaoMockTest {
         assertEquals(TEST_STUDY_IDENTIFIER, id.getStudyId());
         assertNull(id.getIdentifier());
     }
-
-    @SuppressWarnings("unchecked")
+    
     @SafeVarargs
-    private final void setupQuery(List<String>... lists) {
+    private final void setupQueryOfIds(List<DynamoExternalIdentifier>... lists) {
+        finishMocking(Arrays.asList(lists));
+    }
+    
+    @SafeVarargs
+    private final void setupQueryOfStrings(List<String>... lists) {
         // Convert lists of strings to lists of DynamExternalIdentifiers
         List<List<DynamoExternalIdentifier>> extIdLists = Arrays.asList(lists).stream().map(oneList -> {
             return oneList.stream()
@@ -493,6 +503,10 @@ public class DynamoExternalIdDaoMockTest {
                 .collect(Collectors.toList());
         }).collect(Collectors.toList());
         
+        finishMocking(extIdLists);
+    }
+    
+    private void finishMocking(List<List<DynamoExternalIdentifier>> extIdLists) {
         // Now mock each result
         List<QueryResultPage<DynamoExternalIdentifier>> pages = Lists.newArrayList();
         for (int i = 0; i < extIdLists.size(); i++) {

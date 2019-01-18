@@ -22,8 +22,9 @@ public interface ExternalIdDao {
     ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
 
     /**
-     * Get a forward-only cursor page of results, filtered for the caller's substudy memberships, and optionally
-     * by the start of the identifier or its assignment status (assigned or not). 
+     * Get a forward-only cursor page of results. All external IDs for the study are returned, however, if a 
+     * given substudy ID association is a substudy that the user is not associated to (if the caller is associated 
+     * to any substudies), then the external ID will have a substudy of null. 
      */
     ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
