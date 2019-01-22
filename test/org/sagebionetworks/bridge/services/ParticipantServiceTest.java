@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
@@ -1043,7 +1044,41 @@ public class ParticipantServiceTest {
                 .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
         accountSubstudies.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+    }
+    
+    @Test
+    public void addingSubstudyToAccountClearsCache() {
+        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        StudyParticipant participant = mockSubstudiesInRequest(ImmutableSet.of(), substudies, Roles.ADMIN);
         
+        mockHealthCodeAndAccountRetrieval();
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
+        
+        participantService.updateParticipant(STUDY, participant);
+        
+        assertEquals(2, account.getAccountSubstudies().size());
+        verify(externalIdService, never()).unassignExternalId(any(), any());
+        verify(cacheProvider).removeSessionByUserId(ID);
+    }
+    
+    @Test
+    public void removingSubstudyFromAccountClearsCache() { 
+        Set<String> substudies = ImmutableSet.of("substudyA");
+        StudyParticipant participant = mockSubstudiesInRequest(ImmutableSet.of(), substudies, Roles.ADMIN);
+        
+        mockHealthCodeAndAccountRetrieval();
+        AccountSubstudy asA = AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID);
+        account.getAccountSubstudies().add(asA);
+        
+        AccountSubstudy asB = AccountSubstudy.create(STUDY.getIdentifier(), "substudyB", ID);
+        asB.setExternalId("extB");
+        account.getAccountSubstudies().add(asB);
+        
+        participantService.updateParticipant(STUDY, participant);
+        
+        // We've tested this collection more thoroughly in updateParticipantTransfersSubstudyIdsForAdmins()
+        assertEquals(1, account.getAccountSubstudies().size());
+        verify(externalIdService).unassignExternalId(account, "extB");
         verify(cacheProvider).removeSessionByUserId(ID);
     }
     
@@ -1058,6 +1093,7 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, participant);
         
+        // We've tested this collection more thoroughly in updateParticipantTransfersSubstudyIdsForAdmins()
         verify(cacheProvider, never()).removeSessionByUserId(any());
     }    
     
@@ -1096,7 +1132,6 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void updateParticipantWithNoAccount() {
         doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(ACCOUNT_ID);
@@ -1565,7 +1600,6 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, PARTICIPANT, false);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void updateIdentifiersFiltersSubstudyPermissions() {
         // caller in question is in substudyB
@@ -1611,18 +1645,19 @@ public class ParticipantServiceTest {
         
         verify(accountDao).updateAccount(eq(account), notNull(Consumer.class));
         
-        assertEquals("newExternalId", Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId());
+        assertEquals(2, account.getAccountSubstudies().size());
+        
+        Set<String> substudyIds = account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId).collect(Collectors.toSet());
+        Set<String> externalIds = account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getExternalId).collect(Collectors.toSet());
+        
+        assertEquals(ImmutableSet.of("substudyA", "substudyB"), substudyIds);
+        assertEquals(ImmutableSet.of(EXTERNAL_ID, "newExternalId"), externalIds);
         
         // The RequestContext should be updated
         assertEquals(ImmutableSet.of("substudyA", "substudyB"), BridgeUtils.getRequestContext().getCallerSubstudies());
     }
-    
-    
-    // when external ID does not exist
-    
-    // when external IDs are not managed
-    
-    // 
     
     @Test
     public void updateIdentifiersEmailSignInUpdatePhone() {
@@ -1837,9 +1872,12 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdRequiredOnSignup(true);
         
+        // developer
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withExternalId(null).build();
         
         participantService.createParticipant(STUDY, participant, false);
+        // called with null, which does nothing.
+        verify(externalIdService).commitAssignExternalId(null);
     }
     
     @Test
@@ -2025,6 +2063,8 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         assertEquals("newExternalId", account.getExternalId());
+        // called with null, which does nothing.
+        verify(externalIdService).commitAssignExternalId(null);
     }
 
     @Test
@@ -2116,16 +2156,19 @@ public class ParticipantServiceTest {
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, null, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), eq(account), any());
+        verify(externalIdService).commitAssignExternalId(null);
     }
     @Test
     public void createParticipantExternalIdAddedUpdatesExternalId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         when(accountDao.constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD)).thenReturn(account);
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID, false)).thenReturn(EXT_ID);
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), eq(account), any());
+        verify(externalIdService).commitAssignExternalId(EXT_ID);
     }
     @Test
     public void updateParticipantValidatesManagedExternalId() {
@@ -2185,6 +2228,7 @@ public class ParticipantServiceTest {
         
         verify(accountDao).updateAccount(eq(account), notNull(Consumer.class));
         assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService).commitAssignExternalId(EXT_ID);
     }
     @Test
     public void updateParticipantExternalIdsExistNoneAddedDoesNothing() {
@@ -2245,6 +2289,7 @@ public class ParticipantServiceTest {
         
         verify(accountDao).updateAccount(eq(account), notNull(Consumer.class));
         assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService).commitAssignExternalId(EXT_ID);
     }
     @SuppressWarnings("unchecked")
     @Test
@@ -2252,9 +2297,10 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         mockAccountRetrievalWithSubstudyD();
         account.setExternalId(null);
-
+        
+        ExternalIdentifier nextExtId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId", false))
-            .thenReturn(ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId"));
+            .thenReturn(nextExtId);
 
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
         
@@ -2262,6 +2308,7 @@ public class ParticipantServiceTest {
         
         verify(accountDao).updateAccount(eq(account), notNull(Consumer.class));
         assertEquals("newExternalId", account.getExternalId());
+        verify(externalIdService).commitAssignExternalId(nextExtId);
     }
     @Test
     public void updateParticipantAsResearcherExternalIdsExistAndMatchOneAddedDoesNothing() {
@@ -2368,18 +2415,38 @@ public class ParticipantServiceTest {
     
     @SuppressWarnings("unchecked")
     @Test
-    public void researcherCanChangeExternalIdOnUpdate() {
+    public void researcherCanChangeUnmanagedExternalIdOnUpdate() {
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
-        
+
         participantService.updateParticipant(STUDY, participant);
-        
+
         verify(accountDao).updateAccount(accountCaptor.capture(), notNull(Consumer.class));
         assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
+        // But they will not assign because there's no record to assign.
+        verify(externalIdService).commitAssignExternalId(null);
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void researcherCanChangeManagedExternalIdOnUpdate() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(true);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId("newExternalId").build();
+        ExternalIdentifier newExtId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId", false)).thenReturn(newExtId);
+
+        participantService.updateParticipant(STUDY, participant);
+
+        verify(accountDao).updateAccount(accountCaptor.capture(), notNull(Consumer.class));
+        assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
+        verify(externalIdService).commitAssignExternalId(newExtId);
+    }
+    
     @Test
     public void assignExternalId() {
         mockHealthCodeAndAccountRetrieval();
@@ -2813,9 +2880,9 @@ public class ParticipantServiceTest {
         return study;
     }
     
-    private StudyParticipant mockSubstudiesInRequest(Set<String> callerSubstudies, Set<String> participantSubstudies, Roles... roles) {
+    private StudyParticipant mockSubstudiesInRequest(Set<String> callerSubstudies, Set<String> participantSubstudies, Roles... callerRoles) {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies)
-                .withCallerRoles( (roles.length == 0) ? null : ImmutableSet.copyOf(roles)).build());
+                .withCallerRoles( (callerRoles.length == 0) ? null : ImmutableSet.copyOf(callerRoles)).build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withSubstudyIds(participantSubstudies).build();

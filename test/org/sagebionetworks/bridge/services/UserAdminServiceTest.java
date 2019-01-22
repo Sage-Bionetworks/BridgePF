@@ -197,7 +197,7 @@ public class UserAdminServiceTest {
             Account account = Account.create();
             account.setId(BridgeUtils.generateGuid());
             account.setStudyId(session.getStudyIdentifier().getIdentifier());
-            account.setHealthCode(session.getHealthCode());
+            account.setHealthCode(BridgeUtils.generateGuid());
             ExternalIdentifier extIdObj = setupExternalId(account, externalId);
             externalIdService.commitAssignExternalId(extIdObj);
         } finally {
