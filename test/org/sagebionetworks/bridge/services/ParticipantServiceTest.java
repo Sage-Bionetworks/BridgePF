@@ -2040,6 +2040,7 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, PARTICIPANT);
 
         assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService).commitAssignExternalId(null);
     }
 
     @Test
