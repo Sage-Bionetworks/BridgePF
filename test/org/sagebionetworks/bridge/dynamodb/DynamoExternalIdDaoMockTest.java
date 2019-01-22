@@ -220,7 +220,7 @@ public class DynamoExternalIdDaoMockTest {
         
         // Verify here that prior to migration, a lack of association doesn't break anything
         DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId1");
-        extId1.setSubstudyId(null); // Should see this substudy
+        extId1.setSubstudyId(null); // should see this external identifier record
         DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId2");
         extId2.setSubstudyId("substudyA");
         DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId3");
@@ -233,11 +233,16 @@ public class DynamoExternalIdDaoMockTest {
         
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> externalIds = dao.getExternalIds(TEST_STUDY, null, 10,
                 null, null);
-        assertNull(externalIds.getItems().get(0).getSubstudyId());
-        assertEquals("substudyA", externalIds.getItems().get(1).getSubstudyId());
-        assertEquals("substudyB", externalIds.getItems().get(2).getSubstudyId());
-        assertNull(externalIds.getItems().get(3).getSubstudyId());
-        assertNull(externalIds.getItems().get(4).getSubstudyId());
+        assertExternalId(externalIds.getItems().get(0), "extId1", null);  
+        assertExternalId(externalIds.getItems().get(1), "extId2", "substudyA");
+        assertExternalId(externalIds.getItems().get(2), "extId3", "substudyB");
+        assertExternalId(externalIds.getItems().get(3), "extId4", null);
+        assertExternalId(externalIds.getItems().get(4), "extId5", null);
+    }
+    
+    private void assertExternalId(ExternalIdentifierInfo info, String expectedExternalId, String substudyId) {
+        assertEquals(expectedExternalId, info.getIdentifier());
+        assertEquals(substudyId, info.getSubstudyId());
     }
     
     @Test
