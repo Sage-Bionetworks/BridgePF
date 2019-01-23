@@ -259,15 +259,28 @@ public class AuthenticationService {
         }
 
         try {
-            // Since caller has no roles, no roles can be assigned on sign up. Right now public sign up cannot
-            // assign the user to a substudy.
+            // This call is exposed without authentication, so the request context has no roles, and no roles 
+            // can be assigned to this user.
             return participantService.createParticipant(study, participant, true);
         } catch(EntityAlreadyExistsException e) {
+            AccountId accountId = null;
+            // Clashes in the reassignment of external identifiers will now roll back account creation and 
+            // throw a different exception EAEE that we must catch and address here.
+            if ("ExternalIdentifier".equals(e.getEntityClass())) {
+                String identifier = (String)e.getEntityKeys().get("identifier");
+                accountId = AccountId.forExternalId(study.getIdentifier(), identifier);
+                LOG.info("Sign up attempt using assigned external ID '"+identifier+"'");
+            } else if ("Account".equals(e.getEntityClass())) {
+                String userId = (String)e.getEntityKeys().get("userId");
+                accountId = AccountId.forId(study.getIdentifier(), userId);    
+                LOG.info("Sign up attempt using credential that exists in account '"+userId+"'");
+            } else {
+                LOG.error("Sign up attempt threw unanticipated EntityAlreadyExistsException: " + e.getMessage());
+                return null;
+            }
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
             // reveals that the credential has been taken.
-            LOG.info("Sign up attempt using credential that exists in account '"+e.getEntityKeys().get("userId")+"'");
-            AccountId accountId = AccountId.forId(study.getIdentifier(), (String)e.getEntityKeys().get("userId"));
             accountWorkflowService.notifyAccountExists(study, accountId);
             return null;
         }
@@ -325,14 +338,22 @@ public class AuthenticationService {
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
-        ExternalIdentifier externalIdentifier = externalIdService.getExternalId(
-                study.getStudyIdentifier(), externalId);        
-        if (externalIdentifier == null) {
-            throw new EntityNotFoundException(ExternalIdentifier.class);
+        // Throws an EntityNotFoundException if the external ID does not exist.
+        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(), externalId, true);
+        
+        // The *caller* must be associated to the external IDs substudy, if any
+        if (BridgeUtils.filterForSubstudy(externalIdObj) == null) {
+            throw new EntityNotFoundException(Account.class);
         }
+
         AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
         Account account = accountDao.getAccount(accountId);
         
+        // The *target* must be associated to the substudy, if any
+        boolean existsButWrongSubstudy = account != null && BridgeUtils.filterForSubstudy(account) == null;
+        if (existsButWrongSubstudy) {
+            throw new EntityNotFoundException(Account.class);
+        }
         // No account and user doesn't want to create it, treat as a 404
         if (account == null && !createAccount) {
             throw new EntityNotFoundException(Account.class);

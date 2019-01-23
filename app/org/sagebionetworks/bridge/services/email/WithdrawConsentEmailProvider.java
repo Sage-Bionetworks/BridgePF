@@ -26,7 +26,6 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     private static final String CONSENT_EMAIL_SUBJECT = "Notification of consent withdrawal for %s";
     private static final String SUB_TYPE_HTML = "html";
 
-    private final String externalId;
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -34,9 +33,8 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     private final long withdrewOn;
     private final List<String> recipients;
     
-    public WithdrawConsentEmailProvider(Study study, String externalId, Account account, Withdrawal withdrawal, long withdrewOn) {
+    public WithdrawConsentEmailProvider(Study study, Account account, Withdrawal withdrawal, long withdrewOn) {
         super(study);
-        this.externalId = externalId;
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.email = account.getEmail();
@@ -89,12 +87,7 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     }
     
     private String getUserLabel() {
-        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(firstName), nullSafeCleanHtml(lastName),
-                email);
-        if (externalId != null) {
-            label += " (external ID: " + nullSafeCleanHtml(externalId) + ") ";
-        }
-        return label;
+        return String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(firstName), nullSafeCleanHtml(lastName), email);
     }
 
     // Helper method to strip HTML from a string so it can be safely printed in the Withdraw Consent email. Converts

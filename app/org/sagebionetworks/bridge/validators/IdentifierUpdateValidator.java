@@ -64,7 +64,7 @@ public class IdentifierUpdateValidator implements Validator {
             } else if (study.isExternalIdValidationEnabled()) {
                 // the same validation we perform when adding a participant where external ID is required on sign up.
                 ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
-                        update.getExternalIdUpdate());
+                        update.getExternalIdUpdate(), false);
                 if (externalId == null) {
                     errors.rejectValue("externalIdUpdate", "is not a valid external ID");
                 }

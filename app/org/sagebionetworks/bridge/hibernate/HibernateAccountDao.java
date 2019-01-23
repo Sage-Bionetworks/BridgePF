@@ -22,10 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -50,7 +49,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -304,7 +302,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void createAccount(Study study, Account account) {
+    public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -313,12 +311,12 @@ public class HibernateAccountDao implements AccountDao {
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account. We don't verify substudies because this is handled by validation
-        hibernateHelper.create(account, null);
+        hibernateHelper.create(account, afterPersistConsumer);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account) {
+    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
         String accountId = account.getId();
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
@@ -339,7 +337,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify substudies because this is handled by validation
-        hibernateHelper.update(account, null);            
+        hibernateHelper.update(account, afterPersistConsumer);            
     }
     
     /** {@inheritDoc} */
@@ -350,7 +348,7 @@ public class HibernateAccountDao implements AccountDao {
         
         if (account != null) {
             accountEdits.accept(account);
-            updateAccount(account);
+            updateAccount(account, null);
         }
     }
 
@@ -415,13 +413,11 @@ public class HibernateAccountDao implements AccountDao {
         
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            hibernateAccount = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-            // Verify the sub-study rules are matched  
-            return BridgeUtils.filterForSubstudy(hibernateAccount);
+            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
         }
         
         QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
-        
+
         List<HibernateAccount> accountList = hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
@@ -554,24 +550,20 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
-        
-        // Further, we do not return any substudy IDs that the caller is not associated with (because
-        // this would leak our partners and this is not desirable).
-        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
-        
-        Set<String> substudyIds = ImmutableSet.of();
+        SubstudyAssociations assoc = null;
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                     ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            substudyIds = accountSubstudies.stream()
-                    .map(AccountSubstudy::getSubstudyId)
-                    .filter(substudyId -> callerSubstudyIds.isEmpty() || callerSubstudyIds.contains(substudyId))
-                    .collect(BridgeCollectors.toImmutableSet());
+            
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies);
+        } else {
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
         }
+        
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
-                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 
-                studyId, substudyIds);
+                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
+                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
     }
 }

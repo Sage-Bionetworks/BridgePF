@@ -26,6 +26,7 @@ import java.util.Set;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -129,8 +130,8 @@ public class ParticipantControllerTest {
     private static final Set<String> EMPTY_SET = new HashSet<>();
     
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email",
-            TestConstants.PHONE, "externalId", "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY,
-            ImmutableSet.of());
+            TestConstants.PHONE, null, ImmutableMap.of("substudyA", "externalId"), "id", DateTime.now(),
+            AccountStatus.ENABLED, TestConstants.TEST_STUDY, ImmutableSet.of());
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(TestConstants.EMAIL).withPassword(TestConstants.PASSWORD).build();

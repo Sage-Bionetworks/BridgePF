@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +46,6 @@ public class UserProfileController extends BaseController {
 
     private ParticipantService participantService;
     
-    private ExternalIdService externalIdService;
-    
     private ViewCache viewCache;
 
     @Autowired
@@ -58,10 +55,6 @@ public class UserProfileController extends BaseController {
     @Resource(name = "genericViewCache")
     public final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
-    }
-    @Autowired
-    public final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
     }
 
     @Deprecated
@@ -129,12 +122,14 @@ public class UserProfileController extends BaseController {
     @Deprecated
     public Result createExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
+                session.getHealthCode());
         
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
-
-        externalIdService.assignExternalId(study, externalId.getIdentifier(), session.getHealthCode());
+        externalId.setStudyId(accountId.getStudyId());
         
+        participantService.assignExternalId(accountId, externalId);
         sessionUpdateService.updateExternalId(session, externalId);
         
         return okResult(UserSessionInfo.toJSON(session));

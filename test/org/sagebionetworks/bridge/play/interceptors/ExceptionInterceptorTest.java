@@ -35,6 +35,7 @@ import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
@@ -81,6 +82,7 @@ public class ExceptionInterceptorTest {
                 .withNotifyByEmail(true)
                 .withId("userId")
                 .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withExternalIds(ImmutableMap.of("substudyA", "externalIdA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(ImmutableSet.of("group1")).build();
         
@@ -102,7 +104,6 @@ public class ExceptionInterceptorTest {
         TestUtils.assertResult(result, 412);
         
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
-
         assertTrue(node.get("authenticated").booleanValue());
         assertFalse(node.get("consented").booleanValue());
         assertFalse(node.get("signedMostRecentConsent").booleanValue());
@@ -123,8 +124,9 @@ public class ExceptionInterceptorTest {
         assertEquals(1, array.size());
         assertEquals("group1", array.get(0).textValue());
         assertEquals(0, node.get("consentStatuses").size());
+        assertEquals("externalIdA", node.get("externalIds").get("substudyA").textValue());
         // And no further properties
-        assertEquals(21, node.size());
+        assertEquals(22, node.size());
     }
     
     @Test

@@ -1,99 +1,157 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.services.SubstudyService;
 
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.validators.ExternalIdsValidator.ExternalIdList;
+import com.google.common.collect.ImmutableSet;
 
-import com.google.common.collect.Lists;
-
+@RunWith(MockitoJUnitRunner.class)
 public class ExternalIdValidatorTest {
-
-    private ExternalIdsValidator validator;
+    
+    private ExternalIdValidator validatorV4;
+    
+    @Mock
+    private SubstudyService substudyService;
     
     @Before
     public void before() {
-        validator = new ExternalIdsValidator(5);
+        validatorV4 = new ExternalIdValidator(substudyService, false);
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test
-    public void rejectsOverLimit() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList("A","B","C","D","E","F"));
+    public void validates() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudy-id"))
+                .withCallerStudyId(TEST_STUDY).build());
         
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("ExternalIdList contains too many elements; size=6, limit=5"));
-        }
-    }
-    
-    @Test
-    public void rejectsEmpty() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList());
+        when(substudyService.getSubstudy(TEST_STUDY, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "one-id");
+        id.setSubstudyId("substudy-id");
         
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("ExternalIdList contains no elements"));
-        }
+        Validate.entityThrowingException(validatorV4, id);
     }
     
     @Test
-    public void rejectsEmptyElement() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList("AAA","","CCC"));
-
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("ids[1] cannot be null or blank", e.getErrors().get("ids[1]").get(0));
-            assertTrue(e.getMessage().contains("ids[1] cannot be null or blank"));
-        }
+    public void validatesV3() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(TEST_STUDY).build());
+        
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "one-id");
+        
+        ExternalIdValidator validatorV3 = new ExternalIdValidator(substudyService, true);
+        Validate.entityThrowingException(validatorV3, id);
     }
     
     @Test
-    public void rejectsNullElement() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList("AAA",null,"CCC"));
-
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("ids[1] cannot be null or blank", e.getErrors().get("ids[1]").get(0));
-            assertTrue(e.getMessage().contains("ids[1] cannot be null or blank"));
-        }
+    public void identifierCannotBeNull() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, null);
+        assertValidatorMessage(validatorV4, id, "identifier", "cannot be null or blank");
     }
     
     @Test
-    public void rejectsInvalidElement() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList("Two Words","<Funky>Markup","And a \ttab character"));
-
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("ids[0] 'Two Words' must contain only digits, letters, underscores and dashes", e.getErrors().get("ids[0]").get(0));
-            assertEquals("ids[1] '<Funky>Markup' must contain only digits, letters, underscores and dashes", e.getErrors().get("ids[1]").get(0));
-            assertEquals("ids[2] 'And a \ttab character' must contain only digits, letters, underscores and dashes", e.getErrors().get("ids[2]").get(0));
-        }        
+    public void identifierCannotBeBlank() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "\t");
+        assertValidatorMessage(validatorV4, id, "identifier", "cannot be null or blank");
     }
     
     @Test
-    public void rejectsDuplicateElement() {
-        ExternalIdList list = new ExternalIdList(Lists.newArrayList("AAA","BBB","AAA"));
+    public void identifierMustMatchPattern1() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "two words");
+        assertValidatorMessage(validatorV4, id, "identifier",
+            "'two words' must contain only digits, letters, underscores and dashes");
+    }
+    
+    @Test
+    public void identifierMustMatchPattern2() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "<Funky>Markup");
+        assertValidatorMessage(validatorV4, id, "identifier",
+            "'<Funky>Markup' must contain only digits, letters, underscores and dashes");
+    }
 
-        try {
-            Validate.entityThrowingException(validator, list);
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("ids[2] is a duplicate value", e.getErrors().get("ids[2]").get(0));
-        }        
+    @Test
+    public void identifierMustMatchPattern3() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "And a \ttab character");
+        assertValidatorMessage(validatorV4, id, "identifier",
+            "'And a \ttab character' must contain only digits, letters, underscores and dashes");
+    }
+    
+    @Test
+    public void substudyIdCannotBeNull() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "identifier");
+        assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
+    }
+    
+    @Test
+    public void substudyIdCannotBeBlank() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "identifier");
+        id.setSubstudyId("   ");
+        assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
+    }
+    
+    @Test
+    public void substudyIdMustBeValid() {
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "identifier");
+        id.setSubstudyId("not-real");
+        assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
+    }
+    
+    @Test
+    public void substudyIdCanBeAnythingForAdmins() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
+                .withCallerStudyId(TEST_STUDY).build());
+        
+        when(substudyService.getSubstudy(TEST_STUDY, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "one-id");
+        id.setSubstudyId("substudy-id");
+        
+        Validate.entityThrowingException(validatorV4, id);
+    }
+    
+    @Test
+    public void substudyIdMustMatchCallersSubstudies() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyB"))
+                .withCallerStudyId(TEST_STUDY).build());
+        
+        when(substudyService.getSubstudy(TEST_STUDY, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "one-id");
+        id.setSubstudyId("substudy-id");
+        
+        assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void studyIdCannotBeBlank() { 
+        ExternalIdentifier.create(new StudyIdentifierImpl("   "), "one-id");
+    }
+    
+    @Test
+    public void studyIdMustBeCallersStudyId() { 
+        // This fails because we have not set a context with this study ID.
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY, "one-id");
+        
+        assertValidatorMessage(validatorV4, id, "studyId", "is not a valid study");
     }
 }

@@ -64,7 +64,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsentService {
     
-    protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
+    protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig()
+            .get("usersigned.consents.bucket");
     private AccountDao accountDao;
     private SendMailService sendMailService;
     private SmsService smsService;
@@ -188,7 +189,7 @@ public class ConsentService {
         consentListCopy.add(withConsentCreatedOnSignature);
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -289,9 +290,9 @@ public class ConsentService {
             notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, null);
         
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
 
         return statuses;
     }
@@ -313,25 +314,27 @@ public class ConsentService {
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
         
-        // Forget this person. If the user registers again at a later date, it is as if they have created
-        // a new account. But we hold on to this record so we can still retrieve the consent records for a 
-        // given healthCode.
+        // Forget this person. If the user registers again at a later date, it is as if they have 
+        // created a new account. But we hold on to this record so we can still retrieve the consent 
+        // records for a given healthCode. We also don't delete external ID/substudy releationships
+        // so substudies can continue to view withdrawals by health code.
         account.setSharingScope(SharingScope.NO_SHARING);
+        account.setFirstName(null);
+        account.setLastName(null);
         account.setNotifyByEmail(false);
         account.setEmail(null);
         account.setEmailVerified(false);
         account.setPhone(null);
         account.setPhoneVerified(false);
-        account.setExternalId(null);
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, null);
 
         notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.
-    private void sendWithdrawEmail(Study study, String externalId, Account account, Withdrawal withdrawal,
+    private void sendWithdrawEmail(Study study, Account account, Withdrawal withdrawal,
             long withdrewOn) {
         if (account.getEmail() == null) {
             // Withdraw email provider currently doesn't support non-email accounts. Skip.
@@ -341,7 +344,7 @@ public class ConsentService {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }
-        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account,
+        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, account,
                 withdrawal, withdrewOn);
         if (!consentEmail.getRecipients().isEmpty()) {
             sendMailService.sendEmail(consentEmail);    

@@ -16,6 +16,7 @@ import play.mvc.Result;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -34,29 +35,37 @@ public class ExternalIdController extends BaseController {
         this.externalIdService = externalIdService;
     }
     
+    @Deprecated
     public Result getExternalIds(String offsetKey, String pageSizeString, String idFilter, String assignmentFilterString) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         // Play will not convert these to null if they are not included in the query string, so we must do the conversion.
         Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
         Boolean assignmentFilter = (assignmentFilterString != null) ? Boolean.valueOf(assignmentFilterString) : null;
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(
-                study, offsetKey, pageSize, idFilter, assignmentFilter);
+                offsetKey, pageSize, idFilter, assignmentFilter);
         return okResult(page);
     }
     
+    @Deprecated
     public Result addExternalIds() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        List<String> externalIdentifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
-        externalIdService.addExternalIds(study, externalIdentifiers);
+        List<String> identifiers = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
+        if (identifiers.size() > 20) {
+            throw new BadRequestException("Bulk identifier import limit is 20, " + identifiers.size() + " were submitted.");
+        }
         
+        for (String externalIdentifier : identifiers) {
+            ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);
+            externalIdService.createExternalId(extId, true);    
+        }
         return createdResult("External identifiers added.");
     }
     
+    @Deprecated
     public Result deleteExternalIds() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -66,8 +75,10 @@ public class ExternalIdController extends BaseController {
             throw new BadRequestException("No external IDs provided in query string.");
         }
         List<String> identifiers = Lists.newArrayList(externalIds);
-        externalIdService.deleteExternalIds(study, identifiers);
-        
+        for (String externalIdentifier : identifiers) {
+            ExternalIdentifier extId = ExternalIdentifier.create(study, externalIdentifier);
+            externalIdService.deleteExternalIdPermanently(study, extId);
+        }
         return okResult("External identifiers deleted.");
     }
     
@@ -80,5 +91,4 @@ public class ExternalIdController extends BaseController {
         
         return okResult(password);
     }
-
 }

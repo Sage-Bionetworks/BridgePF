@@ -36,6 +36,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -111,6 +114,9 @@ public class HibernateAccountDaoTest {
     
     @Captor
     ArgumentCaptor<Map<String,Object>> paramCaptor;
+    
+    @Mock
+    Consumer<Account> accountConsumer;
     
     private Study study;
     private HibernateAccountDao dao;
@@ -864,7 +870,7 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
 
         // execute - We generate a new account ID.
-        dao.createAccount(study, account);
+        dao.createAccount(study, account, null);
 
         // verify hibernate call
         ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -908,7 +914,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Execute. Identifiers not allows to change.
-        dao.updateAccount(account);
+        dao.updateAccount(account, null);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -943,7 +949,7 @@ public class HibernateAccountDaoTest {
         account.setReauthTokenHash("bad reauth token hash");
         account.setReauthTokenModifiedOn(MOCK_DATETIME);
         
-        dao.updateAccount(account);
+        dao.updateAccount(account, null);
         
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
                 HibernateAccount.class);
@@ -967,7 +973,7 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.updateAccount(makeValidGenericAccount());
+            dao.updateAccount(makeValidGenericAccount(), null);
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals("Account " + ACCOUNT_ID + " not found", ex.getMessage());
@@ -1002,7 +1008,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Identifiers ARE allowed to change here.
-        dao.updateAccount(account);
+        dao.updateAccount(account, null);
 
         // Capture the update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -1633,7 +1639,18 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON);
         hibernateAccount.setStatus(AccountStatus.ENABLED);
+        
+        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ACCOUNT_ID);
+        as1.setExternalId("externalIdA");
+        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ACCOUNT_ID);
+        as2.setExternalId("externalIdB");
 
+        when(mockHibernateHelper.queryGet("FROM HibernateAccountSubstudy WHERE accountId=:accountId", 
+                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, 
+                HibernateAccountSubstudy.class)).thenReturn(ImmutableList.of(as1, as2));
+        
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
         assertEquals(ACCOUNT_ID, accountSummary.getId());
@@ -1641,6 +1658,8 @@ public class HibernateAccountDaoTest {
         assertEquals(EMAIL, accountSummary.getEmail());
         assertEquals(TestConstants.PHONE, accountSummary.getPhone());
         assertEquals(EXTERNAL_ID, accountSummary.getExternalId());
+        assertEquals(ImmutableMap.of("substudyA", "externalIdA", "substudyB", "externalIdB"),
+                accountSummary.getExternalIds());
         assertEquals(FIRST_NAME, accountSummary.getFirstName());
         assertEquals(LAST_NAME, accountSummary.getLastName());
         assertEquals(AccountStatus.ENABLED, accountSummary.getStatus());
@@ -1657,11 +1676,57 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
+    public void unmarshallAccountSummaryFiltersSubstudies() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+        
+        // Create HibernateAccount. Only fill in values needed for AccountSummary.
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setId(ACCOUNT_ID);
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        
+        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ACCOUNT_ID);
+        as1.setExternalId("externalIdA");
+        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
+                .create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ACCOUNT_ID);
+        as2.setExternalId("externalIdB");
+
+        when(mockHibernateHelper.queryGet("FROM HibernateAccountSubstudy WHERE accountId=:accountId", 
+                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, 
+                HibernateAccountSubstudy.class)).thenReturn(ImmutableList.of(as1, as2));
+        
+        // Unmarshall
+        AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
+        assertEquals(ImmutableMap.of("substudyB", "externalIdB"), accountSummary.getExternalIds());
+        assertEquals(ImmutableSet.of("substudyB"), accountSummary.getSubstudyIds());
+    }
+    
+    @Test
+    public void unmarshallAccountSummaryStillReturnsOldExternalId() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+        
+        // Create HibernateAccount. Only fill in values needed for AccountSummary.
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setId(ACCOUNT_ID);
+        hibernateAccount.setExternalId(EXTERNAL_ID);
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        
+        // Unmarshall
+        AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
+        assertEquals(EXTERNAL_ID, accountSummary.getExternalId());
+    }    
+    
+    @Test
     public void editAccountSuccess() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
                 "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
                 "acct.healthCode=:healthCode GROUP BY acct.id";
         
+        // Spy this to verify that the editor lambda is called 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setHealthCode("A");
         // mock hibernate
@@ -1671,12 +1736,12 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate
-        dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, account -> account.setFirstName("ChangedFirstName"));
+        dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, accountConsumer);
         
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).update(updatedAccountCaptor.capture(), eq(null));
-        
-        assertEquals("ChangedFirstName", updatedAccountCaptor.getValue().getFirstName());
+        InOrder inOrder = Mockito.inOrder(accountConsumer, mockHibernateHelper);
+        inOrder.verify(accountConsumer).accept(hibernateAccount);
+        inOrder.verify(mockHibernateHelper).update(updatedAccountCaptor.capture(), eq(null));
     }
     
     @Test
@@ -1686,6 +1751,7 @@ public class HibernateAccountDaoTest {
         
         dao.editAccount(TestConstants.TEST_STUDY, "bad-health-code", account -> account.setEmail("JUNK"));
         
+        verify(accountConsumer, never()).accept(any());
         verify(mockHibernateHelper, never()).update(any(), eq(null));
     }
 
@@ -1886,38 +1952,6 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
-    public void deleteAccountFailsAcrossSubstudies() throws Exception {
-        testSubstudyMatch(CALLER_SUBSTUDIES, ACCOUNT_SUBSTUDIES, (accountId) -> {
-            dao.deleteAccount(accountId);
-            verify(mockHibernateHelper, never()).deleteById(any(), any());
-        });
-    }
-    
-    @Test
-    public void deleteAccountSucceedsOnSubstudyMatch() throws Exception {
-        testSubstudyMatch(ImmutableSet.of(SUBSTUDY_A), ACCOUNT_SUBSTUDIES, (accountId) -> {
-            dao.deleteAccount(accountId);
-            verify(mockHibernateHelper).deleteById(any(), any());
-        });
-    }
-    
-    @Test
-    public void deleteReauthTokenFailsAcrossSubstudies() throws Exception {
-        testSubstudyMatch(CALLER_SUBSTUDIES, ACCOUNT_SUBSTUDIES, (accountId) -> {
-            dao.deleteReauthToken(accountId);
-            verify(mockHibernateHelper, never()).update(any(), eq(null));
-        });
-    }
-
-    @Test
-    public void deleteReauthTokenSucceedsOnSubstudyMatch() throws Exception {
-        testSubstudyMatch(ImmutableSet.of(SUBSTUDY_A), ACCOUNT_SUBSTUDIES, (accountId) -> {
-            dao.deleteReauthToken(accountId);
-            verify(mockHibernateHelper).update(any(), eq(null));
-        });
-    }
-    
-    @Test
     public void editAccountFailsAcrossSubstudies() throws Exception { 
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(CALLER_SUBSTUDIES).build());        
@@ -1931,52 +1965,6 @@ public class HibernateAccountDaoTest {
         });
         
         verify(mockHibernateHelper, never()).update(any(), eq(null));
-        BridgeUtils.setRequestContext(null);
-    }
-    
-    @Test
-    public void getAccountFailsAcrossSubstudies() throws Exception {
-        testSubstudyMatch(CALLER_SUBSTUDIES, ACCOUNT_SUBSTUDIES, (accountId) -> {
-            Account account = dao.getAccount(accountId);
-            assertNull(account);
-        });
-    }
-    
-    @Test
-    public void getAccountSucceedsOnSubstudyMatch() throws Exception {
-        testSubstudyMatch(ImmutableSet.of(SUBSTUDY_A), ACCOUNT_SUBSTUDIES, (accountId) -> {
-            Account account = dao.getAccount(accountId);
-            assertNotNull(account);
-        });
-    }
-    
-    @Test
-    public void getAccountAfterAuthenticationFailsAcrossSubstudies() throws Exception { 
-        testSubstudyMatch(CALLER_SUBSTUDIES, ACCOUNT_SUBSTUDIES, (accountId) -> {
-            Account account = dao.getAccountAfterAuthentication(accountId);
-            assertNull(account);
-        });
-    }
-    
-    @Test
-    public void getAccountAfterAuthenticationSucceedsOnSubstudyMatch() throws Exception { 
-        testSubstudyMatch(ImmutableSet.of(SUBSTUDY_A), ACCOUNT_SUBSTUDIES, (accountId) -> {
-            Account account = dao.getAccountAfterAuthentication(accountId);
-            assertNotNull(account);
-        });
-    }
-
-    private void testSubstudyMatch(Set<String> callerSubstudies, Set<AccountSubstudy> accountSubstudies,
-            Consumer<AccountId> supplier) throws Exception {
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());        
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
-        hibernateAccount.setAccountSubstudies(accountSubstudies);
-        when(mockHibernateHelper.getById(any(), any())).thenReturn(hibernateAccount);
-
-        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
-        supplier.accept(accountId);
-        
         BridgeUtils.setRequestContext(null);
     }
     

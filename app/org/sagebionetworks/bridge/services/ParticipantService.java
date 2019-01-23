@@ -9,10 +9,10 @@ import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -24,11 +24,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -42,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -83,7 +87,7 @@ public class ParticipantService {
     private ConsentService consentService;
 
     private ExternalIdService externalIdService;
-
+    
     private CacheProvider cacheProvider;
 
     private ScheduledActivityDao activityDao;
@@ -130,7 +134,7 @@ public class ParticipantService {
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
-
+    
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
@@ -166,6 +170,12 @@ public class ParticipantService {
         this.substudyService = substudyService;
     }
     
+    public void assignExternalId(AccountId accountId, ExternalIdentifier externalId) {
+        Account account = getAccountThrowingException(accountId);
+        ExternalIdentifier extIdObj = beginAssignExternalId(account, externalId.getIdentifier());
+        externalIdService.commitAssignExternalId(extIdObj);
+    }
+    
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
@@ -176,7 +186,7 @@ public class ParticipantService {
         checkNotNull(userId);
 
         // Account must have a verified phone number.
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = getAccountThrowingException(AccountId.forId(study.getIdentifier(), userId));
         if (account.getPhoneVerified() != Boolean.TRUE) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no verified phone number");
@@ -215,10 +225,7 @@ public class ParticipantService {
     }
 
     public StudyParticipant getParticipant(Study study, AccountId accountId, boolean includeHistory) {
-        Account account = accountDao.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = getAccountThrowingException(accountId);
         return getParticipant(study, account, includeHistory);
     }
 
@@ -238,6 +245,9 @@ public class ParticipantService {
             //
             // See https://sagebionetworks.jira.com/browse/BRIDGE-1463 for more info.
             LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (BridgeUtils.filterForSubstudy(account) == null) {
             throw new EntityNotFoundException(Account.class);
         }
 
@@ -261,8 +271,9 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
-        builder.withSubstudyIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getSubstudyId)
-                .collect(BridgeCollectors.toImmutableSet()));
+        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
+        builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -306,9 +317,8 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
 
-        Account account = getAccountThrowingException(study, email);
-        
-        AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
+        AccountId accountId = AccountId.forEmail(study.getIdentifier(), email);
+        Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
             accountDao.deleteReauthToken(accountId);
@@ -357,8 +367,20 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
-        accountDao.createAccount(study, account);
-        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
+        
+        // Set up the external ID object and the changes to the account, attempt to save the external ID 
+        // within an account transaction, and roll back the account if the external ID save fails. If the 
+        // account save fails, catch the exception and rollback the external ID save. 
+        final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
+        try {
+            accountDao.createAccount(study, account,
+                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+        } catch(Exception e) {
+            if (externalId != null) {
+                externalIdService.unassignExternalId(account, externalId.getIdentifier());    
+            }
+            throw e;
+        }
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
@@ -390,25 +412,36 @@ public class ParticipantService {
         checkNotNull(study);
         checkNotNull(participant);
         
+        Account account = null;
+        if (participant.getId() != null) {
+            // Do not filter substudies because you are going to persist this account.
+            // Only call this if participant has an ID. If it doesn't, it will fail
+            // validation anyway and account will never be referenced.
+            account = getAccountThrowingExceptionIfSubstudyMatches(
+                    AccountId.forId(study.getIdentifier(), participant.getId()));
+        }
+        
         StudyParticipantValidator validator = new StudyParticipantValidator(
                 externalIdService, substudyService, study, false);
         Validate.entityThrowingException(validator, participant);
         
-        Account account = getAccountThrowingException(study, participant.getId());
-        
-        // Users can add an external ID to their own accounts (but not change or remove it); researchers can 
-        // change an external ID. In the latter case, the old external ID needs to be unassigned first.
         Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
-        boolean isSimpleAdd = account.getExternalId() == null && participant.getExternalId() != null;
-        boolean isResearcherChange = callerRoles.contains(Roles.RESEARCHER) && 
-                !Objects.equals(account.getExternalId(), participant.getExternalId());
+        Set<String> allExternalIds = BridgeUtils.collectExternalIds(account);
         
-        boolean assigningExternalId = isSimpleAdd || isResearcherChange;
+        // Legacy behavior: a user can add an external ID to their account on an update, we refer to 
+        // this as a "simple add." A researcher can assign an external ID to any user if it has not yet 
+        // been assigned (if it has been assigned, beginAssignExternalId() throws an exception and 
+        // aborts this entire call).
         
+        boolean isSimpleAdd = allExternalIds.isEmpty() && participant.getExternalId() != null;
+        boolean isResearcherAdd = callerRoles.contains(Roles.RESEARCHER)
+                && !allExternalIds.contains(participant.getExternalId())
+                && participant.getExternalId() != null;
+        boolean assigningExternalId = isSimpleAdd || isResearcherAdd;
+        
+        // The last change made to the external ID collection is always reflected in the 
+        // singular external ID field to ensure backwards compatibility during migration.
         if  (assigningExternalId) {
-            if (account.getExternalId() != null) {
-                externalIdService.unassignExternalId(study, account.getExternalId(), account.getHealthCode());    
-            }
             account.setExternalId(participant.getExternalId());
         }
         updateAccountAndRoles(study, account, participant, false);
@@ -419,10 +452,26 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        accountDao.updateAccount(account);
         
-        if (assigningExternalId) {
-            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
+        // Simple case, not trying to assign an external ID 
+        if (!assigningExternalId) {
+            accountDao.updateAccount(account, null);
+            return;
+        }
+        
+        // Complex case: you are assigning an external ID. Set up the external ID object and the changes
+        // to the account, attempt to save the external ID within an account transaction, and roll back 
+        // the account if the external ID save fails. If the account save fails, catch the exception and 
+        // rollback the external ID save. 
+        ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
+        try {
+            accountDao.updateAccount(account,
+                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+        } catch (Exception e) {
+            if (externalId != null) {
+                externalIdService.unassignExternalId(account, externalId.getIdentifier());
+            }
+            throw e;
         }
     }
 
@@ -444,17 +493,44 @@ public class ParticipantService {
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
        
-        // Only allow the setting of substudies on new accounts, or if the caller is an admin (changing
-        // substudies while not changing external IDs or consents may break things, so we don't allow it).
+        // Only allow the setting of substudies on new accounts. Note that while administrators can change this 
+        // after the account is created, for admin accounts, it can create some very strange security behavior 
+        // for that account if it is signed in, so we MUST destroy the session. 
         Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         if (isNew || callerRoles.contains(Roles.ADMIN)) {
-            // Adjust the persisted Hibernate collection, w/o concurrency exceptions
-            Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
-                return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
-            }).collect(Collectors.toSet());
+            // Sign out the user if you make alterations that will change the security state of 
+            // the account. Otherwise very strange bugs can results.
+            boolean clearCache = false;
             
-            account.getAccountSubstudies().clear();
-            account.getAccountSubstudies().addAll(updatedSubstudies);
+            // Copy to prevent concurrent modification exceptions
+            Set<AccountSubstudy> accountSubstudies = ImmutableSet.copyOf(account.getAccountSubstudies());
+            
+            // remove external ID if it exists and unassign the external ID
+            for (AccountSubstudy acctSubstudy : accountSubstudies) {
+                if (!participant.getSubstudyIds().contains(acctSubstudy.getSubstudyId())) {
+                    externalIdService.unassignExternalId(account, acctSubstudy.getExternalId());
+                    account.getAccountSubstudies().remove(acctSubstudy);
+                    clearCache = true;
+                }
+            }
+            // add
+            Set<String> existingSubstudyIds = account.getAccountSubstudies().stream()
+                    .map(AccountSubstudy::getSubstudyId).collect(Collectors.toSet());
+            for (String substudyId : participant.getSubstudyIds()) {
+                if (!existingSubstudyIds.contains(substudyId)) {
+                    AccountSubstudy newSubstudy = AccountSubstudy.create(
+                            account.getStudyId(), substudyId, account.getId());
+                    account.getAccountSubstudies().add(newSubstudy);
+                    clearCache = true;
+                }
+            }
+            
+            // We have to clear the cache if we make changes that can alter the security profile of 
+            // the account, otherwise very strange behavior can occur if that user is signed in with 
+            // a stale session.
+            if (!isNew && clearCache) {
+                cacheProvider.removeSessionByUserId(account.getId());    
+            }
         }
         // Do not copy timezone or external ID. Neither can be updated once set.
         
@@ -666,14 +742,13 @@ public class ParticipantService {
         } else {
             account = accountDao.authenticate(study, update.getSignIn());
         }
-        
         // Verify the account matches the current caller
         if (!account.getId().equals(context.getUserId())) {
             throw new EntityNotFoundException(Account.class);
         }
         
         // reload account, or you will get an optimistic lock exception
-        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+        account = getAccountThrowingExceptionIfSubstudyMatches(AccountId.forId(study.getIdentifier(), account.getId()));
         
         // Update if account has an empty field and there's an update
         boolean sendEmailVerification = false;
@@ -690,26 +765,95 @@ public class ParticipantService {
             sendEmailVerification = true;
             accountUpdated = true;
         }
-        if (update.getExternalIdUpdate() != null && account.getExternalId() == null) {
+        Set<String> externalIds = BridgeUtils.collectExternalIds(account);
+        if (update.getExternalIdUpdate() != null && !externalIds.contains(update.getExternalIdUpdate())) {
             account.setExternalId(update.getExternalIdUpdate());
             accountUpdated = true;
             assignExternalId = true;
         }
-        // save. if this throws a constraint exception, further services are not called
         if (accountUpdated) {
-            accountDao.updateAccount(account);   
+            if (assignExternalId) {
+                ExternalIdentifier externalId = beginAssignExternalId(account, account.getExternalId());
+                try {
+                    accountDao.updateAccount(account, (oneAccount) -> externalIdService.commitAssignExternalId(externalId));
+                    updateRequestContext(externalId);
+                } catch (Exception e) {
+                    if (externalId != null) {
+                        externalIdService.unassignExternalId(account, externalId.getIdentifier());
+                    }
+                    throw e;
+                }                
+            } else {
+                accountDao.updateAccount(account, null);
+            }
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 
             !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
-        if (assignExternalId) {
-            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());
-        }
-        
         // return updated StudyParticipant to update and return session
         return getParticipant(study, account.getId(), false);
+    }
+    
+    protected ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
+        checkNotNull(account);
+        checkNotNull(account.getStudyId());
+        checkNotNull(account.getHealthCode());
+        
+        if (externalId == null) {
+            return null;
+        }
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        ExternalIdentifier identifier = externalIdService.getExternalId(studyId, externalId, false);
+        if (identifier == null) {
+            return null;
+        }        
+        if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
+        }
+        // Whether already assigned or not, we will adjust the account, in case we are repairing
+        // an existing broken data association
+        identifier.setHealthCode(account.getHealthCode());
+        // For backwards compatibility while transitioning to multiple external IDs, assign the singular 
+        // external ID field. But don't do this if we're adding a second external ID (we should be 
+        // entirely migrated to multiple external ID usage before we need to assign multiple IDs).
+        if (account.getExternalId() == null) {
+            account.setExternalId(identifier.getIdentifier());    
+        }
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
+    }
+
+
+    /**
+     * To see any new association to a substudy in the session that we return from the update identifiers call, 
+     * we need to allow it in the permission structure of the call, which means we need to update the request 
+     * context.
+     */
+    private void updateRequestContext(ExternalIdentifier externalId) {
+        if (externalId.getSubstudyId() != null) {
+            RequestContext currentContext = BridgeUtils.getRequestContext();
+            
+            Set<String> newSubstudies = new ImmutableSet.Builder<String>()
+                    .addAll(currentContext.getCallerSubstudies())
+                    .add(externalId.getSubstudyId()).build();
+            
+            RequestContext newContext = new RequestContext.Builder()
+                    .withCallerRoles(currentContext.getCallerRoles())
+                    .withCallerStudyId(currentContext.getCallerStudyIdentifier())
+                    .withRequestId(currentContext.getId())
+                    .withCallerSubstudies(newSubstudies)
+                    .build();
+            BridgeUtils.setRequestContext(newContext);
+        }
     }
      
     
@@ -755,9 +899,26 @@ public class ParticipantService {
         }
         account.setRoles(newRoleSet);
     }
+    
+    private Account getAccountThrowingExceptionIfSubstudyMatches(AccountId accountId) {
+        Account account = accountDao.getAccount(accountId);
+        if (account != null) {
+            Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+            boolean anyMatch = account.getAccountSubstudies().stream()
+                    .anyMatch(as -> callerSubstudies.contains(as.getSubstudyId()));
+            if (callerSubstudies.isEmpty() || anyMatch) {
+                return account;
+            }
+        }
+        throw new EntityNotFoundException(Account.class);
+    }
 
     private Account getAccountThrowingException(Study study, String id) {
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), id));
+        return getAccountThrowingException(AccountId.forId(study.getIdentifier(), id));
+    }
+    
+    private Account getAccountThrowingException(AccountId accountId) {
+        Account account = BridgeUtils.filterForSubstudy(accountDao.getAccount(accountId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

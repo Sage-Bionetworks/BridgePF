@@ -106,7 +106,7 @@ public class StudyParticipantValidator implements Validator {
         // prevent this record's persistence.
         if (study.isExternalIdValidationEnabled() && StringUtils.isNotBlank(participant.getExternalId())) {
             ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
-                    participant.getExternalId());
+                    participant.getExternalId(), false);
             if (externalId == null) {
                 errors.rejectValue("externalId", "is not a valid external ID");
             }
