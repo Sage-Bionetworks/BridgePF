@@ -55,6 +55,8 @@ public class ExternalIdControllerV4Test {
     
     private Study study;
     
+    private UserSession session;
+    
     @Spy
     private ExternalIdControllerV4 controller;
     
@@ -71,10 +73,26 @@ public class ExternalIdControllerV4Test {
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        UserSession session = new UserSession();
+        session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+    }
+    
+
+    @Test
+    public void migrateExternalIdentifier() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
+        
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson( 
+                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}"));
+        
+        Result result = controller.migrateExternalIdentifier();
+        TestUtils.assertResult(result, 200, 
+                "External ID 'anExternalId' associated to substudy 'aSubstudyId'.");
+        
+        verify(mockService).migrateExternalIdentifier(study, "anExternalId", "aSubstudyId");
     }
     
     @Test
