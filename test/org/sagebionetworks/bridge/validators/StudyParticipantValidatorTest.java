@@ -257,7 +257,7 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void createWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("foo");
 
@@ -318,7 +318,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void updateWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo", false)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalIdAndId("foo");
         

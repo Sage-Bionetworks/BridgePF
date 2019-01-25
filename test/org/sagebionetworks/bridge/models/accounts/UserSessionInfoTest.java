@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -31,6 +32,7 @@ public class UserSessionInfoTest {
                 .withId("user-identifier")
                 .withRoles(ImmutableSet.of(RESEARCHER))
                 .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withExternalIds(ImmutableMap.of("substudyA", "externalIdA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(Sets.newHashSet("foo")).build();
         
@@ -66,6 +68,7 @@ public class UserSessionInfoTest {
         assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
+        assertEquals("externalIdA", node.get("externalIds").get("substudyA").textValue());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
         JsonNode consentMap = node.get("consentStatuses");
@@ -80,7 +83,7 @@ public class UserSessionInfoTest {
         assertEquals(6, consentStatus.size());
         
         // ... and no things that shouldn't be there
-        assertEquals(21, node.size());
+        assertEquals(22, node.size());
     }
     
     @Test

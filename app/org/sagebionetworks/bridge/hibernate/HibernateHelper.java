@@ -26,7 +26,9 @@ public class HibernateHelper {
 
     /**
      * Creates (inserts) an object through Hibernate. Throws a ConcurrentModificationException if creating the object
-     * would violate a key constraint, most commonly if the row already exists.
+     * would violate a key constraint, most commonly if the row already exists. A consumer may be passed to this method 
+     * that will receive the object in the context of a database transaction; if the consumer throws a runtime error, 
+     * the transaction will be aborted.
      */
     public <T> void create(T obj, Consumer<T> consumer) {
         executeWithExceptionHandling(obj, session -> {
@@ -117,11 +119,11 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public <T> T update(T obj, Consumer<T> consumer) {
+    public <T> T update(T obj, Consumer<T> afterPersistConsumer) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
-            if (consumer != null) {
-                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            if (afterPersistConsumer != null) {
+                afterPersistConsumer.accept(obj); // if this throws, changes to account are abandoned    
             }
             return obj;
         });

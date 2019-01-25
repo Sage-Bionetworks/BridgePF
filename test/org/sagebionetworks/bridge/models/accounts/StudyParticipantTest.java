@@ -79,6 +79,7 @@ public class StudyParticipantTest {
         assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
         assertEquals("substudyB", node.get("substudyIds").get(1).textValue());
         assertEquals("+04:00", node.get("timeZone").asText());
+        assertEquals("externalIdA", node.get("externalIds").get("substudyA").textValue());
         assertEquals("StudyParticipant", node.get("type").asText());
         
         JsonNode clientData = node.get("clientData");
@@ -103,7 +104,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(24, node.size());
+        assertEquals(25, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -124,6 +125,7 @@ public class StudyParticipantTest {
         assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
         assertEquals(ACCOUNT_ID, deserParticipant.getId());
+        assertEquals("externalIdA", deserParticipant.getExternalIds().get("substudyA"));
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals("2002-02-02", deserHistory.getBirthdate());
@@ -267,6 +269,10 @@ public class StudyParticipantTest {
     public void canCopySubstudiesVerified() {
         assertCopyField("substudyIds", (builder)-> verify(builder).withSubstudyIds(any()));
     }
+    @Test
+    public void canCopyExternalIdsVerified() { 
+        assertCopyField("externalIds", (builder)-> verify(builder).withExternalIds(any()));
+    }
     
     @Test
     public void testNullResiliency() {
@@ -370,6 +376,7 @@ public class StudyParticipantTest {
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
                 .withSubstudyIds(SUBSTUDIES)
+                .withExternalIds(ImmutableMap.of("substudyA","externalIdA"))
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)

@@ -38,14 +38,15 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -78,9 +79,6 @@ public class UserProfileControllerTest {
     private CacheProvider cacheProvider;
     
     @Mock
-    private ExternalIdService externalIdService;
-    
-    @Mock
     private StudyService studyService;
     
     @Mock
@@ -100,6 +98,12 @@ public class UserProfileControllerTest {
     
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
+    
+    @Captor
+    private ArgumentCaptor<AccountId> accountIdCaptor;
+    
+    @Captor
+    private ArgumentCaptor<ExternalIdentifier> externalIdCaptor;
     
     private UserSession session;
     
@@ -127,7 +131,6 @@ public class UserProfileControllerTest {
         controller.setAccountDao(accountDao);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
-        controller.setExternalIdService(externalIdService);
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
         
@@ -257,7 +260,12 @@ public class UserProfileControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
-        verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
+        verify(participantService).assignExternalId(accountIdCaptor.capture(), externalIdCaptor.capture());
+        
+        assertEquals(HEALTH_CODE, accountIdCaptor.getValue().getHealthCode());
+        assertEquals(TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals("ABC-123-XYZ", externalIdCaptor.getValue().getIdentifier());
+        assertEquals(TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
 
     @Test
