@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
@@ -392,9 +393,12 @@ public class ConsentService {
             ConsentPdf consentPdf) {
         String shortUrl;
         try {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+            
             String fileName = getSignedConsentUrl();
             DateTime expiresOn = getDownloadExpiration();
-            s3Helper.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes());
+            s3Helper.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes(), metadata);
             URL url = s3Helper.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
             shortUrl = urlShortenerService.shortenUrl(url.toString(), SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS);
         } catch(IOException e) {
