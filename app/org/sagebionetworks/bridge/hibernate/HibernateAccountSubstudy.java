@@ -50,6 +50,9 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
     public void setExternalId(String externalId) {
         this.externalId = externalId;
     }
+    public void setSubstudyId(String substudyId) {
+        this.substudyId = substudyId;
+    }
 
     @Override
     public int hashCode() {
