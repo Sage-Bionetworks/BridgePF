@@ -101,6 +101,7 @@ public class ExternalIdServiceTest {
         // verify
         assertEquals(SUBSTUDY_ID, extId.getSubstudyId());
         assertEquals(1, account.getAccountSubstudies().size());
+        assertEquals(ID, account.getExternalId());
         
         AccountSubstudy acctSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, acctSubstudy.getStudyId());
