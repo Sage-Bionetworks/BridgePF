@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
@@ -92,6 +94,7 @@ public class ConsentServiceMockTest {
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder().withUserId(PARTICIPANT.getId())
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
+    @Spy
     private ConsentService consentService;
     
     private Study study;
@@ -131,7 +134,6 @@ public class ConsentServiceMockTest {
     public void before() throws IOException {
         String documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
         
-        consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
@@ -744,10 +746,17 @@ public class ConsentServiceMockTest {
     }    
     
     @Test
-    public void consentToResearchWithPhoneOK() {
+    public void consentToResearchWithPhoneOK() throws Exception {
+        doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();
+        
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
         
         verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
+        
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        verify(s3Helper).writeBytesToS3(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), eq("asdf.pdf"), any(),
+                metadataCaptor.capture());
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
         
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());
@@ -785,13 +794,19 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void resendConsentAgreementWithPhoneOK() {
+    public void resendConsentAgreementWithPhoneOK() throws Exception {
+        doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
 
         verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
 
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        verify(s3Helper).writeBytesToS3(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), eq("asdf.pdf"), any(),
+                metadataCaptor.capture());
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
+        
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());
         assertEquals(study, provider.getStudy());
