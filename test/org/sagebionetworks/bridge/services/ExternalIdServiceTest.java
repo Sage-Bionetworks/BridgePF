@@ -160,8 +160,11 @@ public class ExternalIdServiceTest {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        // This was already a managed external ID, and will be updated correctly
-        account.setExternalId(ID);  
+        // This starts as a different value and is changed to ID in the test. This would only 
+        // happen in the real world if we migrate an account associated to multiple external 
+        // IDs. We intend to finish this migration (and export) before allowing multiple 
+        // external IDs in production.
+        account.setExternalId("differentExternalId");
         
         AccountId accountId = AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
         when(accountDao.getAccount(accountId)).thenReturn(account);
