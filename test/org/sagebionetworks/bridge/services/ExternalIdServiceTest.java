@@ -115,9 +115,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierWithExistingSubstudyAssociation() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(extId);
@@ -151,9 +148,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierFromSingularToSubstudyAssociation() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(extId);
@@ -189,9 +183,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierWithNoAccount() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(extId);

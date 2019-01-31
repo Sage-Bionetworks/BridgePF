@@ -360,6 +360,8 @@ public class DynamoNotificationTopicDaoTest {
     // (okay if SNS topic exists, but DDB record doesn't, so don't need to test that path)
     @Test
     public void noOrphanOnPartialCreate() {
+        doThrow(new RuntimeException()).when(mockSnsClient).createTopic(any(String.class));
+        
         try {
             dao.createTopic(getNotificationTopic());
             fail("Should have thrown exception");

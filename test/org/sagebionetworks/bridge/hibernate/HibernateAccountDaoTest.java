@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
@@ -1931,7 +1932,9 @@ public class HibernateAccountDaoTest {
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
-
+        when(mockHibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateAccount.class)))
+                .thenReturn(Lists.newArrayList(hibernateAccount));
+        
         dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, (account) -> {
             fail("Should have thrown exception");
         });

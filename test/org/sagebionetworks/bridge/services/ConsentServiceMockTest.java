@@ -366,6 +366,9 @@ public class ConsentServiceMockTest {
                 assertNotNull(sig.getWithdrewOn());
             }
         }
+        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
+            System.out.println(acctSubstudy);
+        }
     }
     
     @Test
@@ -592,6 +595,8 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        
+        verify(subpopulation, never()).isAutoSendConsentSuppressed();
         
         // Despite explicitly suppressing email, if the user makes this call, we will send the email.
         verify(sendMailService).sendEmail(emailCaptor.capture());

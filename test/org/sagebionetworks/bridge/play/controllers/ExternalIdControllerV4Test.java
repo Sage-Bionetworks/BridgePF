@@ -85,8 +85,8 @@ public class ExternalIdControllerV4Test {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson( 
-                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}"));
+        TestUtils.mockPlay().withJsonBody(TestUtils.createJson( 
+                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}")).mock();
         
         Result result = controller.migrateExternalIdentifier();
         TestUtils.assertResult(result, 200, 

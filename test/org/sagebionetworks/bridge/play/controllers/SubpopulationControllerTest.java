@@ -114,11 +114,15 @@ public class SubpopulationControllerTest {
     public void getAllSubpopulationsIncludeDeleted() throws Exception {
         TestUtils.mockPlay().mock();
         
-        // */List<Subpopulation> list = createSubpopulationList();
-        // */when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
+        List<Subpopulation> list = createSubpopulationList();
+        when(subpopService.getSubpopulations(study.getStudyIdentifier(), true)).thenReturn(list);
         
         Result result = controller.getAllSubpopulations("true");
         TestUtils.assertResult(result, 200);
+        
+        ResourceList<Subpopulation> payload = TestUtils.getResponsePayload(result,
+                new TypeReference<ResourceList<Subpopulation>>() {});
+        assertEquals(2, payload.getItems().size());
         
         verify(subpopService).getSubpopulations(study.getStudyIdentifier(), true);
     }

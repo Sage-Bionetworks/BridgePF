@@ -501,7 +501,7 @@ public class ParticipantControllerTest {
 
     @Test
     public void updateParticipantWithMismatchedIdsUsesURL() throws Exception {
-        TestUtils.mockPlay().withJsonBody(createJson(createJson("{'id':'id2'}"))).mock();
+        TestUtils.mockPlay().withJsonBody(createJson("{'id':'id2'}")).mock();
         
         Result result = controller.updateParticipant("id1");
         assertResult(result, 200, "Participant updated.");

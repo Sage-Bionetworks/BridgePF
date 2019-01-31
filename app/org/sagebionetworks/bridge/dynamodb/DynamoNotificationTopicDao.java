@@ -196,6 +196,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         // Delete from SNS.
         try {
             DeleteTopicRequest request = new DeleteTopicRequest().withTopicArn(existing.getTopicARN());
+            System.out.println(snsClient);
             snsClient.deleteTopic(request);
         } catch(AmazonServiceException e) {
             LOG.warn("Bridge topic '" + existing.getName() + "' in study '" + existing.getStudyId()

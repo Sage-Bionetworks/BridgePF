@@ -271,11 +271,10 @@ public class AccountWorkflowServiceTest {
     @Test
     public void sendPhoneVerificationTokenThrottled() {
         // Throttle limit is 2. Make 3 requests, and send only 2 emails.
-     // */when(service.getNextToken()).thenReturn(TOKEN);
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
+        verify(mockSmsService, times(2)).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
     }
     
     @Test

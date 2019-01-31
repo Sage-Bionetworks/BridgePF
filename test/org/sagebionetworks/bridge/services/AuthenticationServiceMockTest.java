@@ -225,11 +225,13 @@ public class AuthenticationServiceMockTest {
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(account));
         
         // Does not throw consent required exception, despite being unconsented, because user has DEVELOPER role.
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test

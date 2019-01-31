@@ -193,6 +193,7 @@ public class SurveyServiceMockTest {
                 .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
         getActivityList(plans).set(0, activity);
         
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
@@ -550,6 +551,7 @@ public class SurveyServiceMockTest {
     public void updateSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey((GuidCreatedOnVersionHolder)survey, false)).thenReturn(survey);
         
         try {
             service.updateSurvey(OTHER_STUDY, survey);   
@@ -563,6 +565,7 @@ public class SurveyServiceMockTest {
     public void publishSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey((GuidCreatedOnVersionHolder)survey, true)).thenReturn(survey);
         
         try {
             service.publishSurvey(OTHER_STUDY, survey, true);   
@@ -576,6 +579,7 @@ public class SurveyServiceMockTest {
     public void versionSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, false)).thenReturn(survey);
         
         try {
             service.versionSurvey(OTHER_STUDY, SURVEY_KEYS);   
@@ -587,6 +591,10 @@ public class SurveyServiceMockTest {
 
     @Test
     public void deleteSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(survey);
+        
         try {
             service.deleteSurvey(OTHER_STUDY, SURVEY_KEYS);
             fail("Should have thrown an exception");
@@ -614,6 +622,7 @@ public class SurveyServiceMockTest {
     public void getSurveyMostRecentlyPublishedVersionInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true)).thenReturn(survey);
         
         service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
     }
@@ -638,6 +647,7 @@ public class SurveyServiceMockTest {
     public void getSurveyMostRecentVersionInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID)).thenReturn(survey);
         
         service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
     }

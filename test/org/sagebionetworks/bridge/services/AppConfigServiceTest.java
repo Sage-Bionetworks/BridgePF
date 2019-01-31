@@ -369,6 +369,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -377,6 +378,7 @@ public class AppConfigServiceTest {
         setupConfigsForUser();
         AppConfig appConfig = service.getAppConfigForUser(context, true);
         assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
+        assertEquals("theIdentifier", appConfig.getSurveyReferences().get(0).getIdentifier());
     }
     
     @Test
