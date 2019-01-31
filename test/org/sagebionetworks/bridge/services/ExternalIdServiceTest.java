@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.After;
@@ -87,7 +88,7 @@ public class ExternalIdServiceTest {
         
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(extId);
+            .thenReturn(Optional.ofNullable(extId));
         
         Account account = Account.create();
         account.setId(USER_ID);
@@ -120,7 +121,7 @@ public class ExternalIdServiceTest {
         
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(extId);
+            .thenReturn(Optional.of(extId));
         
         Account account = Account.create();
         account.setId(USER_ID);
@@ -156,7 +157,7 @@ public class ExternalIdServiceTest {
         
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(extId);
+            .thenReturn(Optional.of(extId));
         
         Account account = Account.create();
         account.setId(USER_ID);
@@ -194,7 +195,7 @@ public class ExternalIdServiceTest {
         
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(extId);
+            .thenReturn(Optional.of(extId));
         
         // execute
         externalIdService.migrateExternalIdentifier(study, ID, SUBSTUDY_ID);
@@ -208,22 +209,20 @@ public class ExternalIdServiceTest {
     
     @Test
     public void getExternalId() {
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.of(extId));
         
-        ExternalIdentifier retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
-        assertEquals(extId, retrieved);
+        Optional<ExternalIdentifier> retrieved = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);
+        assertEquals(extId, retrieved.get());
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test
     public void getExternalIdNoExtIdThrows() {
-        externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, true);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.empty());
+        
+        Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);
+        assertFalse(optionalId.isPresent());
     }
 
-    @Test
-    public void getExternalIdNoExtIdReturnsNull() {
-        assertNull(externalIdService.getExternalId(TestConstants.TEST_STUDY, ID, false));
-    }
-    
     @Test
     public void getExternalIds() {
         externalIdService.getExternalIds("offsetKey", 10, "idFilter", true);
@@ -253,6 +252,7 @@ public class ExternalIdServiceTest {
     public void createExternalId() {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.empty());
         
         externalIdService.createExternalId(extId, false);
         
@@ -263,6 +263,7 @@ public class ExternalIdServiceTest {
     public void createExternalIdEnforcesStudyId() {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.empty());
         
         ExternalIdentifier newExtId = ExternalIdentifier.create(new StudyIdentifierImpl("some-dumb-id"), ID);
         newExtId.setSubstudyId(SUBSTUDY_ID);
@@ -276,6 +277,7 @@ public class ExternalIdServiceTest {
     public void createExternalIdSetsSubstudyIdIfMissingAndUnambiguous() {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.empty());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(TestConstants.TEST_STUDY)
@@ -311,7 +313,7 @@ public class ExternalIdServiceTest {
     public void createExternalIdAlreadyExistsThrows() {
         when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.of(extId));
         extId.setSubstudyId(SUBSTUDY_ID);
         
         externalIdService.createExternalId(extId, false);
@@ -319,7 +321,7 @@ public class ExternalIdServiceTest {
     
     @Test
     public void deleteExternalIdPermanently() {
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.of(extId));
         
         externalIdService.deleteExternalIdPermanently(study, extId);
         
@@ -335,6 +337,8 @@ public class ExternalIdServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyMissingThrows() {
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, extId.getIdentifier())).thenReturn(Optional.empty());
+        
         externalIdService.deleteExternalIdPermanently(study, extId);
     }
     
@@ -344,7 +348,7 @@ public class ExternalIdServiceTest {
                 .withCallerStudyId(TestConstants.TEST_STUDY)
                 .withCallerSubstudies(SUBSTUDIES).build());        
         extId.setSubstudyId("someOtherId");
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(extId);
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.of(extId));
         
         externalIdService.deleteExternalIdPermanently(study, extId);
     }
