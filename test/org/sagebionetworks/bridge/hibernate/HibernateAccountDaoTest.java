@@ -1222,8 +1222,8 @@ public class HibernateAccountDaoTest {
     @Test
     public void getByExternalId() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
-                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.externalId=:externalId GROUP BY acct.id";
+                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "+
+                "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // mock hibernate
@@ -1244,8 +1244,8 @@ public class HibernateAccountDaoTest {
     @Test
     public void getByExternalIdAfterAuthentication() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "+
-                "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.externalId=:externalId GROUP BY acct.id";
+                "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "+
+                "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // mock hibernate
