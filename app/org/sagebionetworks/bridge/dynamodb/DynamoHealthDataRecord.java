@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Set;
 
@@ -46,6 +47,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
+    private String userSubstudyMemberships;
     private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
@@ -294,6 +296,19 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     public void setUserDataGroups(Set<String> userDataGroups) {
         // DDB doesn't support empty sets, use null reference for empty set. This is also enforced by the builder.
         this.userDataGroups = (userDataGroups != null && !userDataGroups.isEmpty()) ? userDataGroups : null;
+    }
+    
+    /** {@inheritDoc} */
+    @JsonIgnore
+    @Override
+    public String getUserSubstudyMemberships() {
+        return userSubstudyMemberships;
+    }
+    
+    /** @see #getUserSubstudyMemberships() */
+    @Override
+    public void setUserSubstudyMemberships(String userSubstudyMemberships) {
+        this.userSubstudyMemberships = userSubstudyMemberships;
     }
 
     /** {@inheritDoc} */

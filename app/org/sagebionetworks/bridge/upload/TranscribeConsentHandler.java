@@ -1,9 +1,12 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.sagebionetworks.bridge.BridgeUtils.serializeSubstudyMemberships;
+
 import javax.annotation.Nonnull;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -30,6 +33,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             record.setUserSharingScope(account.getSharingScope());
             record.setUserExternalId(account.getExternalId());
             record.setUserDataGroups(account.getDataGroups());
+            record.setUserSubstudyMemberships( serializeSubstudyMemberships(account) );
         } else {
             // default sharing to NO_SHARING
             record.setUserSharingScope(SharingScope.NO_SHARING);

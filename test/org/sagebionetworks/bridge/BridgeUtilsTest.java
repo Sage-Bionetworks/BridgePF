@@ -52,6 +52,48 @@ public class BridgeUtilsTest {
     }
     
     @Test
+    public void serializeSubstudyMemberships() {
+        Account account = Account.create();
+        AccountSubstudy substudy1 = AccountSubstudy.create("studyId", "subA", "accountId");
+        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        substudy2.setExternalId("extB");
+        AccountSubstudy substudy3 = AccountSubstudy.create("studyId", "subC", "accountId");
+        substudy3.setExternalId("extC");
+        AccountSubstudy substudy4 = AccountSubstudy.create("studyId", "subD", "accountId");
+        account.setAccountSubstudies(ImmutableSet.of(substudy1, substudy2, substudy3, substudy4));
+        
+        String output = BridgeUtils.serializeSubstudyMemberships(account);
+        
+        assertEquals("|subA=|subB=extB|subC=extC|subD=|", output);
+    }
+    
+    @Test
+    public void serializeSubstudyMembershipsOneEntry() {
+        Account account = Account.create();
+        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        substudy2.setExternalId("extB");
+        account.setAccountSubstudies(ImmutableSet.of(substudy2));
+        
+        String output = BridgeUtils.serializeSubstudyMemberships(account);
+        
+        assertEquals("|subB=extB|", output);
+    }
+    
+    @Test
+    public void serializeSubstudyMembershipsNull() {
+        Account account = Account.create();
+        account.setAccountSubstudies(null);
+        assertNull(BridgeUtils.serializeSubstudyMemberships(account));
+    }
+    
+    @Test
+    public void serializeSubstudyMembershipsBlank() {
+        Account account = Account.create();
+        account.setAccountSubstudies(ImmutableSet.of());
+        assertNull(BridgeUtils.serializeSubstudyMemberships(account));
+    }
+    
+    @Test
     public void substudyIdsVisibleToCallerFilters() {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());

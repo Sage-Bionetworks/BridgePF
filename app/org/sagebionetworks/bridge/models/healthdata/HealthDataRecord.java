@@ -168,6 +168,20 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** @see #getUserDataGroups() */
     void setUserDataGroups(Set<String> userDataGroups);
+    
+    /**
+     * The substudies assigned to the user, and the optional external ID being used for each assignment, if any. 
+     * The string takes the form of "|substudy=[externalId][|substudy=[externalId]]|". The string "|substudy=|" 
+     * indicates membership in a substudy without an external ID, while "|substudy=externalId|" indicates 
+     * membership along with an external ID. This sequence can occur one or more times separated by the pipe 
+     * symbol, with a pipe symbol at the start and the end of the string. The equals and pipe characters are 
+     * escape characters that are not allowed in the substudy or external IDs, and allow for unambiguous query 
+     * matching of substrings.
+     */
+    String getUserSubstudyMemberships();
+    
+    /** @see #getUserSubstudyMemberships() */
+    void setUserSubstudyMemberships(String userSubstudyMemberships);
 
     /** Error messages related to upload validation. Only generated if UploadValidationStrictness is set to REPORT. */
     String getValidationErrors();
