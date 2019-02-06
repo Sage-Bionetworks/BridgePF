@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
-import static org.sagebionetworks.bridge.BridgeUtils.serializeSubstudyMemberships;
+import static org.sagebionetworks.bridge.BridgeUtils.mapSubstudyMemberships;
 
 import javax.annotation.Nonnull;
 
@@ -33,7 +33,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             record.setUserSharingScope(account.getSharingScope());
             record.setUserExternalId(account.getExternalId());
             record.setUserDataGroups(account.getDataGroups());
-            record.setUserSubstudyMemberships( serializeSubstudyMemberships(account) );
+            record.setUserSubstudyMemberships( mapSubstudyMemberships(account) );
         } else {
             // default sharing to NO_SHARING
             record.setUserSharingScope(SharingScope.NO_SHARING);

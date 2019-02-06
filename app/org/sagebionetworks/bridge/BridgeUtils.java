@@ -12,7 +12,6 @@ import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,6 @@ public class BridgeUtils {
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
     public static final Joiner SPACE_JOINER = Joiner.on(" ");
-    public static final Joiner PIPE_JOINER = Joiner.on("|");
     private static final int ONE_HOUR = 60*60;
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
@@ -90,19 +88,14 @@ public class BridgeUtils {
     // "request context" object into every method of every class.
     private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
-    public static String serializeSubstudyMemberships(Account account) {
-        if (isEmpty(account.getAccountSubstudies())) {
-            return null;
+    public static Map<String,String> mapSubstudyMemberships(Account account) {
+        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
+            String value = (acctSubstudy.getExternalId() == null) ? 
+                    "" : acctSubstudy.getExternalId();
+            builder.put(acctSubstudy.getSubstudyId(), value);
         }
-        List<String> pairs = account.getAccountSubstudies().stream().map(acctSubstudy -> {
-            return (acctSubstudy.getExternalId() == null) ?
-                (acctSubstudy.getSubstudyId() + "=") :
-                (acctSubstudy.getSubstudyId() + "=" + acctSubstudy.getExternalId());
-        }).collect(Collectors.toList());
-        
-        Collections.sort(pairs);
-
-        return "|" + PIPE_JOINER.join(pairs) + "|";
+        return builder.build();
     }
     
     public static Tuple<String> parseAutoEventValue(String automaticEventValue) {

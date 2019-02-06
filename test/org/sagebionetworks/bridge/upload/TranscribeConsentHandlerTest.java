@@ -6,6 +6,7 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +54,10 @@ public class TranscribeConsentHandlerTest {
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, outputRecord.getUserSharingScope());
         assertEquals(TEST_EXTERNAL_ID, outputRecord.getUserExternalId());
         assertEquals(Sets.newHashSet("test-group1","test-group2"), outputRecord.getUserDataGroups());
-        assertEquals("|subA=|subB=extB|", outputRecord.getUserSubstudyMemberships());
+        
+        Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
+        assertEquals("", substudyMemberships.get("subA"));
+        assertEquals("extB", substudyMemberships.get("subB"));
     }
 
     @Test

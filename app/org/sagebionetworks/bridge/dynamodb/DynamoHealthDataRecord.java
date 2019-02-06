@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
@@ -47,7 +47,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
-    private String userSubstudyMemberships;
+    private Map<String, String> userSubstudyMemberships;
     private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
@@ -299,15 +299,15 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
     
     /** {@inheritDoc} */
-    @JsonIgnore
+    @DynamoDBTypeConverted(converter=StringValueStringKeyMapMarshaller.class)
     @Override
-    public String getUserSubstudyMemberships() {
+    public Map<String, String> getUserSubstudyMemberships() {
         return userSubstudyMemberships;
     }
     
     /** @see #getUserSubstudyMemberships() */
     @Override
-    public void setUserSubstudyMemberships(String userSubstudyMemberships) {
+    public void setUserSubstudyMemberships(Map<String, String> userSubstudyMemberships) {
         this.userSubstudyMemberships = userSubstudyMemberships;
     }
 

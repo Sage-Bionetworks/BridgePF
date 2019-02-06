@@ -52,7 +52,7 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void serializeSubstudyMemberships() {
+    public void mapSubstudyMemberships() {
         Account account = Account.create();
         AccountSubstudy substudy1 = AccountSubstudy.create("studyId", "subA", "accountId");
         AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
@@ -62,37 +62,44 @@ public class BridgeUtilsTest {
         AccountSubstudy substudy4 = AccountSubstudy.create("studyId", "subD", "accountId");
         account.setAccountSubstudies(ImmutableSet.of(substudy1, substudy2, substudy3, substudy4));
         
-        String output = BridgeUtils.serializeSubstudyMemberships(account);
-        
-        assertEquals("|subA=|subB=extB|subC=extC|subD=|", output);
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertEquals(4, results.size());
+        assertEquals("", results.get("subA"));
+        assertEquals("extB", results.get("subB"));
+        assertEquals("extC", results.get("subC"));
+        assertEquals("", results.get("subD"));
     }
     
     @Test
-    public void serializeSubstudyMembershipsOneEntry() {
+    public void mapSubstudyMembershipsOneEntry() {
         Account account = Account.create();
         AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
         substudy2.setExternalId("extB");
         account.setAccountSubstudies(ImmutableSet.of(substudy2));
         
-        String output = BridgeUtils.serializeSubstudyMemberships(account);
-        
-        assertEquals("|subB=extB|", output);
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertEquals(1, results.size());
+        assertEquals("extB", results.get("subB"));
     }
     
     @Test
-    public void serializeSubstudyMembershipsNull() {
+    public void mapSubstudyMembershipsNull() {
         Account account = Account.create();
         account.setAccountSubstudies(null);
-        assertNull(BridgeUtils.serializeSubstudyMemberships(account));
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertTrue(results.isEmpty());
     }
     
     @Test
-    public void serializeSubstudyMembershipsBlank() {
+    public void mapSubstudyMembershipsBlank() {
         Account account = Account.create();
         account.setAccountSubstudies(ImmutableSet.of());
-        assertNull(BridgeUtils.serializeSubstudyMemberships(account));
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertTrue(results.isEmpty());
     }
-    
+
     @Test
     public void substudyIdsVisibleToCallerFilters() {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");

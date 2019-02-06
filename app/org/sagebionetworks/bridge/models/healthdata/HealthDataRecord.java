@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
@@ -170,18 +171,14 @@ public interface HealthDataRecord extends BridgeEntity {
     void setUserDataGroups(Set<String> userDataGroups);
     
     /**
-     * The substudies assigned to the user, and the optional external ID being used for each assignment, if any. 
-     * The string takes the form of "|substudy=[externalId][|substudy=[externalId]]|". The string "|substudy=|" 
-     * indicates membership in a substudy without an external ID, while "|substudy=externalId|" indicates 
-     * membership along with an external ID. This sequence can occur one or more times separated by the pipe 
-     * symbol, with a pipe symbol at the start and the end of the string. The equals and pipe characters are 
-     * escape characters that are not allowed in the substudy or external IDs, and allow for unambiguous query 
-     * matching of substrings.
+     * The substudies assigned to the user, and the optional external ID being used for each assignment, if any.
+     * The keys of this map are substudy IDs, and the values are either the associated external ID, or an empty 
+     * string if there is no associated external ID.
      */
-    String getUserSubstudyMemberships();
+    Map<String,String> getUserSubstudyMemberships();
     
     /** @see #getUserSubstudyMemberships() */
-    void setUserSubstudyMemberships(String userSubstudyMemberships);
+    void setUserSubstudyMemberships(Map<String,String> userSubstudyMemberships);
 
     /** Error messages related to upload validation. Only generated if UploadValidationStrictness is set to REPORT. */
     String getValidationErrors();
