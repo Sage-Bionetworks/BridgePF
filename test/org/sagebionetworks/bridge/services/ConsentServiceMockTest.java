@@ -361,13 +361,15 @@ public class ConsentServiceMockTest {
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
         assertEquals("externalId", account.getExternalId());
+        // This association is not removed
+        assertEquals(1, account.getAccountSubstudies().size());
+        AccountSubstudy acctSubstudy = account.getAccountSubstudies().iterator().next();
+        assertEquals("substudyId", acctSubstudy.getSubstudyId());
+        assertEquals("anExternalId", acctSubstudy.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());
             }
-        }
-        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
-            System.out.println(acctSubstudy);
         }
     }
     
@@ -870,6 +872,7 @@ public class ConsentServiceMockTest {
         account.setNotifyByEmail(true);
         account.setExternalId("externalId");
         AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
+        as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }
