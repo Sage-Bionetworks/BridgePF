@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
