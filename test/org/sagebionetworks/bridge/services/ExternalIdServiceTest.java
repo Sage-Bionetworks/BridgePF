@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -205,6 +206,24 @@ public class ExternalIdServiceTest {
         
         verify(externalIdDao).createExternalId(extId);
         verify(accountDao, never()).updateAccount(any(), any());
+    }
+    
+    @Test
+    public void migrateExternalIdentifierWithNoExternalId() throws Exception {
+        // setup
+        when(substudyService.getSubstudy(TestConstants.TEST_STUDY,  SUBSTUDY_ID, true))
+            .thenReturn(Substudy.create());
+        
+        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
+            .thenReturn(Optional.empty());
+        
+        // execute
+        try {
+            externalIdService.migrateExternalIdentifier(study, ID,  SUBSTUDY_ID);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            assertEquals("ExternalIdentifier not found.", e.getMessage());
+        }
     }
     
     @Test
