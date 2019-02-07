@@ -216,7 +216,7 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void getExternalIdNoExtIdThrows() {
+    public void getExternalIdNoExtIdReturnsEmptyOptional() {
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID)).thenReturn(Optional.empty());
         
         Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(TestConstants.TEST_STUDY, ID);

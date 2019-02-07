@@ -746,7 +746,7 @@ public class AuthenticationServiceMockTest {
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
-                .thenThrow(new EntityNotFoundException(ExternalIdentifier.class));
+            .thenReturn(Optional.empty());
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));

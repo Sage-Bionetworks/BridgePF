@@ -120,10 +120,10 @@ public class DynamoExternalIdDaoTest {
         ExternalIdentifier externalId = setupExternalIdentifier(account, "AAA");
         dao.commitAssignExternalId(externalId);
         
-        Optional<ExternalIdentifier> optionalId = dao.getExternalId(studyId, "AAA");
-        assertEquals("AAA", optionalId.get().getIdentifier());
-        assertEquals("healthCode", optionalId.get().getHealthCode());
-        assertEquals(studyId.getIdentifier(), optionalId.get().getStudyId());
+        externalId = dao.getExternalId(studyId, "AAA").get();
+        assertEquals("AAA", externalId.getIdentifier());
+        assertEquals("healthCode", externalId.getHealthCode());
+        assertEquals(studyId.getIdentifier(), externalId.getStudyId());
     }
 
     @Test(expected = EntityAlreadyExistsException.class)
@@ -376,7 +376,6 @@ public class DynamoExternalIdDaoTest {
             return null;
         }        
         ExternalIdentifier identifier = optionalId.get();
-        //ExternalIdentifier identifier = ExternalIdentifier.create(TestConstants.TEST_STUDY, externalId);
         identifier.setHealthCode(account.getHealthCode());
         account.setExternalId(identifier.getIdentifier());
         if (identifier.getSubstudyId() != null) {
