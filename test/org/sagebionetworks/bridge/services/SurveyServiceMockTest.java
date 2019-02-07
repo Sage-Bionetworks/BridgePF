@@ -230,6 +230,10 @@ public class SurveyServiceMockTest {
 
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        // there are no schedules to constraint this delete, it is prevented
+        // by the presence of a shared module
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true))
+                .thenReturn(ImmutableList.of()); 
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -363,8 +367,13 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
         // Two published surveys in the list, no exception thrown
+        List<SchedulePlan> plans = ImmutableList.of(createSchedulePlanListWithSurveyReference(true).get(0),
+                createSchedulePlanListWithSurveyReference(true).get(0));
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
+        
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        when(mockSurveyDao.getSurveyAllVersions(any(), any(), anyBoolean())).thenReturn(ImmutableList.of(survey));
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -420,7 +429,10 @@ public class SurveyServiceMockTest {
     public void deleteSurveyPermanentlyNotConstrainedByCompoundScheduleWithMultiplePublishedSurveys() {
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(survey, false)).thenReturn(survey);
+        doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false);
+        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }   
