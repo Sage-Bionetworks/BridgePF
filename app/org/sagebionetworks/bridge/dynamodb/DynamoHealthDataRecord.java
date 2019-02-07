@@ -17,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -299,7 +300,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBTypeConverted(converter=StringValueStringKeyMapMarshaller.class)
+    @DynamoDBTypeConvertedJson
     @Override
     public Map<String, String> getUserSubstudyMemberships() {
         return userSubstudyMemberships;
