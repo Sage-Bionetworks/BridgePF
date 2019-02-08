@@ -88,7 +88,7 @@ public class DynamoSurveyTest {
         // Just test that we have the right number of elements. In-depth serialization testing is done by
         // SurveyElementTest
         JsonNode jsonElementList = jsonNode.get("elements");
-        assertEquals(10, jsonElementList.size());
+        assertEquals(12, jsonElementList.size());
 
         // Convert back to POJO and validate. Note that study ID is still missing, since it was removed from the JSON.
         Survey convertedSurvey = BridgeObjectMapper.get().convertValue(jsonNode, Survey.class);
@@ -104,14 +104,14 @@ public class DynamoSurveyTest {
         assertEquals(survey.getIdentifier(), convertedSurvey.getIdentifier());
         assertTrue(convertedSurvey.isPublished());
         assertEquals(42, convertedSurvey.getSchemaRevision().longValue());
-        assertEquals(10, convertedSurvey.getElements().size());
-        for (int i = 0; i < 10; i++) {
+        assertEquals(12, convertedSurvey.getElements().size());
+        for (int i = 0; i < 12; i++) {
             assertEqualsSurveyElement(survey.getElements().get(i), convertedSurvey.getElements().get(i));
         }
 
-        // There are 10 survey elements, but only the first 9 are questions.
-        assertEquals(9, convertedSurvey.getUnmodifiableQuestionList().size());
-        for (int i = 0; i < 9; i++) {
+        // There are 11 survey elements, but only the first 10 are questions.
+        assertEquals(11, convertedSurvey.getUnmodifiableQuestionList().size());
+        for (int i = 0; i < 11; i++) {
             assertEqualsSurveyElement(convertedSurvey.getElements().get(i),
                     convertedSurvey.getUnmodifiableQuestionList().get(i));
         }
@@ -158,8 +158,8 @@ public class DynamoSurveyTest {
         assertEquals(survey.getIdentifier(), copy.getIdentifier());
         assertTrue(copy.isPublished());
         assertEquals(42, copy.getSchemaRevision().longValue());
-        assertEquals(9, copy.getElements().size());
-        for (int i = 0; i < 9; i++) {
+        assertEquals(11, copy.getElements().size());
+        for (int i = 0; i < 11; i++) {
             assertEqualsSurveyElement(survey.getElements().get(i), copy.getElements().get(i));
         }
     }
