@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.Optional;
+
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -19,7 +21,7 @@ public interface ExternalIdDao {
      * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
      * substudy membership.
      */
-    ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
+    Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId);
 
     /**
      * Get a forward-only cursor page of results. All external IDs for the study are returned, however, if a 

@@ -165,6 +165,30 @@ public class TestSurvey extends DynamoSurvey {
         }
     };
     
+    private DynamoSurveyQuestion yearMonthQuestion = new DynamoSurveyQuestion() {
+        {
+            YearMonthConstraints c = new YearMonthConstraints();
+            c.setAllowFuture(true);
+            setPrompt("What year and month did you get a diagnosis?");
+            setIdentifier("diagnosis-year-month");
+            setUiHint(UIHint.YEARMONTH);
+            setConstraints(c);
+            setGuid(UUID.randomUUID().toString());
+        }
+    };
+    
+    private DynamoSurveyQuestion postalCodeQuestion = new DynamoSurveyQuestion() {
+        {
+            PostalCodeConstraints pcc = new PostalCodeConstraints();
+            pcc.setCountryCode(CountryCode.US);
+            setPrompt("What are the first 3 digits of your zip code?");
+            setIdentifier("postal-code");
+            setUiHint(UIHint.POSTALCODE);
+            setConstraints(pcc);
+            setGuid(UUID.randomUUID().toString());
+        }
+    };
+    
     public TestSurvey(Class<?> cls, boolean makeNew) {
         setGuid(UUID.randomUUID().toString());
         setName("General Blood Pressure Survey");
@@ -185,6 +209,8 @@ public class TestSurvey extends DynamoSurvey {
         elements.add(timeQuestion);
         elements.add(multiValueQuestion);
         elements.add(stringQuestion);
+        elements.add(yearMonthQuestion);
+        elements.add(postalCodeQuestion);
         
         if (makeNew) {
             setGuid(null);
@@ -249,5 +275,11 @@ public class TestSurvey extends DynamoSurvey {
     @JsonIgnore
     public SurveyQuestion getTimeQuestion() {
         return timeQuestion;
+    }
+    
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getYearMonthQuestion() {
+        return yearMonthQuestion;
     }
 }

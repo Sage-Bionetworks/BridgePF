@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.After;
@@ -271,6 +272,7 @@ public class AuthenticationServiceMockTest {
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
 
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test
@@ -356,7 +358,8 @@ public class AuthenticationServiceMockTest {
             service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
-            verify(cacheProvider).setUserSession(e.getUserSession());    
+            verify(cacheProvider).setUserSession(e.getUserSession());
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());
         }
     }
     
@@ -371,7 +374,8 @@ public class AuthenticationServiceMockTest {
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         // Does not throw a consent required exception because the participant is an admin. 
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retrieved = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test
@@ -432,14 +436,20 @@ public class AuthenticationServiceMockTest {
         service.reauthenticate(study, CONTEXT, SIGN_IN_WITH_EMAIL); // doesn't have reauth token
     }
     
-    @Test(expected = ConsentRequiredException.class)
+    @Test
     public void reauthThrowsUnconsentedException() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
         
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
-        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        try {
+            service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+            fail("Should have thrown exception");
+        } catch(ConsentRequiredException e) {
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());
+        }
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -573,7 +583,8 @@ public class AuthenticationServiceMockTest {
             service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
-            verify(cacheProvider).setUserSession(e.getUserSession());    
+            verify(cacheProvider).setUserSession(e.getUserSession());
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());            
         }
     }
     
@@ -678,7 +689,8 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void generatePasswordExternalIdRecordMissiong() {
+    public void generatePasswordExternalIdRecordMissing() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
         study.setExternalIdValidationEnabled(true);
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -687,7 +699,8 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordNoAccountDoNotCreateAccount() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -697,7 +710,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         IdentifierHolder idHolder = new IdentifierHolder("userId");
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
@@ -716,7 +730,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
@@ -739,8 +754,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true))
-                .thenThrow(new EntityNotFoundException(ExternalIdentifier.class));
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+            .thenReturn(Optional.empty());
         
         try {
             service.generatePassword(study, EXTERNAL_ID, true);
@@ -757,7 +772,8 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         
         when(accountDao.getAccount(any())).thenReturn(account);
@@ -789,7 +805,8 @@ public class AuthenticationServiceMockTest {
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyA", "id")));
         
@@ -804,7 +821,8 @@ public class AuthenticationServiceMockTest {
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(accountDao.getAccount(any())).thenReturn(account);
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyB", "id")));

@@ -67,7 +67,8 @@ public class ExternalIdService {
         
         // Both getters throw exceptions if the entities do not exist. 
         substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, true);
-        ExternalIdentifier externalIdentifier = getExternalId(study.getStudyIdentifier(), externalId, true);
+        ExternalIdentifier externalIdentifier = getExternalId(study.getStudyIdentifier(), externalId)
+                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
         externalIdentifier.setSubstudyId(substudyId);
         // This just calls DDB's save method, and can be used to persist an update for this temporary migration method.
@@ -95,17 +96,12 @@ public class ExternalIdService {
         }
     }
     
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId, boolean throwException) {
+    public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
         checkNotNull(studyId);
         checkNotNull(externalId);
         
         // Not filtered because there's no public API to retrieve an individual external ID.
-        ExternalIdentifier existing = externalIdDao.getExternalId(studyId, externalId);
-        
-        if (throwException && existing == null) {
-            throw new EntityNotFoundException(ExternalIdentifier.class);
-        }
-        return existing;
+        return externalIdDao.getExternalId(studyId, externalId);
     }
     
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(
@@ -143,10 +139,8 @@ public class ExternalIdService {
         // Note that this external ID must be unique across the whole study, not just a substudy, or else
         // it cannot be used to identify the substudy, and that's a significant purpose behind the 
         // association of the two
-        ExternalIdentifier existing = externalIdDao.getExternalId(studyId, externalId.getIdentifier());
-        if (existing != null) {
-            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier",
-                    externalId.getIdentifier());
+        if (externalIdDao.getExternalId(studyId, externalId.getIdentifier()).isPresent()) {
+            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", externalId.getIdentifier());
         }
         externalIdDao.createExternalId(externalId);
     }
@@ -159,8 +153,9 @@ public class ExternalIdService {
             throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
         }
         
-        ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier());
-        if (existing == null ||  BridgeUtils.filterForSubstudy(existing) == null) {
+        ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier())
+                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
+        if (BridgeUtils.filterForSubstudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         externalIdDao.deleteExternalId(externalId);

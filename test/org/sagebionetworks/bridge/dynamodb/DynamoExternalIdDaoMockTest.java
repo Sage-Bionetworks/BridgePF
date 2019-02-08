@@ -22,6 +22,7 @@ import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -103,20 +104,20 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalId() {
         when(mapper.load(any())).thenReturn(externalId);
 
-        ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_STUDY, ID);
 
         verify(mapper).load(externalId);
-        assertEquals(retrieved, externalId);
+        assertEquals(externalId, retrieved.get());
     }
 
     @Test
     public void getExternalIdReturnsNull() {
         when(mapper.load(any())).thenReturn(null);
 
-        ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_STUDY, ID);
 
         verify(mapper).load(externalId);
-        assertNull(retrieved);
+        assertFalse(retrieved.isPresent());
     }
 
     @Test
