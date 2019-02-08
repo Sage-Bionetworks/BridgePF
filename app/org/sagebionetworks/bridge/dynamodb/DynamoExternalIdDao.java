@@ -11,6 +11,7 @@ import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NULL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -80,12 +81,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     @Override
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
+    public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
         checkNotNull(studyId);
         checkNotNull(externalId);
         
         DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId.getIdentifier(), externalId);
-        return mapper.load(key);
+        return Optional.ofNullable(mapper.load(key));
     }
 
     @Override
@@ -202,11 +203,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkArgument(isNotBlank(externalId));
         
         StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = getExternalId(studyId, externalId);
+        Optional<ExternalIdentifier> optionalId = getExternalId(studyId, externalId);
         
-        if (identifier == null) {
+        if (!optionalId.isPresent()) {
             return;
         }
+        ExternalIdentifier identifier = optionalId.get();
         if (account.getHealthCode().equals(identifier.getHealthCode())) {
             identifier.setHealthCode(null);
             mapper.save(identifier);

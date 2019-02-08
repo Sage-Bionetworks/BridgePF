@@ -8,6 +8,8 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.Optional;
+
 import javax.annotation.Resource;
 
 import org.junit.After;
@@ -210,10 +212,11 @@ public class UserAdminServiceTest {
     
     // This behavior is very similar to ParticipantService.beginAssignExternalId().
     private ExternalIdentifier setupExternalId(Account account, String externalId) {
-        ExternalIdentifier identifier = externalIdService.getExternalId(TestConstants.TEST_STUDY, externalId, false);
-        if (identifier == null) {
+        Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(TestConstants.TEST_STUDY, externalId);
+        if (!optionalId.isPresent()) {
             return null;
-        }        
+        }
+        ExternalIdentifier identifier = optionalId.get();
         identifier.setHealthCode(account.getHealthCode());
         if (account.getExternalId() == null) {
             account.setExternalId(identifier.getIdentifier());    
