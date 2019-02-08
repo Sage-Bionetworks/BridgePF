@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
@@ -11,7 +12,11 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 
 import com.google.common.collect.Sets;
 
@@ -19,6 +24,34 @@ public class TestUtilsTest {
 
     private static final HashSet<String> ALL_OF_GROUPS = Sets.newHashSet("a","b");
     private static final HashSet<String> NONE_OF_GROUPS = Sets.newHashSet("c","d");
+    
+    @Test
+    public void testAssertExceptionThrowsTheExceptionWithRightMessage() {
+        TestUtils.assertException(EntityNotFoundException.class, "Account not found.", () -> {
+            throw new EntityNotFoundException(Account.class);});
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void testAssertExceptionThrowsTheExceptionWithWrongMessage() {
+        TestUtils.assertException(EntityNotFoundException.class, "Account not found", () -> {
+            throw new EntityNotFoundException(AppConfig.class);});
+    }
+    
+    @Test(expected = ConstraintViolationException.class)
+    public void testAssertThrowsExceptionUnrelatedException() {
+        TestUtils.assertException(EntityNotFoundException.class, "Account not found", () -> {
+            throw new ConstraintViolationException.Builder().build();});
+    }
+    
+    @Test
+    public void testAssertThrowsExceptionNoException() {
+        try {
+            TestUtils.assertException(Exception.class, "Any message at all", () -> {});
+            fail("Should have thrown exception");
+        } catch(Throwable e) {
+            assertEquals("Should have thrown exception: java.lang.Exception, message: 'Any message at all'", e.getMessage());
+        }
+    }
     
     @Test
     public void createCriteriaWithArguments() {

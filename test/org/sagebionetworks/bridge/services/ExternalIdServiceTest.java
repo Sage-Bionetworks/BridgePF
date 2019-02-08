@@ -22,9 +22,11 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -218,12 +220,8 @@ public class ExternalIdServiceTest {
             .thenReturn(Optional.empty());
         
         // execute
-        try {
-            externalIdService.migrateExternalIdentifier(study, ID,  SUBSTUDY_ID);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            assertEquals("ExternalIdentifier not found.", e.getMessage());
-        }
+        TestUtils.assertException(EntityNotFoundException.class, "ExternalIdentifier not found.", 
+            () -> externalIdService.migrateExternalIdentifier(study, ID,  SUBSTUDY_ID));
     }
     
     @Test
