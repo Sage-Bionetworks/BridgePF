@@ -618,7 +618,8 @@ public final class DynamoStudy implements Study {
         this.installLinks = (map == null) ? new HashMap<>() : map;
     }
     
-    @Override public boolean getDisableExport() {
+    @Override 
+    public boolean getDisableExport() {
         return this.disableExport;
     }
 
