@@ -17,6 +17,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -27,6 +28,7 @@ import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
+import org.sagebionetworks.bridge.models.surveys.PostalCodeConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
 @Component
@@ -320,6 +323,10 @@ public class SurveySaveValidator implements Validator {
             doValidateConstraintsType(errors, hint, (DateConstraints)con);
         } else if (con instanceof DateTimeConstraints) {
             doValidateConstraintsType(errors, hint, (DateTimeConstraints)con);
+        } else if (con instanceof YearMonthConstraints) {
+            doValidateConstraintsType(errors, hint, (YearMonthConstraints)con);
+        } else if (con instanceof PostalCodeConstraints) {
+            doValidateConstraintsType(errors, hint, (PostalCodeConstraints)con);
         } else if (con instanceof NumericalConstraints) {
             doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
         }
@@ -413,6 +420,22 @@ public class SurveySaveValidator implements Validator {
             if (latestDate.isBefore(earliestDate)) {
                 errors.rejectValue("earliestValue", "is after the latest value");
             }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, YearMonthConstraints con) {
+        YearMonth earliestDate = con.getEarliestValue();
+        YearMonth latestDate = con.getLatestValue();
+        if (earliestDate != null && latestDate != null) {
+            if (latestDate.isBefore(earliestDate)) {
+                errors.rejectValue("earliestValue", "is after the latest value");
+            }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, PostalCodeConstraints con) {
+        if (con.getCountryCode() == null) {
+            errors.rejectValue("postalCode", "is required");
         }
     }
 

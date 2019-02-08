@@ -36,11 +36,13 @@ import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
+import org.sagebionetworks.bridge.models.surveys.PostalCodeConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.Unit;
+import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -68,6 +70,8 @@ public class UploadSchemaService {
                     .put(DataType.DATETIME, UploadFieldType.TIMESTAMP)
                     .put(DataType.HEIGHT, UploadFieldType.FLOAT)
                     .put(DataType.WEIGHT, UploadFieldType.FLOAT)
+                    .put(DataType.YEARMONTH, UploadFieldType.STRING)
+                    .put(DataType.POSTALCODE, UploadFieldType.STRING)
                     .build();
 
     // Default string length for single_choice field. This is needed to prevent single_choice questions from changing
@@ -324,6 +328,24 @@ public class UploadSchemaService {
                             .withType(UploadFieldType.STRING)
                             .withMaxLength(Unit.MAX_STRING_LENGTH)
                             .build());
+        } else if (constraints instanceof YearMonthConstraints) {
+            uploadFieldDefinitions.add(
+                    new UploadFieldDefinition.Builder()
+                    .withName(fieldName)
+                    .withRequired(false)
+                    .withType(UploadFieldType.STRING)
+                    .withMaxLength(7)
+                    .build());
+        } else if (constraints instanceof PostalCodeConstraints) {
+            // Not known for certainty that all partial postal codes will be less than 
+            // 5 characters, but seems likely from known examples
+            uploadFieldDefinitions.add(
+                    new UploadFieldDefinition.Builder()
+                    .withName(fieldName)
+                    .withRequired(false)
+                    .withType(UploadFieldType.STRING)
+                    .withMaxLength(5)
+                    .build());
         } else {
             // Get upload field type from the map.
             uploadFieldType = SURVEY_TO_SCHEMA_TYPE.get(surveyQuestionType);

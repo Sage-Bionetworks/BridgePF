@@ -79,6 +79,26 @@ public class TestUtils {
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
     /**
+     * Using @Test(expected=SomeException.class) has led us to create tests that pass because 
+     * exceptions are being thrown from the wrong place in the code under test. This utility method
+     * will also verify the message in the exception, which can help us find and fix these misleading
+     * succeeding tests.
+     */
+    public static void assertException(Class<? extends Exception> cls, String message, Runnable runnable) {
+        try {
+            runnable.run();
+        } catch(Exception e) {
+            if (!e.getClass().isAssignableFrom(cls)) {
+                throw e;
+            } else if (!e.getMessage().equals(message)) {
+                throw e;
+            }
+            return;
+        }
+        fail("Should have thrown exception: " + cls.getName() + ", message: '" + message + "'");
+    }
+    
+    /**
      * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and 
      * that your mock account was correctly edited.
      * @param mockAccountDao

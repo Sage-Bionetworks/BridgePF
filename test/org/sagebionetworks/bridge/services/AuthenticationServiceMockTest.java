@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.After;
@@ -678,7 +679,8 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void generatePasswordExternalIdRecordMissiong() {
+    public void generatePasswordExternalIdRecordMissing() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
         study.setExternalIdValidationEnabled(true);
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -688,7 +690,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -698,7 +701,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         IdentifierHolder idHolder = new IdentifierHolder("userId");
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
@@ -717,7 +721,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
@@ -740,8 +745,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true))
-                .thenThrow(new EntityNotFoundException(ExternalIdentifier.class));
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+            .thenReturn(Optional.empty());
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
@@ -761,7 +766,8 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         
         StudyParticipant participant = new StudyParticipant.Builder().build();
@@ -796,7 +802,8 @@ public class AuthenticationServiceMockTest {
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(accountDao.getAccount(any())).thenReturn(account);
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyA", "id")));
@@ -812,7 +819,8 @@ public class AuthenticationServiceMockTest {
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID, true)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(accountDao.getAccount(any())).thenReturn(account);
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyB", "id")));

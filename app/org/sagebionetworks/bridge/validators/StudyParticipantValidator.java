@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -105,9 +106,9 @@ public class StudyParticipantValidator implements Validator {
         // managed. If it's already assigned to another user, the database constraints will 
         // prevent this record's persistence.
         if (study.isExternalIdValidationEnabled() && StringUtils.isNotBlank(participant.getExternalId())) {
-            ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
-                    participant.getExternalId(), false);
-            if (externalId == null) {
+            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+                    participant.getExternalId());
+            if (!optionalId.isPresent()) {
                 errors.rejectValue("externalId", "is not a valid external ID");
             }
         }
