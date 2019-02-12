@@ -52,6 +52,55 @@ public class BridgeUtilsTest {
     }
     
     @Test
+    public void mapSubstudyMemberships() {
+        Account account = Account.create();
+        AccountSubstudy substudy1 = AccountSubstudy.create("studyId", "subA", "accountId");
+        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        substudy2.setExternalId("extB");
+        AccountSubstudy substudy3 = AccountSubstudy.create("studyId", "subC", "accountId");
+        substudy3.setExternalId("extC");
+        AccountSubstudy substudy4 = AccountSubstudy.create("studyId", "subD", "accountId");
+        account.setAccountSubstudies(ImmutableSet.of(substudy1, substudy2, substudy3, substudy4));
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertEquals(4, results.size());
+        assertEquals("", results.get("subA"));
+        assertEquals("extB", results.get("subB"));
+        assertEquals("extC", results.get("subC"));
+        assertEquals("", results.get("subD"));
+    }
+    
+    @Test
+    public void mapSubstudyMembershipsOneEntry() {
+        Account account = Account.create();
+        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        substudy2.setExternalId("extB");
+        account.setAccountSubstudies(ImmutableSet.of(substudy2));
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertEquals(1, results.size());
+        assertEquals("extB", results.get("subB"));
+    }
+    
+    @Test
+    public void mapSubstudyMembershipsNull() {
+        Account account = Account.create();
+        account.setAccountSubstudies(null);
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertTrue(results.isEmpty());
+    }
+    
+    @Test
+    public void mapSubstudyMembershipsBlank() {
+        Account account = Account.create();
+        account.setAccountSubstudies(ImmutableSet.of());
+        
+        Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
     public void substudyIdsVisibleToCallerFilters() {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());

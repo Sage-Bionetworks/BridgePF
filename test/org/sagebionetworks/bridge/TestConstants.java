@@ -45,7 +45,7 @@ public class TestConstants {
     public static final String EMAIL = "email";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
-
+    
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
     
