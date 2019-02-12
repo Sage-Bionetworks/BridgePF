@@ -5,9 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,8 +15,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -235,8 +233,6 @@ public class ParticipantControllerTest {
                 .withRequestParam("endTime", END_TIME)
                 .withRequestParam("emailFilter", "foo");
         
-        when(authService.getSession(eq(study), any())).thenReturn(session);
-        
         when(mockParticipantService.getPagedAccountSummaries(eq(study), any())).thenReturn(page);
         
         controller.setParticipantService(mockParticipantService);
@@ -252,7 +248,7 @@ public class ParticipantControllerTest {
 
         controller.setSessionUpdateService(sessionUpdateService);
         
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
     }
     
     @After
@@ -373,7 +369,7 @@ public class ParticipantControllerTest {
     @Test
     public void updateParticipant() throws Exception {
         study.getUserProfileAttributes().add("can_be_recontacted");
-        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
+        TestUtils.mockPlay().withJsonBody(createJson("{'firstName':'firstName',"+
                 "'lastName':'lastName',"+
                 "'email':'email@email.com',"+
                 "'externalId':'externalId',"+
@@ -382,7 +378,7 @@ public class ParticipantControllerTest {
                 "'notifyByEmail':true,"+
                 "'dataGroups':['group2','group1'],"+
                 "'attributes':{'can_be_recontacted':'true'},"+
-                "'languages':['en','fr']}"));
+                "'languages':['en','fr']}")).mock();
         
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
@@ -490,7 +486,7 @@ public class ParticipantControllerTest {
         IdentifierHolder holder = new IdentifierHolder("ABCD");
         
         study.getUserProfileAttributes().add("phone");
-        mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
+        TestUtils.mockPlay().withJsonBody(createJson("{'firstName':'firstName',"+
                 "'lastName':'lastName',"+
                 "'email':'email@email.com',"+
                 "'externalId':'externalId',"+
@@ -499,13 +495,13 @@ public class ParticipantControllerTest {
                 "'notifyByEmail':true,"+
                 "'dataGroups':['group2','group1'],"+
                 "'attributes':{'phone':'123456789'},"+
-                "'languages':['en','fr']}"));
+                "'languages':['en','fr']}")).mock();
         return holder;
     }
 
     @Test
     public void updateParticipantWithMismatchedIdsUsesURL() throws Exception {
-        mockPlayContextWithJson(createJson("{'id':'id2'}"));
+        TestUtils.mockPlay().withJsonBody(createJson("{'id':'id2'}")).mock();
         
         Result result = controller.updateParticipant("id1");
         assertResult(result, 200, "Participant updated.");
@@ -549,10 +545,9 @@ public class ParticipantControllerTest {
                 .withHealthCode("healthCode").build();
         
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
-        doReturn(new UserSession(participant)).when(authService).getSession(eq(study), any());
         
         String json = MAPPER.writeValueAsString(participant);
-        mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
 
         Result result = controller.updateSelfParticipant();
         
@@ -599,13 +594,13 @@ public class ParticipantControllerTest {
                 .withExternalId("POWERS").build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
         
-        mockPlayContextWithJson(createJson("{'externalId':'simpleStringChange',"+
+        TestUtils.mockPlay().withJsonBody(createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing',"+
                 "'notifyByEmail':false,"+
                 "'attributes':{'baz':'belgium'},"+
                 "'languages':['fr'],"+
                 "'status':'enabled',"+
-                "'roles':['admin']}"));
+                "'roles':['admin']}")).withMockResponse().mock();
         
         Result result = controller.updateSelfParticipant();
         assertResult(result, 200);
@@ -657,7 +652,8 @@ public class ParticipantControllerTest {
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
         String json = MAPPER.writeValueAsString(participant);
-        TestUtils.mockPlayContextWithJson(json);
+        
+        TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
 
         Result result = controller.updateSelfParticipant();
         assertResult(result, 200);
@@ -784,7 +780,7 @@ public class ParticipantControllerTest {
         DateTimeUtils.setCurrentMillisFixed(20000);
         try {
             String json = "{\"reason\":\"Because, reasons.\"}";
-            TestUtils.mockPlayContextWithJson(json);
+            TestUtils.mockPlay().withJsonBody(json).mock();
             
             controller.withdrawFromStudy(ID);
             
@@ -799,7 +795,7 @@ public class ParticipantControllerTest {
         DateTimeUtils.setCurrentMillisFixed(20000);
         try {
             String json = "{\"reason\":\"Because, reasons.\"}";
-            TestUtils.mockPlayContextWithJson(json);
+            TestUtils.mockPlay().withJsonBody(json).mock();
             
             controller.withdrawConsent(ID, SUBPOP_GUID);
             
@@ -867,7 +863,7 @@ public class ParticipantControllerTest {
     public void sendMessage() throws Exception {
         NotificationMessage message = TestUtils.getNotificationMessage();
         
-        TestUtils.mockPlayContextWithJson(message);
+        TestUtils.mockPlay().withBody(message).mock();
         Result result = controller.sendNotification(ID);
         
         assertResult(result, 202, "Message has been sent to external notification service.");
@@ -886,7 +882,7 @@ public class ParticipantControllerTest {
         Set<String> erroredRegistrations = ImmutableSet.of("123", "456");
         when(mockParticipantService.sendNotification(study, ID, message)).thenReturn(erroredRegistrations);
         
-        TestUtils.mockPlayContextWithJson(message);
+        TestUtils.mockPlay().withBody(message).mock();
         Result result = controller.sendNotification(ID);
         
         assertResult(result, 202, "Message has been sent to external notification service. Some registrations returned errors: 123, 456.");
@@ -1023,8 +1019,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void updateIdentifiersWithPhone() throws Exception {
-        mockPlayContextWithJson(PHONE_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlay().withBody(PHONE_UPDATE).withMockResponse().mock();
         
         when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
         
@@ -1047,8 +1042,7 @@ public class ParticipantControllerTest {
 
     @Test
     public void updateIdentifiersWithEmail() throws Exception {
-        mockPlayContextWithJson(EMAIL_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlay().withBody(EMAIL_UPDATE).withMockResponse().mock();
         
         when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
         
@@ -1069,8 +1063,7 @@ public class ParticipantControllerTest {
 
     @Test
     public void updateIdentifiersWithExternalId() throws Exception {
-        mockPlayContextWithJson(EXTID_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlay().withBody(EXTID_UPDATE).withMockResponse().mock();
         
         when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
         
@@ -1092,8 +1085,7 @@ public class ParticipantControllerTest {
     @Test(expected = NotAuthenticatedException.class)
     public void updateIdentifierRequiresAuthentication() throws Exception {
         doReturn(null).when(controller).getSessionIfItExists();
-        mockPlayContextWithJson(PHONE_UPDATE);
-        when(mockParticipantService.updateIdentifiers(any(), any(), any())).thenReturn(participant);
+        TestUtils.mockPlay().withBody(PHONE_UPDATE).mock();
         
         controller.updateIdentifiers();
     }
@@ -1199,7 +1191,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void sendSMS() throws Exception {
-        TestUtils.mockPlayContextWithJson(new SmsTemplate("This is a message")); 
+        TestUtils.mockPlay().withBody(new SmsTemplate("This is a message")).mock();
         
         Result result = controller.sendSmsMessage(ID);
         
@@ -1215,7 +1207,7 @@ public class ParticipantControllerTest {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.WORKER)).build());
         
-        TestUtils.mockPlayContextWithJson(new SmsTemplate("This is a message")); 
+        TestUtils.mockPlay().withBody(new SmsTemplate("This is a message")).mock();
         
         Result result = controller.sendSmsMessageForWorker(TestConstants.TEST_STUDY_IDENTIFIER, ID);
         
@@ -1389,7 +1381,7 @@ public class ParticipantControllerTest {
                 .withLanguage("en")
                 .withStartTime(START_TIME)
                 .withEndTime(END_TIME).build();
-        TestUtils.mockPlayContextWithJson(search);
+        TestUtils.mockPlay().withBody(search).mock();
         return search;
     }
     

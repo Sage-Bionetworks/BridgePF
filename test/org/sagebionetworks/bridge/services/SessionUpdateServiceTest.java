@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -20,7 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -211,8 +212,6 @@ public class SessionUpdateServiceTest {
         consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
                 .withSignedMostRecentConsent(true).build());
         
-        when(mockConsentService.getConsentStatuses(any())).thenReturn(consents);
-        
         UserSession session = new UserSession();
         session.setStudyIdentifier(API_STUDY_ID);
         session.setConsentStatuses(consents);
@@ -256,12 +255,10 @@ public class SessionUpdateServiceTest {
         consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
                 .withSignedMostRecentConsent(true).withRequired(true).build());
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
-        
-        when(mockConsentService.getConsentStatuses(context)).thenReturn(consents);
-        
         UserSession session = new UserSession();
         session.setConsentStatuses(consents);
+        
+        assertNull(session.getParticipant().getSharingScope());
 
         service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, true);
         

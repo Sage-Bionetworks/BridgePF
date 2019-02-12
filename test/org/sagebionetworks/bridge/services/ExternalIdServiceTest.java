@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,7 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -117,9 +117,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierWithExistingSubstudyAssociation() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(Optional.of(extId));
@@ -153,9 +150,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierFromSingularToSubstudyAssociation() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(Optional.of(extId));
@@ -191,9 +185,6 @@ public class ExternalIdServiceTest {
     @Test
     public void migrateExternalIdentifierWithNoAccount() throws Exception {
         // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, ID, true))
-            .thenReturn(Substudy.create());
-        
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
             .thenReturn(Optional.of(extId));
@@ -309,8 +300,6 @@ public class ExternalIdServiceTest {
     @Test(expected = InvalidEntityException.class)
     public void createExternalIdDoesNotSetSubstudyIdAmbiguous() {
         extId.setSubstudyId(null); // not set by caller
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY, SUBSTUDY_ID, false))
-            .thenReturn(Substudy.create());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(TestConstants.TEST_STUDY)

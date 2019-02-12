@@ -453,7 +453,6 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        
         // Simple case, not trying to assign an external ID 
         if (!assigningExternalId) {
             accountDao.updateAccount(account, null);

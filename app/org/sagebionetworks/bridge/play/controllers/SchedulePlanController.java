@@ -19,6 +19,8 @@ import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import play.mvc.Result;
 
 @Controller
@@ -54,7 +56,7 @@ public class SchedulePlanController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
+        DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(request(), JsonNode.class));
         SchedulePlan plan = schedulePlanService.createSchedulePlan(study, planForm);
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
@@ -71,7 +73,7 @@ public class SchedulePlanController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
+        DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(request(), JsonNode.class));
         planForm.setGuid(guid);
         SchedulePlan plan = schedulePlanService.updateSchedulePlan(study, planForm);
         

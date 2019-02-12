@@ -72,7 +72,7 @@ libraryDependencies ++= Seq(
   // Test
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
-  "org.mockito" % "mockito-core" % "1.10.19" % Test,
+  "org.mockito" % "mockito-core" % "2.23.4" % Test,
   "org.sagebionetworks" % "BridgeTestUtils" % "1.4" % Test,
   "org.springframework" % "spring-test" % "4.3.18.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2" % Test

@@ -2,10 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -106,30 +105,30 @@ public class SurveyControllerTest {
         viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getObject(anyObject(), eq(String.class))).thenAnswer(new Answer<String>() {
+        when(provider.getObject(any(), eq(String.class))).thenAnswer(new Answer<String>() {
             @Override
             public String answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
+                CacheKey key = invocation.getArgument(0);
                 return cacheMap.get(key);
             }
         });
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
-                String value = invocation.getArgumentAt(1, String.class);
+                CacheKey key = invocation.getArgument(0);
+                String value = invocation.getArgument(1);
                 cacheMap.put(key, value);
                 return null;
             }
-        }).when(provider).setObject(anyObject(), anyString(), anyInt());
+        }).when(provider).setObject(any(), anyString(), anyInt());
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
+                CacheKey key = invocation.getArgument(0);
                 cacheMap.remove(key);
                 return null;
             }
-        }).when(provider).removeObject(anyObject());
+        }).when(provider).removeObject(any());
         viewCache.setCacheProvider(provider);
         
         studyService = mock(StudyService.class);
@@ -142,15 +141,7 @@ public class SurveyControllerTest {
         controller.setStudyService(studyService);
     }
     
-    private void setupContext(StudyIdentifier studyIdentifier, Roles role, boolean hasConsented, Object object) throws Exception {
-        // Setup the context, with our without JSON in the POST body
-        if (object == null) {
-            TestUtils.mockPlayContext();
-        } else {
-            String json = BridgeObjectMapper.get().writeValueAsString(object);
-            TestUtils.mockPlayContextWithJson(json);
-        }
-        
+    private void setupContext(StudyIdentifier studyIdentifier, Roles role, boolean hasConsented) throws Exception {
         // Create a participant (with a role, if given)
         StudyParticipant.Builder builder = new StudyParticipant.Builder().withHealthCode("BBB");
         if (role != null) {
@@ -175,7 +166,8 @@ public class SurveyControllerTest {
     
     @Test
     public void verifyViewCacheIsWorking() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         when(service.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString(), eq(true))).thenReturn(getSurvey(false));
         
         controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
@@ -187,7 +179,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getAllSurveysMostRecentVersionDoNotIncludeDeletedAsDefault() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, false)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion(null);
@@ -198,7 +191,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getAllSurveysMostRecentVersionDoNotIncludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, "false");
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withBody("false").mock();
         when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, false)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion("false");
@@ -209,7 +203,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getAllSurveysMostRecentVersionIncludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, true)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion("true");
@@ -220,7 +215,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionDoNotIncludeDeletedDefault() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getAllSurveysMostRecentlyPublishedVersion(API_STUDY_ID, false)).thenReturn(getSurveys(2, false));
         
         controller.getAllSurveysMostRecentlyPublishedVersion(null);
@@ -231,7 +227,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionDoNotIncludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getAllSurveysMostRecentlyPublishedVersion(API_STUDY_ID, false)).thenReturn(getSurveys(2, false));
         
         controller.getAllSurveysMostRecentlyPublishedVersion("false");
@@ -242,7 +239,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionIncludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getAllSurveysMostRecentlyPublishedVersion(API_STUDY_ID, true)).thenReturn(getSurveys(2, false));
         
         controller.getAllSurveysMostRecentlyPublishedVersion("true");
@@ -253,8 +251,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionForStudy() throws Exception {
-        setupContext(SECONDSTUDY_STUDY_ID, WORKER, UNCONSENTED, null);
-
+        setupContext(SECONDSTUDY_STUDY_ID, WORKER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         // make surveys
         List<Survey> surveyList = getSurveys(2, false);
         surveyList.get(0).setGuid("survey-0");
@@ -276,7 +274,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getSurveyForUser() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, true)).thenReturn(getSurvey(false));
         
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -287,7 +286,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getSurveyMostRecentlyPublishedVersionForUser() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         when(service.getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
         
         controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
@@ -298,8 +298,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getSurvey() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, CONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, true)).thenReturn(getSurvey(false));
         
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -310,8 +310,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getSurveyForWorker() throws Exception {
-        setupContext(TestConstants.TEST_STUDY, WORKER, UNCONSENTED, null);
-        
+        setupContext(TestConstants.TEST_STUDY, WORKER, UNCONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         // make survey
         Survey survey = getSurvey(false);
         survey.setGuid("test-survey");
@@ -328,7 +328,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getSurveyMostRecentVersion() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getSurveyMostRecentVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         
         Result result = controller.getSurveyMostRecentVersion(SURVEY_GUID);
@@ -340,7 +341,8 @@ public class SurveyControllerTest {
 
     @Test
     public void getSurveyMostRecentlyPublishedVersion() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         when(service.getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
         
         Result result = controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
@@ -352,8 +354,8 @@ public class SurveyControllerTest {
     
     @Test
     public void deleteSurveyDefaultsToLogicalDelete() throws Exception {
-        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
@@ -367,8 +369,8 @@ public class SurveyControllerTest {
     
     @Test
     public void developerCanLogicallyDelete() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
@@ -382,8 +384,8 @@ public class SurveyControllerTest {
     
     @Test
     public void adminCanLogicallyDelete() throws Exception {
-        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
@@ -397,15 +399,15 @@ public class SurveyControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void workerCannotDelete() throws Exception {
-        setupContext(API_STUDY_ID, WORKER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, WORKER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
     }
     
     @Test
     public void deleteSurveyAllowedForDeveloper() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false))
                 .thenReturn(survey);
@@ -420,8 +422,8 @@ public class SurveyControllerTest {
     
     @Test
     public void physicalDeleteOfSurveyNotAllowedForDeveloper() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
@@ -434,8 +436,8 @@ public class SurveyControllerTest {
     }
     
     public void physicalDeleteAllowedForAdmin() throws Exception {
-        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, false)).thenReturn(survey);
         
@@ -449,8 +451,8 @@ public class SurveyControllerTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(null);
         
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
@@ -458,8 +460,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getSurveyAllVersionsExcludeDeletedByDefault() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getSurveyAllVersions(API_STUDY_ID, SURVEY_GUID, false)).thenReturn(getSurveys(3, false));
         
         Result result = controller.getSurveyAllVersions(SURVEY_GUID, null);
@@ -471,8 +473,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getSurveyAllVersionsExcludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getSurveyAllVersions(API_STUDY_ID, SURVEY_GUID, false)).thenReturn(getSurveys(3, false));
         
         Result result = controller.getSurveyAllVersions(SURVEY_GUID, "false");
@@ -484,8 +486,8 @@ public class SurveyControllerTest {
     
     @Test
     public void getSurveyAllVersionsIncludeDeleted() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         when(service.getSurveyAllVersions(API_STUDY_ID, SURVEY_GUID, true)).thenReturn(getSurveys(3, false));
         
         Result result = controller.getSurveyAllVersions(SURVEY_GUID, "true");
@@ -498,8 +500,8 @@ public class SurveyControllerTest {
     @Test
     public void createSurvey() throws Exception {
         Survey survey = getSurvey(true);
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withBody(survey).mock();
         survey.setGuid(BridgeUtils.generateGuid());
         survey.setVersion(1L);
         survey.setCreatedOn(DateTime.now().getMillis());
@@ -518,9 +520,9 @@ public class SurveyControllerTest {
     @Test
     public void versionSurvey() throws Exception {
         Survey survey = getSurvey(false);
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
-        
-        when(service.versionSurvey(eq(TestConstants.TEST_STUDY), any(Survey.class))).thenReturn(survey);
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withBody(survey).mock();
+        when(service.versionSurvey(eq(TestConstants.TEST_STUDY), any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
         
         Result result = controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
         TestUtils.assertResult(result, 201);
@@ -534,8 +536,8 @@ public class SurveyControllerTest {
     @Test
     public void updateSurvey() throws Exception {
         Survey survey = getSurvey(false);
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().withBody(survey).mock();
         when(service.updateSurvey(eq(TestConstants.TEST_STUDY), any(Survey.class))).thenReturn(survey);
         
         Result result = controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -547,8 +549,8 @@ public class SurveyControllerTest {
     
     @Test
     public void publishSurvey() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.publishSurvey(eq(TestConstants.TEST_STUDY), eq(KEYS), eq(false))).thenReturn(survey);
 
@@ -561,8 +563,8 @@ public class SurveyControllerTest {
 
     @Test
     public void publishSurveyNewSchemaRev() throws Exception {
-        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED);
+        TestUtils.mockPlay().mock();
         Survey survey = getSurvey(false);
         when(service.publishSurvey(eq(TestConstants.TEST_STUDY), eq(KEYS), eq(true))).thenReturn(survey);
 
@@ -575,8 +577,8 @@ public class SurveyControllerTest {
 
     @Test
     public void adminRejectedAsUnauthorized() throws Exception {
-        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
-        
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, true)).thenReturn(survey);
         
@@ -590,8 +592,8 @@ public class SurveyControllerTest {
     
     @Test
     public void studyParticipantRejectedAsNotConsented() throws Exception {
-        setupContext(API_STUDY_ID, null, UNCONSENTED, null);
-
+        setupContext(API_STUDY_ID, null, UNCONSENTED);
+        TestUtils.mockPlay().withMockResponse().mock();
         Survey survey = getSurvey(false);
         when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, true)).thenReturn(survey);
         
@@ -639,7 +641,8 @@ public class SurveyControllerTest {
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(CREATED_ON.getMillis());
         
-        setupContext(TEST_STUDY, DEVELOPER, false, survey);
+        setupContext(TEST_STUDY, DEVELOPER, false);
+        TestUtils.mockPlay().withBody(survey).withMockResponse().mock();
         when(service.getSurvey(eq(TEST_STUDY), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
         
         viewCache.getView(viewCache.getCacheKey(

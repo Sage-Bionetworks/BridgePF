@@ -25,6 +25,8 @@ import org.sagebionetworks.bridge.services.UploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
@@ -72,7 +74,7 @@ public class UploadController extends BaseController {
     
     public Result upload() {
         UserSession session = getAuthenticatedAndConsentedSession();
-        UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
+        UploadRequest uploadRequest = UploadRequest.fromJson(parseJson(request(), JsonNode.class));
         UploadSession uploadSession = uploadService.createUpload(session.getStudyIdentifier(), session.getParticipant(),
                 uploadRequest);
         final Metrics metrics = getMetrics();

@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -38,7 +38,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 
-@SuppressWarnings({ "ConstantConditions", "unchecked" })
+@SuppressWarnings("ConstantConditions")
 @RunWith(MockitoJUnitRunner.class)
 public class UploadServiceMockTest {
     
@@ -201,17 +201,14 @@ public class UploadServiceMockTest {
     
     private void setupUploadMocks() {
         // Mock upload
-        doReturn("upload-id").when(mockUpload).getUploadId();
         doReturn(UploadStatus.SUCCEEDED).when(mockUpload).getStatus();
         doReturn("record-id").when(mockUpload).getRecordId();
         
         // Failed mock upload
-        doReturn("failed-upload-id").when(mockFailedUpload).getUploadId();
         doReturn(UploadStatus.REQUESTED).when(mockFailedUpload).getStatus();
 
         // Mock upload with record ID but no record
         Upload mockUploadWithNoRecord = mock(Upload.class);
-        when(mockUploadWithNoRecord.getUploadId()).thenReturn("upload-id-with-no-record");
         when(mockUploadWithNoRecord.getStatus()).thenReturn(UploadStatus.SUCCEEDED);
         when(mockUploadWithNoRecord.getRecordId()).thenReturn("missing-record-id");
 
@@ -226,8 +223,6 @@ public class UploadServiceMockTest {
             .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
-        doReturn(mockUpload).when(mockDao).getUpload("upload-id");
-        doReturn(mockFailedUpload).when(mockDao).getUpload("failed-upload-id");
         
         // Mock the record returned from the validation status record
         doReturn("schema-id").when(mockRecord).getSchemaId();

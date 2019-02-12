@@ -15,7 +15,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -95,8 +96,8 @@ public class ExternalIdControllerV4Test {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson( 
-                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}"));
+        TestUtils.mockPlay().withJsonBody(TestUtils.createJson( 
+                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}")).mock();
         
         Result result = controller.migrateExternalIdentifier();
         TestUtils.assertResult(result, 200, 
@@ -107,7 +108,7 @@ public class ExternalIdControllerV4Test {
     
     @Test
     public void getExternalIdentifiers() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(mockService.getExternalIds("offsetKey", new Integer(49), "idFilter", Boolean.TRUE)).thenReturn(list);
         
         Result result = controller.getExternalIdentifiers("offsetKey", "49", "idFilter", "true");
@@ -121,7 +122,7 @@ public class ExternalIdControllerV4Test {
     
     @Test
     public void getExternalIdentifiersAllDefaults() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(mockService.getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, null))
                 .thenReturn(list);
         
@@ -138,7 +139,7 @@ public class ExternalIdControllerV4Test {
     public void createExternalIdentifier() throws Exception {
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
         extId.setSubstudyId("substudyId");
-        TestUtils.mockPlayContextWithJson(extId);
+        TestUtils.mockPlay().withBody(extId).mock();
         
         Result result = controller.createExternalIdentifier();
         TestUtils.assertResult(result, 201, "External identifier created.");
@@ -153,7 +154,7 @@ public class ExternalIdControllerV4Test {
     
     @Test
     public void deleteExternalIdentifier() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
         Result result = controller.deleteExternalIdentifier("externalId");
@@ -165,8 +166,8 @@ public class ExternalIdControllerV4Test {
     }
     
     @Test(expected = NotAuthenticatedException.class)
-    public void generatePasswordRequiresResearcher() throws Exception {
-        TestUtils.mockPlayContext();
+    public void generkatePasswordRequiresResearcher() throws Exception {
+        TestUtils.mockPlay().mock();
         
         controller.generatePassword("extid", false);
     }

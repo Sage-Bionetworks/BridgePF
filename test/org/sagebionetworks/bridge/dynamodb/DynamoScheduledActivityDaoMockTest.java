@@ -83,7 +83,7 @@ public class DynamoScheduledActivityDaoMockTest {
     private void mockMapperResults(final List<ScheduledActivity> activities) {
         // Mocks loading one of the supplied activities.
         when(mapper.load(any())).thenAnswer(invocation -> {
-            DynamoScheduledActivity thisSchActivity = invocation.getArgumentAt(0, DynamoScheduledActivity.class);
+            DynamoScheduledActivity thisSchActivity = invocation.getArgument(0);
             for (ScheduledActivity schActivity : activities) {
                 if (thisSchActivity.getGuid().equals(schActivity.getGuid()) && thisSchActivity.getHealthCode().equals(schActivity.getHealthCode())) {
                     return thisSchActivity;

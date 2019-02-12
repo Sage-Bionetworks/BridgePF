@@ -4,8 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,7 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -65,6 +65,14 @@ public class DynamoAppConfigElementDaoTest {
     @SuppressWarnings("unchecked")
     @Test
     public void getMostRecentElementsIncludeDeleted() {
+        DynamoAppConfigElement ace1 = new DynamoAppConfigElement();
+        ace1.setId(ID_1);
+        ace1.setRevision(3L);
+        DynamoAppConfigElement ace2 = new DynamoAppConfigElement();
+        ace2.setId(ID_2);
+        ace2.setRevision(3L);
+        
+        when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockMapper.batchLoad(any(List.class))).thenReturn(appConfigElementMapId1And2());
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, true);
@@ -85,6 +93,14 @@ public class DynamoAppConfigElementDaoTest {
     @SuppressWarnings("unchecked")
     @Test
     public void getMostRecentElementsExcludeDeleted() {
+        DynamoAppConfigElement ace1 = new DynamoAppConfigElement();
+        ace1.setId(ID_1);
+        ace1.setRevision(2L);
+        DynamoAppConfigElement ace2 = new DynamoAppConfigElement();
+        ace2.setId(ID_2);
+        ace2.setRevision(3L);
+        
+        when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockMapper.batchLoad(any(List.class))).thenReturn(appConfigElementMapId1And2());
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, false);

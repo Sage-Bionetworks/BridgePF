@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.mockito.Matchers.anyString;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -18,7 +18,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -130,9 +130,6 @@ public class DynamoTopicSubscriptionDaoTest {
 
     @Test
     public void subscribeWhenSnsFails() {
-        doReturn("subscriptionARN").when(mockSubscribeResult).getSubscriptionArn();
-        doReturn(mockSubscribeResult).when(mockSnsClient).subscribe(any());
-        
         doThrow(EXCEPTION).when(mockSnsClient).subscribe(any(SubscribeRequest.class));
         
         NotificationRegistration registration = getNotificationRegistration();
@@ -207,8 +204,6 @@ public class DynamoTopicSubscriptionDaoTest {
     public void unsubscribeWhenSnsFails() {
         doReturn(mockSubscription).when(mockMapper).load(any());
         doReturn("subscriptionARN").when(mockSubscription).getSubscriptionARN();
-        doReturn("registrationGuid").when(mockSubscription).getRegistrationGuid();
-        doReturn("topicGuid").when(mockSubscription).getTopicGuid();
         
         doThrow(EXCEPTION).when(mockSnsClient).unsubscribe(any(String.class));
         
@@ -240,7 +235,6 @@ public class DynamoTopicSubscriptionDaoTest {
         doReturn(mockSubscription).when(mockMapper).load(any());
         doReturn("subscriptionARN").when(mockSubscription).getSubscriptionARN();
         doReturn("registrationGuid").when(mockSubscription).getRegistrationGuid();
-        doReturn("topicGuid").when(mockSubscription).getTopicGuid();
         
         doThrow(EXCEPTION).when(mockMapper).delete(any());
         

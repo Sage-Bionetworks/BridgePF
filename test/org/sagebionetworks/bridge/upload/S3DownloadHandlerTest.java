@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 
-@SuppressWarnings("unchecked")
 public class S3DownloadHandlerTest {
     @Test
     public void test() throws Exception {
@@ -38,7 +37,7 @@ public class S3DownloadHandlerTest {
         // mock S3 helper
         S3Helper mockS3Helper = mock(S3Helper.class);
         doAnswer(invocation -> {
-            File destFile = invocation.getArgumentAt(2, File.class);
+            File destFile = invocation.getArgument(2);
             inMemoryFileHelper.writeBytes(destFile, "test data".getBytes(Charsets.UTF_8));
             return null;
         }).when(mockS3Helper).downloadS3File(eq(TestConstants.UPLOAD_BUCKET), eq("test-upload-id"), any());

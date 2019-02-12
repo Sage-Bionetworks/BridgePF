@@ -344,7 +344,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
-        Account account = getAccount(accountId);
+        Account account = BridgeUtils.filterForSubstudy( getAccount(accountId) );
         
         if (account != null) {
             accountEdits.accept(account);

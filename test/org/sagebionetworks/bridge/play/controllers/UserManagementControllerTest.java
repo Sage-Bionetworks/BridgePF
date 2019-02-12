@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
@@ -12,13 +11,9 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
-
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,8 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import play.mvc.Http;
+import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Http.Response;
 import play.mvc.Result;
 import play.test.Helpers;
@@ -104,21 +98,12 @@ public class UserManagementControllerTest {
         controller.setBridgeConfig(bridgeConfig);
         controller.setCacheProvider(cacheProvider);
         
-        doReturn(session).when(userAdminService).createUser(
-                anyObject(), anyObject(), anyObject(), anyBoolean(), anyBoolean());
+        doReturn(session).when(userAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(authService).getSession(any(String.class));
         doReturn(study).when(studyService).getStudy(TestConstants.TEST_STUDY);
         doReturn(study).when(studyService).getStudy("api");
         
         when(study.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-
-        Map<String,String[]> map = Maps.newHashMap();
-        map.put(BridgeConstants.SESSION_TOKEN_HEADER, new String[]{"AAA"});
-        
-        mockPlayContextWithJson("{}");
-        Http.Context context = Http.Context.current.get();
-        Http.Request request = context.request();
-        when(request.headers()).thenReturn(map);
         doReturn(null).when(controller).getMetrics();
     }
 
@@ -129,7 +114,7 @@ public class UserManagementControllerTest {
         
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy")
                 .withEmail(TestConstants.EMAIL).withPassword("password").build();
-        Response response = TestUtils.mockPlayContextWithJson(signIn);
+        Response response = TestUtils.mockPlay().withBody(signIn).withMockResponse().mock();
 
         when(authService.signIn(eq(study), any(CriteriaContext.class), signInCaptor.capture())).thenReturn(session);
         
@@ -149,7 +134,7 @@ public class UserManagementControllerTest {
     public void signInForAdminNotAnAdmin() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy")
                 .withEmail(TestConstants.EMAIL).withPassword("password").build();
-        TestUtils.mockPlayContextWithJson(signIn);
+        TestUtils.mockPlay().withBody(signIn).withMockResponse().mock();
         
         // But this person is actually a worker, not an admin
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.WORKER)).build());
@@ -168,7 +153,7 @@ public class UserManagementControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
-        TestUtils.mockPlayContextWithJson(signIn);
+        TestUtils.mockPlay().withBody(signIn).mock();
         
         Study nextStudy = Study.create();
         nextStudy.setIdentifier("nextStudy");
@@ -181,6 +166,9 @@ public class UserManagementControllerTest {
     
     @Test
     public void createdResponseReturnsJSONPayload() throws Exception {
+        TestUtils.mockPlay().withJsonBody("{}")
+            .withHeader(BridgeConstants.SESSION_TOKEN_HEADER, "AAA").mock();
+        
         Result result = controller.createUser();
 
         TestUtils.assertResult(result, 201);
@@ -192,6 +180,9 @@ public class UserManagementControllerTest {
 
     @Test
     public void createdResponseReturnsJSONPayloadWithStudyId() throws Exception {
+        TestUtils.mockPlay().withJsonBody("{}")
+            .withHeader(BridgeConstants.SESSION_TOKEN_HEADER, "AAA").mock();
+        
         // same study id as above test
         Result result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
 
@@ -200,6 +191,9 @@ public class UserManagementControllerTest {
     
     @Test
     public void deleteUser() throws Exception {
+        TestUtils.mockPlay().withJsonBody("{}")
+            .withHeader(BridgeConstants.SESSION_TOKEN_HEADER, "AAA").mock();
+        
         Result result = controller.deleteUser("ASDF");
         
         assertResult(result, 200, "User deleted.");

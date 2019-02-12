@@ -7,10 +7,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -27,7 +26,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -43,7 +42,6 @@ import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
 import com.amazonaws.services.sns.model.DeleteEndpointRequest;
 import com.amazonaws.services.sns.model.GetEndpointAttributesResult;
-import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
 import com.google.common.collect.Maps;
 
@@ -345,7 +343,6 @@ public class DynamoNotificationRegistrationDaoTest {
     @Test
     public void updateWhenNew() {
         doReturn(null).when(mockMapper).load(any());
-        doThrow(new NotFoundException("Error")).when(mockSnsClient).getEndpointAttributes(any());
         
         NotificationRegistration registration = getNotificationRegistration();
         try {
@@ -378,7 +375,6 @@ public class DynamoNotificationRegistrationDaoTest {
     @Test
     public void deleteWhenDoesNotExist() {
         doReturn(null).when(mockMapper).load(any());
-        doThrow(new NotFoundException("Error")).when(mockSnsClient).getEndpointAttributes(any());
         
         try {
             dao.deleteRegistration(HEALTH_CODE, GUID);

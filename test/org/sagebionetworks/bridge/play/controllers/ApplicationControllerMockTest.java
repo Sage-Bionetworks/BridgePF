@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,7 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -39,8 +36,6 @@ import org.sagebionetworks.bridge.services.UrlShortenerService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -91,7 +86,6 @@ public class ApplicationControllerMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         doReturn(study).when(studyService).getStudy("test-study");
-        doReturn(Lists.newArrayList(study)).when(studyService).getStudies();
     }
     
     @Test
@@ -129,13 +123,8 @@ public class ApplicationControllerMockTest {
     
     @Test
     public void startSessionWorks() throws Exception {
-        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
-                .put("Accept-Language", new String[]{"en-US"}).build();
-        TestUtils.mockPlayContextWithJson("{}", headers);
-        
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
-        doReturn(session).when(authenticationService).emailSignIn(any(), any());
         
         Result result = controller.startSession("test-study", "email", "token");
 

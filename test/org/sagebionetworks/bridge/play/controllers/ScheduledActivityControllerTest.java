@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -19,7 +19,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -30,7 +29,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -68,7 +67,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityControllerTest {
@@ -154,11 +152,7 @@ public class ScheduledActivityControllerTest {
         schActivity.setReferentGuid("referentGuid");
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("User-Agent", new String[]{USER_AGENT});
-        
-        String json = BridgeObjectMapper.get().writeValueAsString(list);
-        TestUtils.mockPlayContextWithJson(json, headers);
+        TestUtils.mockPlay().withBody(list).withHeader("User-Agent", USER_AGENT).mock();
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -170,9 +164,6 @@ public class ScheduledActivityControllerTest {
         session.setStudyIdentifier(TEST_STUDY);
         
         when(scheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
-
-        doReturn(ACCOUNT_CREATED_ON).when(account).getCreatedOn();
-        doReturn(study).when(studyService).getStudy(TEST_STUDY_IDENTIFIER);
 
         controller = spy(new ScheduledActivityController());
         controller.setScheduledActivityService(scheduledActivityService);
@@ -375,7 +366,7 @@ public class ScheduledActivityControllerTest {
     @Test
     public void activityHistoryWithDefaults() throws Exception {
         doReturn(createActivityResultsV2(77, null)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
-                eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+                eq(ACTIVITY_GUID), eq(null), eq(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null, null);
         TestUtils.assertResult(result, 200);
@@ -480,8 +471,7 @@ public class ScheduledActivityControllerTest {
         schActivity.setClientData(clientData);
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
-        String json = BridgeObjectMapper.get().writeValueAsString(list);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withBody(list).mock();
         
         Result result = controller.updateScheduledActivities();
         TestUtils.assertResult(result, 200);
