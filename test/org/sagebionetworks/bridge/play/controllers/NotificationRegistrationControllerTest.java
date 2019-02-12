@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.isNotNull;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,11 +20,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -80,7 +79,6 @@ public class NotificationRegistrationControllerTest {
         controller.setNotificationTopicService(mockTopicService);
         
         doReturn(HEALTH_CODE).when(session).getHealthCode();
-        doReturn(true).when(session).doesConsent();
         when(session.getParticipant()).thenReturn(PARTICIPANT);
         doReturn(STUDY_ID).when(session).getStudyIdentifier();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -119,7 +117,7 @@ public class NotificationRegistrationControllerTest {
 
         // Mock Play context.
         String json = TestUtils.createJson("{'deviceId':'"+DEVICE_ID+"','osName':'"+OS_NAME+"'}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
 
         // Execute and validate.
         Result result = controller.createRegistration();
@@ -130,8 +128,7 @@ public class NotificationRegistrationControllerTest {
         assertEquals("GuidHolder", node.get("type").asText());
 
         // Verify service.
-        verify(mockNotificationService).createRegistration(eq(STUDY_ID), notNull(CriteriaContext.class),
-                registrationCaptor.capture());
+        verify(mockNotificationService).createRegistration(eq(STUDY_ID), isNotNull(), registrationCaptor.capture());
         
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(DEVICE_ID, registration.getDeviceId());
@@ -144,7 +141,7 @@ public class NotificationRegistrationControllerTest {
         doReturn(createRegList().get(0)).when(mockNotificationService).updateRegistration(any(), any());
         
         String json = TestUtils.createJson("{'guid':'guidWeIgnore','deviceId':'NEW_DEVICE_ID','osName':'"+OS_NAME+"'}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
         
         Result result = controller.updateRegistration(GUID);
         TestUtils.assertResult(result, 200);
@@ -190,7 +187,7 @@ public class NotificationRegistrationControllerTest {
         SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
         doReturn(Lists.newArrayList(status)).when(mockTopicService)
                 .currentSubscriptionStatuses(STUDY_ID, HEALTH_CODE, GUID);
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         Result result = controller.getSubscriptionStatuses(GUID);
         TestUtils.assertResult(result, 200);
@@ -210,7 +207,7 @@ public class NotificationRegistrationControllerTest {
         doReturn(HEALTH_CODE).when(session).getHealthCode();
         SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
         doReturn(Lists.newArrayList(status)).when(mockTopicService).subscribe(eq(STUDY_ID), eq(HEALTH_CODE), eq(GUID), any());
-        TestUtils.mockPlayContextWithJson(TestUtils.getSubscriptionRequest());
+        TestUtils.mockPlay().withBody(TestUtils.getSubscriptionRequest()).mock();
         
         Result result = controller.subscribe(GUID);
         TestUtils.assertResult(result, 200);

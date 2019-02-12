@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.List;
 
@@ -21,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
@@ -74,7 +72,7 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() throws Exception {
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         controller = spy(new StudyConsentController());
         controller.setStudyConsentService(studyConsentService);
@@ -150,7 +148,7 @@ public class StudyConsentControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StudyConsentForm form = new StudyConsentForm("<document/>");
-        mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(form));
+        TestUtils.mockPlay().withBody(form).mock();
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.addConsent(eq(SUBPOP_GUID), any())).thenReturn(view);

@@ -3,14 +3,14 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -76,6 +75,96 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
     
+    public static PlayContextMocker mockPlay() {
+        return new PlayContextMocker();
+    }
+    
+    public static class PlayContextMocker {
+        private Map<String,String> headers = new HashMap<>();
+        private String json;
+        private Http.Request request;
+        private Http.Response response;
+        
+        private PlayContextMocker() {
+            // We establish a mock for this because most tests require it. A very few test will 
+            // either replace or nullify the request mock in order for tests to pass.
+            this.request = Mockito.mock(Http.Request.class);
+        }
+        /**
+         * The JSON to add as the body of the mocked request. 
+         */
+        public PlayContextMocker withJsonBody(String json) throws Exception {
+            this.json = json;
+            return this;
+        }
+        /**
+         * Add the supplied object as JSON to the body of the mocked request. This method 
+         * will call ObjectMapper.writeValueAsString(object) on the supplied object.
+         */
+        public PlayContextMocker withBody(Object obj) throws Exception {
+            this.json = BridgeObjectMapper.get().writeValueAsString(obj);
+            return this;
+        }
+        /**
+         * Add a header to the mock request. There is no case where we simulate or utilize 
+         * multiple headers with the same name, so support for that in the mocks environment 
+         * has been removed.
+         */
+        public PlayContextMocker withHeader(String name, String content) {
+            if (name != null && content != null) {
+                headers.put(name, content);    
+            }
+            return this;
+        }
+        /**
+         * For requests that require more complicated mocking than an HTTP body or HTTP headers, 
+         * create the mock and add it to the builder via this method. Virtually all tests mock 
+         * only the body and headers of a request.
+         */
+        public PlayContextMocker withRequest(Http.Request mockedRequest) {
+            this.request = mockedRequest;
+            return this;
+        }
+        /**
+         * Most of the time, tests access context.request() only, but some tests need to mock 
+         * response(). Those tests must specifically ask for it by calling this method.
+         */
+        public PlayContextMocker withMockResponse() {
+            this.response = Mockito.mock(Http.Response.class);
+            return this;
+        }
+        /**
+         * Mock all the desired mocks to simulate the Play HTTP environment. Similar to calling 
+         * the build method of a builder.
+         */
+        public Http.Response mock() throws Exception {
+            if (request != null && !headers.isEmpty()) {
+                when(request.getHeader(anyString())).thenAnswer(invocation -> {
+                    Object[] args = invocation.getArguments();
+                    return headers.get(args[0]);
+                });
+            }
+
+            if (request != null && json != null) {
+                Http.RequestBody body = Mockito.mock(Http.RequestBody.class);
+                when(request.body()).thenReturn(body);
+                // This mocks the plain/text response, which is called before the JSON response 
+                // in BaseController.parseJson(). The latter method does not need to be mocked. 
+                when(body.asText()).thenReturn(json);
+            }
+
+            Http.Context context = Mockito.mock(Http.Context.class);
+            if (response != null) {
+                when(context.response()).thenReturn(response);    
+            }
+            if (request != null) {
+                when(context.request()).thenReturn(request);    
+            }
+            Http.Context.current.set(context);
+            return response;            
+        }
+    }
+    
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
     /**
@@ -111,7 +200,7 @@ public class TestUtils {
         Mockito.mockingDetails(mockAccountDao).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgumentAt(2, Consumer.class);
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(2);
             accountEdits.accept(mockAccount);
             return null;
         }).when(mockAccountDao).editAccount(any(), any(), any());
@@ -196,73 +285,6 @@ public class TestUtils {
             }
         }
         return builder.build();
-    }
-    
-    public static Http.Response mockPlayContextWithJson(String json, Map<String,String[]> headers) throws Exception {
-        JsonNode node = new ObjectMapper().readTree(json);
-        Http.RequestBody body = mock(Http.RequestBody.class);
-        when(body.asJson()).thenReturn(node);
-
-        Http.Request request = mock(Http.Request.class);
-        Http.Response response = mock(Http.Response.class);
-
-        when(request.getHeader(anyString())).thenAnswer(invocation -> {
-            Object[] args = invocation.getArguments();
-            String[] values = headers.get(args[0]);
-            return (values == null || values.length == 0) ? null : values[0];
-        });
-        when(request.headers()).thenReturn(headers);
-        when(request.body()).thenReturn(body);
-
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(request);
-        when(context.response()).thenReturn(response);
-
-        Http.Context.current.set(context);
-        return response;
-    }
-    
-    /**
-     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
-     */
-    public static Http.Response mockPlayContextWithJson(String json) throws Exception {
-        return mockPlayContextWithJson(json, Maps.newHashMap());
-    }
-    
-    public static Http.Response mockPlayContextWithJson(Object object) throws Exception {
-        String json = BridgeObjectMapper.get().writeValueAsString(object);
-        return mockPlayContextWithJson(json, Maps.newHashMap());
-    }
-    
-    public static Http.Response mockPlayContextWithJson(Object object, Map<String, String[]> headers) throws Exception {
-        String json = BridgeObjectMapper.get().writeValueAsString(object);
-        return mockPlayContextWithJson(json, headers);
-    }
-    
-    /**
-     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
-     */
-    public static Http.Response mockPlayContext(Http.Request mockRequest) {
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(mockRequest);
-
-        Http.Response mockResponse = mock(Http.Response.class);
-        when(context.response()).thenReturn(mockResponse);
-        
-        Http.Context.current.set(context);
-        return mockResponse;
-    }
-    
-    /**
-     * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
-     */
-    public static Http.Response mockPlayContext() throws Exception {
-        Http.RequestBody body = mock(Http.RequestBody.class);
-        when(body.asJson()).thenReturn(null);
-        
-        Http.Request request = mock(Http.Request.class);
-        when(request.body()).thenReturn(body);
-        return mockPlayContext(request);
     }
     
     public static String randomName(Class<?> clazz) {

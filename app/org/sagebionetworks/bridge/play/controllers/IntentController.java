@@ -26,7 +26,7 @@ public class IntentController extends BaseController {
         // An early hack in the system was that sharing scope was added to the consent signature 
         // JSON even though it is not part of the signature. We need to move that value because 
         // the client API continues to treat sharing as part of the consent signature.
-        JsonNode requestNode = requestToJSON(request());
+        JsonNode requestNode = parseJson(request(), JsonNode.class);
         if (requestNode != null && requestNode.has("consentSignature")) {
             SharingOption sharing = SharingOption.fromJson(requestNode.get("consentSignature"), 2);
             intent = new IntentToParticipate.Builder().copyOf(intent)

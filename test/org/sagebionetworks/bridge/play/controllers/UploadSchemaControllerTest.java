@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.anyVararg;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -353,12 +353,12 @@ public class UploadSchemaControllerTest {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(roles)).build());
 
         // mock request JSON
-        TestUtils.mockPlayContextWithJson(TEST_SCHEMA_JSON);
+        TestUtils.mockPlay().withJsonBody(TEST_SCHEMA_JSON).mock();
 
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
         return controller;
     }
 

@@ -5,13 +5,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -41,7 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseClientException;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -186,14 +186,14 @@ public class StudyServiceMockTest {
 
         when(studyDao.createStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except set version to 1.
-            Study study = invocation.getArgumentAt(0, Study.class);
+            Study study = invocation.getArgument(0);
             study.setVersion(1L);
             return study;
         });
 
         when(studyDao.updateStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except we increment the version.
-            Study study = invocation.getArgumentAt(0, Study.class);
+            Study study = invocation.getArgument(0);
             Long oldVersion = study.getVersion();
             study.setVersion(oldVersion != null ? oldVersion + 1 : 1);
             return study;
@@ -611,7 +611,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutSignedConsentTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setSignedConsentTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getSignedConsentTemplate());
@@ -751,7 +750,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutResetPasswordSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setResetPasswordSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getResetPasswordSmsTemplate());
@@ -761,7 +759,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setPhoneSignInSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getPhoneSignInSmsTemplate());
@@ -771,7 +768,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setAppInstallLinkSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
@@ -781,7 +777,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setVerifyPhoneSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
@@ -791,7 +786,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutAccountExistsSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setAccountExistsSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getAccountExistsSmsTemplate());
@@ -801,7 +795,6 @@ public class StudyServiceMockTest {
     public void createStudyWithoutSignedConsentSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setSignedConsentSmsTemplate(null);
-        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getSignedConsentSmsTemplate());
@@ -1262,7 +1255,6 @@ public class StudyServiceMockTest {
 
         // spy
         doReturn(study).when(service).createStudy(any());
-        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
 
         // stub
         when(participantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
@@ -1364,7 +1356,6 @@ public class StudyServiceMockTest {
         when(mockSynapseClient.createTeam(any())).thenReturn(mockTeam);
         when(mockSynapseClient.createEntity(any())).thenReturn(mockProject);
         when(mockSynapseClient.getACL(any())).thenReturn(mockAcl);
-        when(mockSynapseClient.getTeamACL(any())).thenReturn(mockTeamAcl);
 
         // execute
         Study retStudy = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), study);
@@ -1432,7 +1423,6 @@ public class StudyServiceMockTest {
         assertEquals(TEST_TEAM_ID, retStudy.getSynapseDataAccessTeamId().toString());
     }
 
-    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void createSynapseProjectTeamNonExistUserID() throws SynapseException {
         Study study = getTestStudy();
@@ -1481,8 +1471,6 @@ public class StudyServiceMockTest {
     @Test
     public void updatingStudyVerifiesSupportEmail() throws Exception {
         Study study = getTestStudy();
-        when(emailVerificationService.verifyEmailAddress(study.getSupportEmail()))
-                .thenReturn(EmailVerificationStatus.VERIFIED);
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
 
         // We need to copy study in order to set support email and have it be different than
@@ -1498,8 +1486,6 @@ public class StudyServiceMockTest {
     @Test
     public void updatingStudyNoChangeInSupportEmailDoesNotVerifyEmail() {
         Study study = getTestStudy();
-        when(emailVerificationService.verifyEmailAddress(study.getSupportEmail()))
-                .thenReturn(EmailVerificationStatus.VERIFIED);
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.updateStudy(study, false);

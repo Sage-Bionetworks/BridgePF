@@ -6,10 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import java.util.function.Consumer;
 
-import com.google.common.collect.ImmutableMap;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
@@ -35,9 +33,8 @@ public class RequestInterceptorTest {
         CacheProvider mockCacheProvider = mock(CacheProvider.class);
         when(mockCacheProvider.getUserSession("ABC-DEF")).thenReturn(session);
         
-        Map<String, String[]> headerMap = ImmutableMap.of(BridgeConstants.X_REQUEST_ID_HEADER,
-                new String[] { REQUEST_ID });
-        TestUtils.mockPlayContextWithJson("{}", headerMap);
+        TestUtils.mockPlay().withJsonBody("{}")
+            .withHeader(BridgeConstants.X_REQUEST_ID_HEADER, REQUEST_ID).mock();
         
         Object expectedReturnValue = new Object();
         MethodInvocation mockMethod = mock(MethodInvocation.class);

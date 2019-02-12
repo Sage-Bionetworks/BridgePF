@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -37,7 +37,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -67,7 +67,7 @@ public class HibernateHelperTest {
         // Spy Hibernate helper. This allows us to mock execute() and test it independently later.
         helper = spy(new HibernateHelper(mockSessionFactory, mockExceptionConverter));
         doAnswer(invocation -> {
-            Function<Session, ?> function = invocation.getArgumentAt(0, Function.class);
+            Function<Session, ?> function = invocation.getArgument(0);
             return function.apply(mockSession);
         }).when(helper).execute(any());
     }

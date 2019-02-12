@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.upload;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -147,7 +147,7 @@ public class UploadValidationTaskTest {
         UploadValidationHandler fooHandler = new MessageHandler("foo succeeded");
 
         UploadValidationHandler barHandler = mock(UploadValidationHandler.class);
-        doThrow(exClass).when(barHandler).handle(notNull(UploadValidationContext.class));
+        doThrow(exClass).when(barHandler).handle(notNull());
 
         UploadValidationHandler bazHandler = mock(UploadValidationHandler.class);
         verifyZeroInteractions(bazHandler);

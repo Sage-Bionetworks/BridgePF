@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
-import static org.mockito.Matchers.anyVararg;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -26,7 +26,7 @@ public class ExportControllerTest {
         // mock session
         UserSession mockSession = new UserSession();
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
 
         // mock service
         ExportService mockExportService = mock(ExportService.class);

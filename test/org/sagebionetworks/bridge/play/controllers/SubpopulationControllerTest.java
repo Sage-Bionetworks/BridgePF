@@ -18,7 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -89,7 +89,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void getAllSubpopulationsExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         List<Subpopulation> list = createSubpopulationList();
         when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
@@ -112,20 +112,24 @@ public class SubpopulationControllerTest {
 
     @Test
     public void getAllSubpopulationsIncludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         List<Subpopulation> list = createSubpopulationList();
-        when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
+        when(subpopService.getSubpopulations(study.getStudyIdentifier(), true)).thenReturn(list);
         
         Result result = controller.getAllSubpopulations("true");
         TestUtils.assertResult(result, 200);
+        
+        ResourceList<Subpopulation> payload = TestUtils.getResponsePayload(result,
+                new TypeReference<ResourceList<Subpopulation>>() {});
+        assertEquals(2, payload.getItems().size());
         
         verify(subpopService).getSubpopulations(study.getStudyIdentifier(), true);
     }
 
     @Test
     public void getAllSubpopulationsDefaultExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         List<Subpopulation> list = createSubpopulationList();
         when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
@@ -139,7 +143,7 @@ public class SubpopulationControllerTest {
     @Test
     public void createSubpopulation() throws Exception {
         String json = TestUtils.createJson("{'guid':'junk','name':'Name','defaultGroup':true,'description':'Description','required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
         
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
@@ -169,7 +173,7 @@ public class SubpopulationControllerTest {
     @Test
     public void updateSubpopulation() throws Exception {
         String json = TestUtils.createJson("{'name':'Name','description':'Description','defaultGroup':true,'required':true,'criteria':{'minAppVersion':2,'maxAppVersion':10,'allOfGroups':['requiredGroup'],'noneOfGroups':['prohibitedGroup']}}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
         
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
@@ -199,7 +203,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void getSubpopulation() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("AAA");
@@ -223,7 +227,7 @@ public class SubpopulationControllerTest {
     public void getSubpopulationForResearcher() throws Exception {
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("AAA");
@@ -235,7 +239,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void deleteSubpopulationDefaultsToLogical() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), null);
         
@@ -245,7 +249,7 @@ public class SubpopulationControllerTest {
     
     @Test
     public void deleteSubpopulationLogically() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "false");
         
@@ -261,7 +265,7 @@ public class SubpopulationControllerTest {
         session.setAuthenticated(true);
         doReturn(session).when(controller).getSessionIfItExists();
         
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         
@@ -302,6 +306,7 @@ public class SubpopulationControllerTest {
 
     @Test(expected = UnauthorizedException.class)
     public void getSubpopulationRequiresDeveloper() throws Exception {
+        TestUtils.mockPlay().mock();
         session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet()).build());
         
         controller.getSubpopulation(TestConstants.TEST_STUDY_IDENTIFIER);

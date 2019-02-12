@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
@@ -64,8 +64,6 @@ import play.test.Helpers;
 public class ParticipantReportControllerTest {
     public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
     private static final String REPORT_ID = "foo";
-    private static final String VALID_LANGUAGE_HEADER = "en-US";
-    private static final String VALID_USER_AGENT_HEADER = "Unknown Client/14 BridgeJavaSDK/10";
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
     private static final String OTHER_PARTICIPANT_ID = "userId";
     private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
@@ -129,11 +127,9 @@ public class ParticipantReportControllerTest {
         session.setConsentStatuses(statuses);
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
-        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY.getIdentifier());
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
         
@@ -141,7 +137,6 @@ public class ParticipantReportControllerTest {
         index.setIdentifier("fofo");
         ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
                 Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
-        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         index = ReportIndex.create();
         index.setIdentifier("fofo");
@@ -150,21 +145,9 @@ public class ParticipantReportControllerTest {
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
-    private void setupContext() throws Exception {
-        setupContext(VALID_USER_AGENT_HEADER, VALID_LANGUAGE_HEADER);
-    }
-    
-    private void setupContext(String userAgent, String languages) throws Exception {
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("User-Agent", new String[] {userAgent});
-        headers.put("Accept-Language", new String[] {languages});
-
-        TestUtils.mockPlayContextWithJson("{}", headers);
-    }
-    
     @Test
     public void getParticipantReportDataForSelf() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
@@ -176,7 +159,7 @@ public class ParticipantReportControllerTest {
     
     @Test
     public void getParticipantReportDataForSelfV4() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         
         doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
                 .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
@@ -193,10 +176,10 @@ public class ParticipantReportControllerTest {
     
     @Test
     public void saveParticipantDataForSelf() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
         
         Result result = controller.saveParticipantReportForSelf(REPORT_ID);
         TestUtils.assertResult(result, 201);
@@ -213,7 +196,7 @@ public class ParticipantReportControllerTest {
     
     @Test
     public void getParticipantReportDataNoDatesForSelf() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 REPORT_ID, HEALTH_CODE, null, null);
@@ -226,7 +209,7 @@ public class ParticipantReportControllerTest {
 
     @Test
     public void getParticipantReportDataV4() throws Exception {
-        setupContext();
+        TestUtils.mockPlay().withJsonBody("{}").mock();
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
@@ -356,7 +339,7 @@ public class ParticipantReportControllerTest {
     public void saveParticipantReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
 
         Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
@@ -374,7 +357,7 @@ public class ParticipantReportControllerTest {
     public void saveParticipantEmptyReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{}}");
         
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
 
         Result result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
@@ -384,7 +367,7 @@ public class ParticipantReportControllerTest {
     public void saveParticipantReportForWorker() throws Exception {
         String json = TestUtils.createJson("{'healthCode': '"+OTHER_PARTICIPANT_HEALTH_CODE+"', 'date':'2015-02-12','data':['A','B','C']}");
         
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
 
         Result result = controller.saveParticipantReportForWorker(REPORT_ID);
         TestUtils.assertResult(result, 201, "Report data saved.");
@@ -402,7 +385,7 @@ public class ParticipantReportControllerTest {
     public void saveParticipantReportForWorkerRequiresHealthCode() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':['A','B','C']}");
         
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withJsonBody(json).mock();
         try {
             controller.saveParticipantReportForWorker(REPORT_ID);    
         } catch(BadRequestException e) {

@@ -6,11 +6,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anySetOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,8 +24,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-
+import org.mockito.Captor;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 
+@RunWith(MockitoJUnitRunner.class)
 public class UploadSchemaServiceTest {
     private static final UploadFieldDefinition FIELD_DEF = new UploadFieldDefinition.Builder().withName("field")
             .withType(UploadFieldType.STRING).build();
@@ -53,6 +55,12 @@ public class UploadSchemaServiceTest {
     private UploadSchemaService svc;
     private SharedModuleMetadataService mockSharedModuleMetadataService;
 
+    @Captor
+    ArgumentCaptor<String> queryCaptor;
+    
+    @Captor
+    ArgumentCaptor<Map<String,Object>> paramCaptor;
+    
     @Before
     public void setup() {
         svcInputSchema = makeSimpleSchema();
@@ -250,24 +258,18 @@ public class UploadSchemaServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdNotFound() {
-        // mock dao to return empty list instead of null
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
-
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdPermanentlyNotFound() {
-        // mock dao to return empty list instead of null
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
-
         svc.deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
     
     @Test(expected = BadRequestException.class)
     public void deleteByIdNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
         when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
@@ -276,13 +278,12 @@ public class UploadSchemaServiceTest {
     @Test(expected = BadRequestException.class)
     public void deleteByIdPermanentlyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
         when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
         svc.deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdSuccess() {
         // mock dao
@@ -294,8 +295,6 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemas(schemaListToDelete);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramCaptor.capture(), eq(null), eq(true));
 
@@ -305,7 +304,6 @@ public class UploadSchemaServiceTest {
         assertEquals(Lists.newArrayList(0), paramCaptor.getValue().get("schemaRevisions"));
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdPermanentlySuccess() {
         // mock dao
@@ -318,8 +316,6 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemasPermanently(schemaListToDelete);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramCaptor.capture(), eq(null), eq(true));
 
@@ -414,7 +410,7 @@ public class UploadSchemaServiceTest {
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndRevNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
@@ -424,14 +420,13 @@ public class UploadSchemaServiceTest {
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
         svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdAndRevSuccess() {
         // mock dao
@@ -444,8 +439,6 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemas(ImmutableList.of(schemaToDelete));
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramCaptor.capture(), eq(null), eq(true));
 
@@ -455,7 +448,6 @@ public class UploadSchemaServiceTest {
         assertEquals(SCHEMA_REV, paramCaptor.getValue().get("schemaRevision"));
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdAndRevPermanentlySuccess() {
         // mock dao
@@ -468,8 +460,6 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemasPermanently(ImmutableList.of(schemaToDelete));
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramCaptor.capture(), eq(null), eq(true));
 

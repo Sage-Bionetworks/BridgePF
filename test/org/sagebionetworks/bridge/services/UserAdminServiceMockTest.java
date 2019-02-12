@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -21,7 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
@@ -125,9 +124,8 @@ public class UserAdminServiceMockTest {
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
         
-        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anyObject(),
+        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(any(), any(),
                 anyBoolean());
-        doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
         doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
                 anyString(), anyBoolean());
     }

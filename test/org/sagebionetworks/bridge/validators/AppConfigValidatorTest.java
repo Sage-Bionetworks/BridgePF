@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -186,9 +186,6 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnCreate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
@@ -196,9 +193,6 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnUpdate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");

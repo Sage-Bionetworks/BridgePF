@@ -16,7 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -115,7 +115,7 @@ public class SubstudyControllerTest {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
-        TestUtils.mockPlayContextWithJson(substudy);
+        TestUtils.mockPlay().withBody(substudy).mock();
         
         Result result = controller.createSubstudy();
         assertEquals(201, result.status());
@@ -152,7 +152,7 @@ public class SubstudyControllerTest {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
-        TestUtils.mockPlayContextWithJson(substudy);
+        TestUtils.mockPlay().withBody(substudy).mock();
         
         when(service.updateSubstudy(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
         

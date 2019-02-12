@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -72,7 +73,8 @@ public class FPHSController extends BaseController {
     public Result addExternalIdentifiers() throws Exception {
         getAuthenticatedSession(ADMIN);
         
-        List<FPHSExternalIdentifier> externalIds = MAPPER.convertValue(requestToJSON(request()), EXTERNAL_ID_TYPE_REF);
+        List<FPHSExternalIdentifier> externalIds = MAPPER.convertValue(parseJson(request(), JsonNode.class),
+                EXTERNAL_ID_TYPE_REF);
         fphsService.addExternalIdentifiers(externalIds);
         
         return createdResult("External identifiers added.");

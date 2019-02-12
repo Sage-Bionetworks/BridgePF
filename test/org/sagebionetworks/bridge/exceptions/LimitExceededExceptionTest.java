@@ -23,7 +23,7 @@ public class LimitExceededExceptionTest {
     public void serializesCorrectly() throws Throwable {
         ExceptionInterceptor interceptor = spy(ExceptionInterceptor.class);
         LimitExceededException e = new LimitExceededException("Too many");
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         MethodInvocation invocation = mock(MethodInvocation.class);
         when(invocation.proceed()).thenThrow(e);

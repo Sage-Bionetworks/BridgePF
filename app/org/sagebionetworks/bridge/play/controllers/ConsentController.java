@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
@@ -72,7 +74,7 @@ public class ConsentController extends BaseController {
     }
     
     public Result changeSharingScope() throws Exception {
-        SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), 2);
+        SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
     
@@ -152,8 +154,8 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        final ConsentSignature consentSignature = ConsentSignature.fromJSON(requestToJSON(request()));
-        final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
+        final ConsentSignature consentSignature = ConsentSignature.fromJSON(parseJson(request(), JsonNode.class));
+        final SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), version);
 
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         

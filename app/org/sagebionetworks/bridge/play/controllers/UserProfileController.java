@@ -92,7 +92,7 @@ public class UserProfileController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         String userId = session.getId();
         
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         Map<String,String> attributes = Maps.newHashMap();
         for (String attrKey : study.getUserProfileAttributes()) {
             if (node.has(attrKey)) {

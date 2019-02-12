@@ -92,16 +92,6 @@ public class FPHSControllerTest {
         return BridgeObjectMapper.get().readTree(json);
     }
     
-    private void setExternalIdentifierPost(ExternalIdentifier externalId) throws Exception {
-        String json = BridgeObjectMapper.get().writeValueAsString(externalId);
-        TestUtils.mockPlayContextWithJson(json);
-    }
-    
-    private void setFPHSExternalIdentifiersPost(List<FPHSExternalIdentifier> list) throws Exception {
-        String json = BridgeObjectMapper.get().writeValueAsString(list);
-        TestUtils.mockPlayContextWithJson(json);
-    }
-    
     private void setData() throws Exception {
         FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("foo");
         id1.setRegistered(true);
@@ -161,8 +151,7 @@ public class FPHSControllerTest {
     
     @Test
     public void registrationRequiresAuthenticatedConsentedUser() throws Exception {
-        setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
-        
+        TestUtils.mockPlay().withBody(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo")).mock();
         try {
             controller.registerExternalIdentifier();
             fail("Should have thrown exception");
@@ -174,7 +163,8 @@ public class FPHSControllerTest {
     @Test
     public void registrationOK() throws Exception {
         UserSession session = setUserSession();
-        setExternalIdentifierPost(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo"));
+        TestUtils.mockPlay().withMockResponse()
+            .withBody(ExternalIdentifier.create(TestConstants.TEST_STUDY, "foo")).mock();
 
         Result result = controller.registerExternalIdentifier();
         assertResult(result, 200, "External identifier added to user profile.");
@@ -215,7 +205,7 @@ public class FPHSControllerTest {
     public void addIdentifiersRequiresAdmin() throws Exception {
         FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
-        setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
+        TestUtils.mockPlay().withBody(Lists.newArrayList(id1, id2)).mock();
         
         // There's a user, but not an admin user
         setUserSession();
@@ -232,7 +222,7 @@ public class FPHSControllerTest {
     public void addIdentifiersOK() throws Exception {
         FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
-        setFPHSExternalIdentifiersPost(Lists.newArrayList(id1, id2));
+        TestUtils.mockPlay().withBody(Lists.newArrayList(id1, id2)).mock();
         
         UserSession session = setUserSession();
         // Now when we have an admin user, we get back results

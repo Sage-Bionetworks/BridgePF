@@ -7,7 +7,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -41,7 +41,7 @@ public class ConstraintViolationExceptionTest {
         
         ExceptionInterceptor interceptor = new ExceptionInterceptor();
         
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doThrow(e).when(invocation).proceed();
         
         Result result = (Result)interceptor.invoke(invocation);
@@ -80,7 +80,7 @@ public class ConstraintViolationExceptionTest {
         
         ExceptionInterceptor interceptor = new ExceptionInterceptor();
         
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doThrow(e).when(invocation).proceed();
         
         Result result = (Result)interceptor.invoke(invocation);

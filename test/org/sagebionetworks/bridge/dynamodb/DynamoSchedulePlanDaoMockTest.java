@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
@@ -72,7 +72,6 @@ public class DynamoSchedulePlanDaoMockTest {
     @Captor
     private ArgumentCaptor<DynamoDBQueryExpression<DynamoSchedulePlan>> queryCaptor;
     
-    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         dao = new DynamoSchedulePlanDao();
