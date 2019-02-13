@@ -88,6 +88,16 @@ public class BridgeUtils {
     // "request context" object into every method of every class.
     private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
+    public static Map<String,String> mapSubstudyMemberships(Account account) {
+        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
+            String value = (acctSubstudy.getExternalId() == null) ? 
+                    "" : acctSubstudy.getExternalId();
+            builder.put(acctSubstudy.getSubstudyId(), value);
+        }
+        return builder.build();
+    }
+    
     public static Tuple<String> parseAutoEventValue(String automaticEventValue) {
         int lastIndex = automaticEventValue.lastIndexOf(":P");
         if (lastIndex == -1) {

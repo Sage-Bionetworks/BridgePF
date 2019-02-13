@@ -27,5 +27,8 @@ public class HibernateAccountSubstudyTest {
         assertEquals("substudyId", accountSubstudy.getSubstudyId());
         assertEquals("accountId", accountSubstudy.getAccountId());
         assertEquals("externalId", accountSubstudy.getExternalId());
+        
+        accountSubstudy.setSubstudyId("newSubstudyId");
+        assertEquals("newSubstudyId", accountSubstudy.getSubstudyId());
     }
 }

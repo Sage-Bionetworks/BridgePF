@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -130,7 +130,7 @@ public class HealthDataServiceSubmitHealthDataTest {
 
         // UploadArtifactsHandler needs to write record ID back into the context.
         doAnswer(invocation -> {
-            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
+            UploadValidationContext context = invocation.getArgument(0);
             HealthDataRecord record = context.getHealthDataRecord();
             record.setId(context.getUploadId());
             context.setRecordId(context.getUploadId());

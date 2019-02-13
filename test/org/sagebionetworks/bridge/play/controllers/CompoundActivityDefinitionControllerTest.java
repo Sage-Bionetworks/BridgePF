@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyVararg;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -54,7 +54,7 @@ public class CompoundActivityDefinitionControllerTest {
 
         // spy controller
         controller = spy(new CompoundActivityDefinitionController());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
         controller.setCompoundActivityDefService(defService);
         controller.setStudyService(studyService);
     }
@@ -76,7 +76,7 @@ public class CompoundActivityDefinitionControllerTest {
         controllerInput.setTaskId(TASK_ID);
 
         // Set it as the mock JSON input.
-        TestUtils.mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(controllerInput));
+        TestUtils.mockPlay().withBody(controllerInput).mock();
 
         // mock service - Service output should have both task ID and study ID so we can test that study ID is filtered
         // out
@@ -163,7 +163,7 @@ public class CompoundActivityDefinitionControllerTest {
         controllerInput.setTaskId(TASK_ID);
 
         // Set it as the mock JSON input.
-        TestUtils.mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(controllerInput));
+        TestUtils.mockPlay().withBody(controllerInput).mock();
 
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();

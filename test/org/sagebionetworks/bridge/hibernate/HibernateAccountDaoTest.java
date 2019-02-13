@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
@@ -36,10 +37,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
@@ -140,7 +141,7 @@ public class HibernateAccountDaoTest {
         
         // Mock successful update.
         when(mockHibernateHelper.update(any(), eq(null))).thenAnswer(invocation -> {
-            HibernateAccount account = invocation.getArgumentAt(0, HibernateAccount.class);
+            HibernateAccount account = invocation.getArgument(0);
             if (account != null) {
                 account.setVersion(account.getVersion()+1);    
             }
@@ -219,8 +220,6 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
         account.setStatus(AccountStatus.ENABLED);
         account.setEmailVerified(Boolean.TRUE);
-        
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
         verify(mockHibernateHelper, never()).update(hibernateAccount, null);
@@ -311,8 +310,6 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
         account.setStatus(AccountStatus.ENABLED);
         account.setPhoneVerified(Boolean.TRUE);
-        
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
         verify(mockHibernateHelper, never()).update(hibernateAccount, null);
@@ -1151,10 +1148,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByPhoneNotFound() {
-        when(mockHibernateHelper.queryGet(
-                "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode",
-                PHONE_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccount(ACCOUNT_ID_WITH_PHONE);
         assertNull(account);
     }
@@ -1178,10 +1171,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByPhoneNotFoundAfterAuthentication() {
-        when(mockHibernateHelper.queryGet(
-                "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode",
-                PHONE_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
         assertNull(account);
     }
@@ -1205,9 +1194,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByHealthCodeNotFound() {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
-                HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccount(ACCOUNT_ID_WITH_HEALTHCODE);
         assertNull(account);
     }
@@ -1229,9 +1215,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByHealthCodeNotFoundAfterAuthentication() {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
-                HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
         assertNull(account);
     }    
@@ -1240,8 +1223,8 @@ public class HibernateAccountDaoTest {
     @Test
     public void getByExternalId() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
-                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.externalId=:externalId GROUP BY acct.id";
+                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "+
+                "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // mock hibernate
@@ -1255,9 +1238,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByExternalIdNotFound() {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and externalId=:externalId",
-                EXTID_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EXTID);
         assertNull(account);
     }
@@ -1265,8 +1245,8 @@ public class HibernateAccountDaoTest {
     @Test
     public void getByExternalIdAfterAuthentication() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "+
-                "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.externalId=:externalId GROUP BY acct.id";
+                "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "+
+                "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // mock hibernate
@@ -1280,9 +1260,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByExternalIdNotFoundAfterAuthentication() {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and externalId=:externalId",
-                EXTID_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EXTID);
         assertNull(account);
     }    
@@ -1746,9 +1723,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
-                HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
-        
         dao.editAccount(TestConstants.TEST_STUDY, "bad-health-code", account -> account.setEmail("JUNK"));
         
         verify(accountConsumer, never()).accept(any());
@@ -1958,8 +1932,9 @@ public class HibernateAccountDaoTest {
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
-        when(mockHibernateHelper.getById(any(), any())).thenReturn(hibernateAccount);
-
+        when(mockHibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateAccount.class)))
+                .thenReturn(Lists.newArrayList(hibernateAccount));
+        
         dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, (account) -> {
             fail("Should have thrown exception");
         });

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-@SuppressWarnings("unchecked")
 public class DefaultStudyBootstrapperTest {
 
     private StudyService studyService;

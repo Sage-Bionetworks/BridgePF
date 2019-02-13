@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,7 +23,6 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
-@SuppressWarnings("unchecked")
 public class UnzipHandlerTest {
     private static final String ZIPPED_FILE_NAME = "test.zip";
     private static final byte[] ZIPPED_FILE_DUMMY_CONTENT = "zipped test data".getBytes(Charsets.UTF_8);
@@ -52,10 +51,8 @@ public class UnzipHandlerTest {
 
         UploadArchiveService mockSvc = mock(UploadArchiveService.class);
         doAnswer(invocation -> {
-            Function<String, OutputStream> entryNameToOutputStream = invocation.getArgumentAt(1,
-                    Function.class);
-            BiConsumer<String, OutputStream> outputStreamFinalizer = invocation.getArgumentAt(2,
-                    BiConsumer.class);
+            Function<String, OutputStream> entryNameToOutputStream = invocation.getArgument(1);
+            BiConsumer<String, OutputStream> outputStreamFinalizer = invocation.getArgument(2);
 
             // Mimic unzip by writing the unzipped data to the output stream.
             for (Map.Entry<String, byte[]> oneUnzippedDataEntry : mockUnzippedDataMap.entrySet()) {

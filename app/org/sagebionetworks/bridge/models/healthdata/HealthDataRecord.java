@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
@@ -168,6 +169,16 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** @see #getUserDataGroups() */
     void setUserDataGroups(Set<String> userDataGroups);
+    
+    /**
+     * The substudies assigned to the user, and the optional external ID being used for each assignment, if any.
+     * The keys of this map are substudy IDs, and the values are either the associated external ID, or an empty 
+     * string if there is no associated external ID.
+     */
+    Map<String,String> getUserSubstudyMemberships();
+    
+    /** @see #getUserSubstudyMemberships() */
+    void setUserSubstudyMemberships(Map<String,String> userSubstudyMemberships);
 
     /** Error messages related to upload validation. Only generated if UploadValidationStrictness is set to REPORT. */
     String getValidationErrors();

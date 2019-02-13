@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -315,9 +315,6 @@ public class AppConfigServiceTest {
     // This should not actually ever happen. We're suppressing exceptions if the survey is missing.
     @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();
@@ -372,7 +369,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -381,6 +378,7 @@ public class AppConfigServiceTest {
         setupConfigsForUser();
         AppConfig appConfig = service.getAppConfigForUser(context, true);
         assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
+        assertEquals("theIdentifier", appConfig.getSurveyReferences().get(0).getIdentifier());
     }
     
     @Test

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -452,7 +453,6 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        
         // Simple case, not trying to assign an external ID 
         if (!assigningExternalId) {
             accountDao.updateAccount(account, null);
@@ -805,10 +805,12 @@ public class ParticipantService {
             return null;
         }
         StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = externalIdService.getExternalId(studyId, externalId, false);
-        if (identifier == null) {
+        
+        Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(studyId, externalId);
+        if (!optionalId.isPresent()) {
             return null;
-        }        
+        }
+        ExternalIdentifier identifier = optionalId.get();
         if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
         }

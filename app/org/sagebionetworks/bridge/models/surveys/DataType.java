@@ -11,5 +11,7 @@ public enum DataType {
     DATETIME,
     BLOODPRESSURE,
     HEIGHT,
-    WEIGHT
+    WEIGHT,
+    YEARMONTH,
+    POSTALCODE
 }

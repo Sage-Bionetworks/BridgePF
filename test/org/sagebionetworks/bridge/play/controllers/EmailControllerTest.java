@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -25,7 +25,6 @@ import play.test.Helpers;
 
 import java.util.Map;
 
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -75,7 +74,6 @@ public class EmailControllerTest {
         study.setIdentifier(API);
         
         when(studyService.getStudy(API)).thenReturn(study);
-        when(studyService.getStudy((String) null)).thenThrow(new EntityNotFoundException(Study.class));
     }
 
     private Map<String, String[]> map(String... values) {

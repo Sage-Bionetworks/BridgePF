@@ -344,7 +344,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
-        Account account = getAccount(accountId);
+        Account account = BridgeUtils.filterForSubstudy( getAccount(accountId) );
         
         if (account != null) {
             accountEdits.accept(account);
@@ -450,7 +450,7 @@ public class HibernateAccountDao implements AccountDao {
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
             } else {
-                builder.append("AND acct.externalId=:externalId", "externalId", unguarded.getExternalId());
+                builder.append("AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId)", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {

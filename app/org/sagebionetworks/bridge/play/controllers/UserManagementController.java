@@ -80,7 +80,7 @@ public class UserManagementController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
@@ -101,7 +101,7 @@ public class UserManagementController extends BaseController {
         getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(studyId);
 
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);

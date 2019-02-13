@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
@@ -337,10 +337,6 @@ public class ReportServiceTest {
     
     @Test
     public void deleteParticipantReportRecord() {
-        LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
-        LocalDate endDate = LocalDate.parse("2015-05-05");
-        doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, startDate, endDate);
-        
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
         try {
             service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, DATE.toString(), HEALTH_CODE);
@@ -532,7 +528,6 @@ public class ReportServiceTest {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
-        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
         
         // This is all that is needed. Everything else is actually inferred by the controller
         ReportIndex updatedIndex = ReportIndex.create();
@@ -554,7 +549,6 @@ public class ReportServiceTest {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
-        doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         // This is all that is needed. Everything else is actually inferred by the controller
         ReportIndex updatedIndex = ReportIndex.create();

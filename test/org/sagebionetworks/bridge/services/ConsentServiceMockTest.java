@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -333,8 +333,7 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawFromStudyWithEmail() throws Exception {
         setupWithdrawTest();
-        account.getAccountSubstudies().iterator().next().setExternalId("asExternalId");
-
+        
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
@@ -362,6 +361,11 @@ public class ConsentServiceMockTest {
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
         assertEquals("externalId", account.getExternalId());
+        // This association is not removed
+        assertEquals(1, account.getAccountSubstudies().size());
+        AccountSubstudy acctSubstudy = account.getAccountSubstudies().iterator().next();
+        assertEquals("substudyId", acctSubstudy.getSubstudyId());
+        assertEquals("anExternalId", acctSubstudy.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());
@@ -371,7 +375,6 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawFromStudyWithPhone() {
-        TestUtils.mockEditAccount(accountDao, account);
         account.setPhone(TestConstants.PHONE);
         account.setHealthCode(PARTICIPANT.getHealthCode());
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -593,9 +596,9 @@ public class ConsentServiceMockTest {
     public void emailConsentAgreementDoesNotSuppressEmailNotification() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
-        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
-        
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        
+        verify(subpopulation, never()).isAutoSendConsentSuppressed();
         
         // Despite explicitly suppressing email, if the user makes this call, we will send the email.
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -618,7 +621,6 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         // easiest to test this if we null out the study consent email.
         study.setConsentNotificationEmail(null);
-        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
         
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
         try {
@@ -870,6 +872,7 @@ public class ConsentServiceMockTest {
         account.setNotifyByEmail(true);
         account.setExternalId("externalId");
         AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
+        as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }

@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -18,7 +18,6 @@ import java.net.URL;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -135,36 +134,22 @@ public class UploadControllerTest {
         doReturn(metrics).when(controller).getMetrics();
 
         // mock sessions
-        doReturn("worker-health-code").when(workerSession).getHealthCode();
-        doReturn(new StudyIdentifierImpl("worker-study-id")).when(workerSession).getStudyIdentifier();
         doReturn(true).when(workerSession).isInRole(Roles.WORKER);
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.WORKER)).build();
-        doReturn(participant).when(workerSession).getParticipant();
         
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
-        doReturn(true).when(consentedUserSession).isAuthenticated();
-        doReturn(true).when(consentedUserSession).doesConsent();
         doReturn("userId").when(consentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(consentedUserSession).getParticipant();
         
-        doReturn("researcher-health-code").when(researcherSession).getHealthCode();
-        doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
-        doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
-        doReturn(true).when(researcherSession).isAuthenticated();
-        doReturn(false).when(researcherSession).doesConsent();
-        
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
-        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
-        doReturn(participant).when(otherUserSession).getParticipant();
-        doReturn(true).when(otherUserSession).doesConsent();
     }
     
     @Test
     public void startingUploadRecordedInRequestInfo() throws Exception {
         doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson(
-            "{'name':'uploadName','contentLength':100,'contentMd5':'abc','contentType':'application/zip'}"));
+        TestUtils.mockPlay().withJsonBody(TestUtils.createJson(
+            "{'name':'uploadName','contentLength':100,'contentMd5':'abc','contentType':'application/zip'}"))
+            .withHeader("User-Agent", "app/10").mock();
         
         UploadSession uploadSession = new UploadSession("id", new URL("http://server.com/"), 1000);
         
@@ -183,7 +168,7 @@ public class UploadControllerTest {
         upload.setStudyId("consented-user-study-id");
         // setup controller
         doReturn(workerSession).when(controller).getAuthenticatedSession();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and validate
         Result result = controller.uploadComplete(UPLOAD_ID, null, null);
@@ -206,7 +191,7 @@ public class UploadControllerTest {
         // setup controller
         doReturn(workerSession).when(controller).getAuthenticatedSession();
         doReturn("studyId").when(healthCodeDao).getStudyIdentifier(HEALTH_CODE);
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and validate
         Result result = controller.uploadComplete(UPLOAD_ID, null, null);
@@ -228,7 +213,7 @@ public class UploadControllerTest {
         // setup controller
         doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
         doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and validate
         Result result = controller.uploadComplete(UPLOAD_ID, null, null);
@@ -248,12 +233,11 @@ public class UploadControllerTest {
     public void differentUserInSameStudyCannotCompleteUpload() throws Exception {
         // setup controller
         doReturn("other-health-code").when(otherUserSession).getHealthCode();
-        doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(otherUserSession).getStudyIdentifier();
         doReturn(false).when(otherUserSession).isInRole(Roles.WORKER);
         
         doReturn(otherUserSession).when(controller).getAuthenticatedSession();
         doReturn(otherUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and catch exception
         try {
@@ -274,7 +258,7 @@ public class UploadControllerTest {
         // setup controller
         doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
         doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and validate
         Result result = controller.uploadComplete(UPLOAD_ID, "true", null);
@@ -292,7 +276,7 @@ public class UploadControllerTest {
         // setup controller
         doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
         doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         // execute and validate
         Result result = controller.uploadComplete(UPLOAD_ID, null, "true");
@@ -321,7 +305,7 @@ public class UploadControllerTest {
     
     @Test
     public void getUploadById() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
@@ -345,7 +329,7 @@ public class UploadControllerTest {
 
     @Test
     public void getUploadByRecordId() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
@@ -371,7 +355,7 @@ public class UploadControllerTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getUploadByRecordIdRecordMissing() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         when(healthDataService.getRecordById("record-id")).thenReturn(null);

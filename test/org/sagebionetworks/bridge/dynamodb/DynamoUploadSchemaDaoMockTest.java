@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -19,6 +19,7 @@ import java.util.Map;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -144,7 +145,10 @@ public class DynamoUploadSchemaDaoMockTest {
         map.put("A", ImmutableList.of(undeletedSchema));
         map.put("B", ImmutableList.of(deletedSchema));
         
-        when(mapper.batchLoad(any(List.class))).thenReturn(map);
+        PaginatedQueryList<DynamoUploadSchema> pql = mock(PaginatedQueryList.class);
+        when(mapper.query(eq(DynamoUploadSchema.class), any())).thenReturn(pql);
+        
+        when(mapper.batchLoad(pql)).thenReturn(map);
         
         List<UploadSchema> results1 = dao.indexHelper("indexName", new DynamoUploadSchema(), false);
         assertEquals(1, results1.size());

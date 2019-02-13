@@ -5,11 +5,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -39,7 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -87,8 +87,6 @@ public class ScheduledActivityServiceMockTest {
     private static final String HEALTH_CODE = "healthCode";
     
     private static final String USER_ID = "CCC";
-    
-    private static final String SURVEY_GUID = "surveyGuid";
     
     private static final String ACTIVITY_GUID = "activityGuid";
     
@@ -141,9 +139,6 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> map = ImmutableMap.of();
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
         
-        ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
-        
         when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
@@ -152,10 +147,7 @@ public class ScheduledActivityServiceMockTest {
             schActivity.setGuid((String)args[2]);
             return schActivity;
         });
-        when(activityDao.getActivities(context.getInitialTimeZone(), scheduledActivities))
-                .thenReturn(scheduledActivities);
         
-        doReturn(SURVEY_GUID).when(survey).getGuid();
         doReturn(SURVEY_CREATED_ON.getMillis()).when(survey).getCreatedOn();
         doReturn("identifier").when(survey).getIdentifier();
         when(surveyService.getSurveyMostRecentlyPublishedVersion(

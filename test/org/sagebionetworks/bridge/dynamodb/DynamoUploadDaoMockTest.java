@@ -7,7 +7,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,7 +15,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -29,7 +27,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -126,8 +124,6 @@ public class DynamoUploadDaoMockTest {
         dao.setDdbMapper(mockMapper);
         dao.setHealthCodeDao(healthCodeDao);
         dao.setHealthCodeRequestedOnIndex(mockIndexHelper);
-        
-        when(mockIndexHelper.getIndex()).thenReturn(mockIndex);
     }
     
     @Test
@@ -300,16 +296,7 @@ public class DynamoUploadDaoMockTest {
         Item mockItem2 = new Item().withLong("requestedOn", 10000).with("uploadId", UPLOAD_ID_2);
         
         when(upload1.getRequestedOn()).thenReturn(30000L);
-        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
         when(upload2.getRequestedOn()).thenReturn(10000L);
-        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
-        
-        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2);
-        doAnswer((invocationOnMock) -> {
-            Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
-            consumer.accept(callOrder.remove(0));
-            return null;
-        }).when(mockQueryOutcome).forEach(any());
 
         when(mockIndexHelper.query(any(QuerySpec.class))).thenReturn(lastQueryOutcome);
         when(lastQueryOutcome.getItems()).thenReturn(Lists.newArrayList(mockItem1, mockItem2));
@@ -356,21 +343,10 @@ public class DynamoUploadDaoMockTest {
         Item mockItem4 = new Item().withLong("requestedOn", 40000).with("uploadId", UPLOAD_ID_4);
         
         when(upload1.getRequestedOn()).thenReturn(10000L);
-        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
         when(upload2.getRequestedOn()).thenReturn(20000L);
-        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
         when(upload3.getRequestedOn()).thenReturn(30000L);
-        when(upload3.getUploadId()).thenReturn(UPLOAD_ID_3);
         when(upload4.getRequestedOn()).thenReturn(40000L);
-        when(upload4.getUploadId()).thenReturn(UPLOAD_ID_4);
         
-        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2, mockItem3, mockItem4);
-        doAnswer((invocationOnMock) -> {
-            Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
-            consumer.accept(callOrder.remove(0));
-            return null;
-        }).when(mockQueryOutcome).forEach(any());
-
         when(mockIndexHelper.query(any(QuerySpec.class))).thenReturn(lastQueryOutcome);
         
         when(lastQueryOutcome.getItems()).thenReturn(
@@ -411,28 +387,10 @@ public class DynamoUploadDaoMockTest {
         DateTime endTime = DateTime.now();
         int pageSize = 2;
         
-        Item mockItem1 = new Item().withLong("requestedOn", 10000).with("uploadId", UPLOAD_ID);
-        Item mockItem2 = new Item().withLong("requestedOn", 20000).with("uploadId", UPLOAD_ID_2);
-        Item mockItem3 = new Item().withLong("requestedOn", 30000).with("uploadId", UPLOAD_ID_3);
-        Item mockItem4 = new Item().withLong("requestedOn", 40000).with("uploadId", UPLOAD_ID_4);
-        
-        when(upload1.getRequestedOn()).thenReturn(10000L);
-        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
-        when(upload2.getRequestedOn()).thenReturn(20000L);
-        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
         when(upload3.getRequestedOn()).thenReturn(30000L);
         when(upload3.getUploadId()).thenReturn(UPLOAD_ID_3);
-        when(upload4.getRequestedOn()).thenReturn(40000L);
-        when(upload4.getUploadId()).thenReturn(UPLOAD_ID_4);
         
         when(mockMapper.load(DynamoUpload2.class, upload3.getUploadId())).thenReturn(upload3);
-        
-        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2, mockItem3, mockItem4);
-        doAnswer((invocationOnMock) -> {
-            Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
-            consumer.accept(callOrder.remove(0));
-            return null;
-        }).when(mockQueryOutcome).forEach(any());
         
         when(mockMapper.queryPage(eq(DynamoUpload2.class), any(DynamoDBQueryExpression.class))).thenReturn(queryPage1, queryPage2);
         
@@ -480,9 +438,6 @@ public class DynamoUploadDaoMockTest {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 2;
-        
-        // Before getting to paging, this should fail on the fact that the offsetKey does not return a record
-        when(mockMapper.load(DynamoUpload2.class, upload3.getUploadId())).thenReturn(null);
         
         try {
             dao.getStudyUploads(studyId, startTime, endTime, pageSize, "bad-key");

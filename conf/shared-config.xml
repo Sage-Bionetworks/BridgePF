@@ -181,10 +181,6 @@
         <property name="targetName" value="fphsController"/>
     </bean>
     
-    <bean id="ExternalIdControllerProxied" parent="proxiedController">
-        <property name="targetName" value="externalIdController"/>
-    </bean>
-    
     <bean id="ExternalIdControllerV4Proxied" parent="proxiedController">
         <property name="targetName" value="externalIdControllerV4"/>
     </bean>

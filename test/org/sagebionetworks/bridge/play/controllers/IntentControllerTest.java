@@ -9,7 +9,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -50,7 +50,7 @@ public class IntentControllerTest {
         ((ObjectNode)node).remove("scope");
         ((ObjectNode)node.get("consentSignature")).put("scope", "all_qualified_researchers");
         
-        TestUtils.mockPlayContextWithJson(node.toString());
+        TestUtils.mockPlay().withJsonBody(node.toString()).mock();
         
         Result result = controller.submitIntentToParticipate();
         TestUtils.assertResult(result, 202, "Intent to participate accepted.");

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -69,12 +71,12 @@ public class DynamoExternalIdDaoTest {
     
     @Test
     public void getExistingId() {
-        assertEquals("AAA", dao.getExternalId(studyId, "AAA").getIdentifier());
+        assertEquals("AAA", dao.getExternalId(studyId, "AAA").get().getIdentifier());
     }
     
     @Test
     public void getExistingIdReturnsNull() {
-        assertNull(dao.getExternalId(studyId, "does-not-exist"));
+        assertFalse(dao.getExternalId(studyId, "does-not-exist").isPresent());
     }
     
     private Account createAccount(String healthCode) {
@@ -118,7 +120,7 @@ public class DynamoExternalIdDaoTest {
         ExternalIdentifier externalId = setupExternalIdentifier(account, "AAA");
         dao.commitAssignExternalId(externalId);
         
-        externalId = dao.getExternalId(studyId, "AAA");
+        externalId = dao.getExternalId(studyId, "AAA").get();
         assertEquals("AAA", externalId.getIdentifier());
         assertEquals("healthCode", externalId.getHealthCode());
         assertEquals(studyId.getIdentifier(), externalId.getStudyId());
@@ -369,11 +371,11 @@ public class DynamoExternalIdDaoTest {
     // Pretty similar to ExternalIdService.beginAssignExternalId()
     private ExternalIdentifier setupExternalIdentifier(Account account, String externalId) {
         StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = dao.getExternalId(studyId, externalId);
-        if (identifier == null) {
+        Optional<ExternalIdentifier> optionalId = dao.getExternalId(studyId, externalId);
+        if (!optionalId.isPresent()) {
             return null;
         }        
-        //ExternalIdentifier identifier = ExternalIdentifier.create(TestConstants.TEST_STUDY, externalId);
+        ExternalIdentifier identifier = optionalId.get();
         identifier.setHealthCode(account.getHealthCode());
         account.setExternalId(identifier.getIdentifier());
         if (identifier.getSubstudyId() != null) {

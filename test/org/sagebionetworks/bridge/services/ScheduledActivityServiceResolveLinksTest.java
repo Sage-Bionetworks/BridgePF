@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -41,7 +41,6 @@ import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
-@SuppressWarnings("unchecked")
 public class ScheduledActivityServiceResolveLinksTest {
     private static final String ACTIVITY_LABEL_PREFIX = "test-activity-";
     private static final String COMPOUND_ACTIVITY_REF_TASK_ID = "compound-activity-ref";

@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -79,7 +79,7 @@ public class SharedModuleMetadataControllerTest {
         when(mockSvc.createMetadata(svcInputMetadataCaptor.capture())).thenReturn(makeValidMetadata());
 
         // setup, execute, and validate
-        TestUtils.mockPlayContextWithJson(METADATA_JSON_TEXT);
+        TestUtils.mockPlay().withJsonBody(METADATA_JSON_TEXT).mock();
         Result result = controller.createMetadata();
         TestUtils.assertResult(result, 201);
         assertMetadataInResult(result);
@@ -342,7 +342,7 @@ public class SharedModuleMetadataControllerTest {
                 makeValidMetadata());
 
         // setup, execute, and validate
-        TestUtils.mockPlayContextWithJson(METADATA_JSON_TEXT);
+        TestUtils.mockPlay().withJsonBody(METADATA_JSON_TEXT).mock();
         Result result = controller.updateMetadata(MODULE_ID, MODULE_VERSION);
         TestUtils.assertResult(result, 200);
         assertMetadataInResult(result);

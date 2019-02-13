@@ -30,7 +30,7 @@ public class OAuthController extends BaseController {
     public Result requestAccessToken(String vendorId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(vendorId, token);
         

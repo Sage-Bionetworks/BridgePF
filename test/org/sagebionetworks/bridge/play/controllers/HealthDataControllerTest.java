@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -37,7 +37,6 @@ import play.test.Helpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -125,7 +124,7 @@ public class HealthDataControllerTest {
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
         mockSession.setParticipant(PARTICIPANT);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
 
         // mock RequestInfo
         doReturn(new RequestInfo.Builder()).when(controller).getRequestInfoBuilder(mockSession);
@@ -179,7 +178,7 @@ public class HealthDataControllerTest {
                 "       \"bar\":42\n" +
                 "   }\n" +
                 "}";
-        TestUtils.mockPlayContextWithJson(jsonText);
+        TestUtils.mockPlay().withJsonBody(jsonText).mock();
 
         // mock back-end call - We only care about record ID. Also add Health Code to make sure it's being filtered.
         HealthDataRecord svcRecord = HealthDataRecord.create();
@@ -237,7 +236,7 @@ public class HealthDataControllerTest {
                 "       \"bar\":37\n" +
                 "   }\n" +
                 "}";
-        TestUtils.mockPlayContextWithJson(jsonText);
+        TestUtils.mockPlay().withJsonBody(jsonText).mock();
 
         // mock back-end call - We only care about record ID. Also add Health Code to make sure it's being filtered.
         HealthDataRecord svcRecord = HealthDataRecord.create();
@@ -277,9 +276,9 @@ public class HealthDataControllerTest {
     @Test
     public void updateRecordsStatus() throws Exception {
         // mock request JSON
-        TestUtils.mockPlayContextWithJson(TEST_STATUS_JSON);
+        TestUtils.mockPlay().withJsonBody(TEST_STATUS_JSON).mock();
 
-        when(healthDataService.updateRecordsWithExporterStatus(anyVararg())).thenReturn(ImmutableList.of(TEST_RECORD_ID));
+        when(healthDataService.updateRecordsWithExporterStatus(any())).thenReturn(ImmutableList.of(TEST_RECORD_ID));
 
         // create a mock request entity
         RecordExportStatusRequest mockRequest = new RecordExportStatusRequest();
@@ -291,7 +290,7 @@ public class HealthDataControllerTest {
         TestUtils.assertResult(result, 200, "Update exporter status to: " + ImmutableList.of(TEST_RECORD_ID) + " complete.");
 
         // first verify if it calls the service
-        verify(healthDataService).updateRecordsWithExporterStatus(anyVararg());
+        verify(healthDataService).updateRecordsWithExporterStatus(any());
         // then verify if it parse json correctly as a request entity
         verify(healthDataService).updateRecordsWithExporterStatus(requestArgumentCaptor.capture());
         RecordExportStatusRequest capturedRequest = requestArgumentCaptor.getValue();

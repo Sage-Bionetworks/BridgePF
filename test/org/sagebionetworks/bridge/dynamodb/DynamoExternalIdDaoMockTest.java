@@ -6,9 +6,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -22,6 +22,7 @@ import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -47,7 +48,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -103,20 +104,20 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalId() {
         when(mapper.load(any())).thenReturn(externalId);
 
-        ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_STUDY, ID);
 
         verify(mapper).load(externalId);
-        assertEquals(retrieved, externalId);
+        assertEquals(externalId, retrieved.get());
     }
 
     @Test
     public void getExternalIdReturnsNull() {
         when(mapper.load(any())).thenReturn(null);
 
-        ExternalIdentifier retrieved = dao.getExternalId(TEST_STUDY, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_STUDY, ID);
 
         verify(mapper).load(externalId);
-        assertNull(retrieved);
+        assertFalse(retrieved.isPresent());
     }
 
     @Test

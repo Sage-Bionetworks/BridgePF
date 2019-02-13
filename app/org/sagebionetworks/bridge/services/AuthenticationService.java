@@ -338,8 +338,8 @@ public class AuthenticationService {
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
-        // Throws an EntityNotFoundException if the external ID does not exist.
-        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(), externalId, true);
+        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(), externalId)
+                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
         // The *caller* must be associated to the external IDs substudy, if any
         if (BridgeUtils.filterForSubstudy(externalIdObj) == null) {

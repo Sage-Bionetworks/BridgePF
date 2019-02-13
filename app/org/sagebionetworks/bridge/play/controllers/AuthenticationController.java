@@ -189,7 +189,7 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result signUp() throws Exception {
-        JsonNode node = requestToJSON(request());
+        JsonNode node = parseJson(request(), JsonNode.class);
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         
         String studyId = JsonUtils.asText(node, BridgeConstants.STUDY_PROPERTY);

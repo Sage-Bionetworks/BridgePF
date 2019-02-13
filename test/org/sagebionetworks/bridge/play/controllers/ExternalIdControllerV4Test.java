@@ -15,14 +15,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
+import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -30,9 +36,11 @@ import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 import play.mvc.Result;
+import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExternalIdControllerV4Test {
@@ -48,12 +56,17 @@ public class ExternalIdControllerV4Test {
     @Mock
     private AuthenticationService authenticationService;
     
+    @Mock
+    private BridgeConfig bridgeConfig;
+    
     @Captor
     private ArgumentCaptor<ExternalIdentifier> externalIdCaptor;
     
     private ForwardCursorPagedResourceList<ExternalIdentifierInfo> list;
     
     private Study study;
+    
+    private UserSession session;
     
     @Spy
     private ExternalIdControllerV4 controller;
@@ -63,6 +76,7 @@ public class ExternalIdControllerV4Test {
         controller.setExternalIdService(mockService);
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authenticationService);
+        controller.setBridgeConfig(bridgeConfig);
         
         List<ExternalIdentifierInfo> items = ImmutableList.of(new ExternalIdentifierInfo("id1", null, true),
                 new ExternalIdentifierInfo("id2", null, false));
@@ -71,15 +85,30 @@ public class ExternalIdControllerV4Test {
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        UserSession session = new UserSession();
+        session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+    }
+    
+
+    @Test
+    public void migrateExternalIdentifier() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
+        
+        TestUtils.mockPlay().withJsonBody(TestUtils.createJson( 
+                "{'externalId':'anExternalId','substudyId':'aSubstudyId'}")).mock();
+        
+        Result result = controller.migrateExternalIdentifier();
+        TestUtils.assertResult(result, 200, 
+                "External ID 'anExternalId' associated to substudy 'aSubstudyId'.");
+        
+        verify(mockService).migrateExternalIdentifier(study, "anExternalId", "aSubstudyId");
     }
     
     @Test
     public void getExternalIdentifiers() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(mockService.getExternalIds("offsetKey", new Integer(49), "idFilter", Boolean.TRUE)).thenReturn(list);
         
         Result result = controller.getExternalIdentifiers("offsetKey", "49", "idFilter", "true");
@@ -93,7 +122,7 @@ public class ExternalIdControllerV4Test {
     
     @Test
     public void getExternalIdentifiersAllDefaults() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(mockService.getExternalIds(null, BridgeConstants.API_DEFAULT_PAGE_SIZE, null, null))
                 .thenReturn(list);
         
@@ -110,7 +139,7 @@ public class ExternalIdControllerV4Test {
     public void createExternalIdentifier() throws Exception {
         ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
         extId.setSubstudyId("substudyId");
-        TestUtils.mockPlayContextWithJson(extId);
+        TestUtils.mockPlay().withBody(extId).mock();
         
         Result result = controller.createExternalIdentifier();
         TestUtils.assertResult(result, 201, "External identifier created.");
@@ -125,7 +154,7 @@ public class ExternalIdControllerV4Test {
     
     @Test
     public void deleteExternalIdentifier() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
         Result result = controller.deleteExternalIdentifier("externalId");
@@ -136,4 +165,32 @@ public class ExternalIdControllerV4Test {
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
     
+    @Test(expected = NotAuthenticatedException.class)
+    public void generkatePasswordRequiresResearcher() throws Exception {
+        TestUtils.mockPlay().mock();
+        
+        controller.generatePassword("extid", false);
+    }
+    
+    @Test
+    public void generatePassword() throws Exception {
+        study = new DynamoStudy();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
+        
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+        GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");
+        when(authenticationService.generatePassword(study, "extid", false)).thenReturn(password);
+
+        Result result = controller.generatePassword("extid", false);
+        TestUtils.assertResult(result, 200);
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("extid", node.get("externalId").textValue());
+        assertEquals("user-id", node.get("userId").textValue());
+        assertEquals("some-password", node.get("password").textValue());
+        assertEquals("GeneratedPassword", node.get("type").textValue());
+        
+        verify(authenticationService).generatePassword(eq(study), eq("extid"), eq(false));
+    }
 }
