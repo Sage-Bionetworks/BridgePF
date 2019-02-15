@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -595,11 +596,18 @@ public class UploadHandlersEndToEndTest {
         assertEquals("Eggplant", fffJsonNode.get(1).get("name").textValue());
 
         String hhhAttachmentId = dataNode.get("record.json.HHH").textValue();
-        JsonNode hhhNode = getJsonFragmentAttachment(hhhAttachmentId);
+        
+        ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(hhhAttachmentId),
+                attachmentContentCaptor.capture(), metadataCaptor.capture());
+        JsonNode hhhNode = BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());        
         assertEquals(3, hhhNode.size());
         assertEquals("attachment", hhhNode.get(0).textValue());
         assertEquals("inside", hhhNode.get(1).textValue());
         assertEquals("file", hhhNode.get(2).textValue());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
 
         // We upload the unencrypted zipped file back to S3.
         validateRawDataAttachment();
@@ -663,13 +671,6 @@ public class UploadHandlersEndToEndTest {
     private void validateTextAttachment(String expected, String attachmentId) {
         byte[] uploadedFileContent = uploadedFileContentMap.get(attachmentId);
         assertEquals(expected, new String(uploadedFileContent, Charsets.UTF_8));
-    }
-
-    private JsonNode getJsonFragmentAttachment(String attachmentId) throws Exception {
-        ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
-        verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
-                attachmentContentCaptor.capture());
-        return BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());
     }
 
     private void validateRawDataAttachment() {

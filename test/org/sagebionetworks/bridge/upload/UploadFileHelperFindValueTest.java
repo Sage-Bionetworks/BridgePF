@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -12,11 +13,13 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -164,9 +167,14 @@ public class UploadFileHelperFindValueTest {
         JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
         assertEquals(expectedAttachmentFilename, result.textValue());
 
+        // To verify we have to capture ObjectMetadata, as the class doesn't implement value equality
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        
         // Verify uploaded file
-        verify(mockS3Helper).writeBytesToS3(UploadFileHelper.ATTACHMENT_BUCKET, expectedAttachmentFilename,
-                "\"record-value\"".getBytes(Charsets.UTF_8));
+        verify(mockS3Helper).writeBytesToS3(eq(UploadFileHelper.ATTACHMENT_BUCKET), eq(expectedAttachmentFilename),
+                eq("\"record-value\"".getBytes(Charsets.UTF_8)), metadataCaptor.capture());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 
     @Test

@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Charsets;
@@ -213,8 +214,11 @@ public class UploadFileHelper {
             throws UploadValidationException {
         String filename = uploadId + '-' + fieldName;
         String jsonText = node.toString();
+        
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         try {
-            s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, filename, jsonText.getBytes(Charsets.UTF_8));
+            s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, filename, jsonText.getBytes(Charsets.UTF_8), metadata);
         } catch (IOException ex) {
             throw new UploadValidationException("Error writing attachment to S3, uploadId=" + uploadId +
                     ", fieldName=" + fieldName, ex);

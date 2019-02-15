@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
@@ -189,7 +190,11 @@ public class HealthDataService {
         String rawDataValue = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
                 healthDataSubmission.getData());
         byte[] rawDataBytes = rawDataValue.getBytes(Charsets.UTF_8);
-        s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, rawDataAttachmentId, rawDataBytes);
+        
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        
+        s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, rawDataAttachmentId, rawDataBytes, metadata);
 
         record.setRawDataAttachmentId(rawDataAttachmentId);
 
