@@ -250,6 +250,7 @@ public class ScheduledActivityControllerTest {
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(LANGUAGES, critContext.getLanguages());
+        assertEquals(USER_SUBSTUDY_IDS, critContext.getUserSubstudyIds());
         assertEquals(TEST_STUDY_IDENTIFIER, critContext.getStudyIdentifier().getIdentifier());
         assertEquals(CLIENT_INFO, critContext.getClientInfo());
         
@@ -258,6 +259,7 @@ public class ScheduledActivityControllerTest {
         assertEquals("id", requestInfo.getUserId());
         assertEquals(LANGUAGES, requestInfo.getLanguages());
         assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+        assertEquals(USER_SUBSTUDY_IDS, requestInfo.getUserSubstudyIds());
         assertNotNull(requestInfo.getActivitiesAccessedOn());
         assertEquals(MSK, requestInfo.getActivitiesAccessedOn().getZone());
         assertEquals(MSK, requestInfo.getTimeZone());

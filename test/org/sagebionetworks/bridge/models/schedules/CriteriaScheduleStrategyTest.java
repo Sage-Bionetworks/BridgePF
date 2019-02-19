@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -49,8 +50,8 @@ public class CriteriaScheduleStrategyTest {
     private static final Schedule SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS = makeValidSchedule(
             "Strategy with all requirements");
     
-    private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator(Sets.newHashSet(),
-            Sets.newHashSet(TestUtils.getActivity3().getTask().getIdentifier()));;
+    private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator(ImmutableSet.of(),
+            ImmutableSet.of(), Sets.newHashSet(TestUtils.getActivity3().getTask().getIdentifier()));;
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
@@ -286,9 +287,9 @@ public class CriteriaScheduleStrategyTest {
             Validate.entityThrowingException(VALIDATOR, PLAN);     
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <no data groups declared>");
-            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <no data groups declared>");
-            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 1, " 'group1' is not in enumeration: <no data groups declared>");
+            assertError(e, "strategy.scheduleCriteria[1].criteria.allOfGroups", 0, " 'group1' is not in enumeration: <empty>");
+            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 0, " 'group2' is not in enumeration: <empty>");
+            assertError(e, "strategy.scheduleCriteria[2].criteria.noneOfGroups", 1, " 'group1' is not in enumeration: <empty>");
             assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 0, " cannot be less than minAppVersions.iphone_os");
             assertError(e, "strategy.scheduleCriteria[4].criteria.maxAppVersions.iphone_os", 1, " cannot be negative");
             assertError(e, "strategy.scheduleCriteria[4].criteria.minAppVersions.iphone_os", 0, " cannot be negative");

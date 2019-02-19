@@ -74,6 +74,9 @@ public class SubpopulationServiceTest {
     SubpopulationDao subpopDao;
     
     @Mock
+    SubstudyService substudyService;
+    
+    @Mock
     Study study;
     
     @Mock
@@ -103,6 +106,7 @@ public class SubpopulationServiceTest {
         service.setStudyConsentService(studyConsentService);
         service.setStudyConsentDao(studyConsentDao);
         service.setDefaultConsentForm(form);
+        service.setSubstudyService(substudyService);
         service.setCacheProvider(cacheProvider);
         
         subpop = Subpopulation.create();

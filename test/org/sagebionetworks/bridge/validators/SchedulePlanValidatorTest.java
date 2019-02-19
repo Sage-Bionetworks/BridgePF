@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.validation.Errors;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -24,14 +25,14 @@ import com.google.common.collect.Sets;
 
 public class SchedulePlanValidatorTest {
 
-    private static final Set<String> DATA_GROUPS = Sets.newHashSet("dataGroup");
     private static final Set<String> TASK_IDENTIFIERS = Sets.newHashSet("tapTest");
     
     private SchedulePlanValidator validator;
 
     @Before
     public void before() throws Exception {
-        validator = new SchedulePlanValidator(DATA_GROUPS, TASK_IDENTIFIERS);
+        validator = new SchedulePlanValidator(TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS,
+                TASK_IDENTIFIERS);
     }
 
     @Test
@@ -44,7 +45,8 @@ public class SchedulePlanValidatorTest {
         
         validator.validate((Object)plan, errors);
         
-        verify(strategy).validate(DATA_GROUPS, TASK_IDENTIFIERS, errors);
+        verify(strategy).validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, TASK_IDENTIFIERS,
+                errors);
     }
     
     @Test

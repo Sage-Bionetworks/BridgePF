@@ -52,6 +52,7 @@ public class SchedulePlanServiceMockTest {
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
+    private SubstudyService mockSubstudyService;
     
     @Before
     public void before() {
@@ -62,10 +63,12 @@ public class SchedulePlanServiceMockTest {
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
+        mockSubstudyService = mock(SubstudyService.class);
         
         service = new SchedulePlanService();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
+        service.setSubstudyService(mockSubstudyService);
         
         Survey survey1 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey1.setIdentifier("identifier1");
@@ -75,6 +78,7 @@ public class SchedulePlanServiceMockTest {
         when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
+        
     }
     
     @Test

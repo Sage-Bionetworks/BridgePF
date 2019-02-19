@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -121,6 +122,33 @@ public class CriteriaUtils {
         return true;
     }
     
+    /**
+     * This is called externally by AccountSummarySearchValidator.
+     * @param errors
+     * @param fieldName
+     * @param fullSet
+     * @param setItems
+     */
+    public static List<String> validateSetItemsExist(Set<String> fullSet, Set<String> setItems){
+        List<String> errors = new ArrayList<String>();
+        if (setItems == null) {
+            errors.add("cannot be null");
+        } else {
+            for (String item : setItems) {
+                if (!fullSet.contains(item)) {
+                    String message = "'" + item + "' is not in enumeration: ";
+                    if (fullSet.isEmpty()) {
+                        message += "<empty>";
+                    } else {
+                        message += COMMA_SPACE_JOINER.join(fullSet);
+                    }
+                    errors.add(message);
+                }
+            }
+        }
+        return errors;
+    }
+    
     private static void validateSetItemsExist(Errors errors, String fieldName, Set<String> fullSet, Set<String> setItems) {
         if (setItems == null) {
             errors.rejectValue(fieldName, "cannot be null");
@@ -128,15 +156,25 @@ public class CriteriaUtils {
             for (String item : setItems) {
                 if (!fullSet.contains(item)) {
                     String message = "'" + item + "' is not in enumeration: ";
-                    if (setItems.isEmpty()) {
-                        message += "<empty>";
+                    if (fullSet.isEmpty()) {
+                        message = message + "<empty>";
                     } else {
-                        message += COMMA_SPACE_JOINER.join(fullSet);
+                        message = message + COMMA_SPACE_JOINER.join(fullSet);
                     }
                     errors.rejectValue(fieldName, message);
                 }
             }
         }
+    }
+    
+    public static String validateSetItemsDoNotOverlap(Set<String> setA, Set<String> setB) {
+        if (setA != null && setB != null) {
+            Set<String> intersection = Sets.intersection(setA, setB);
+            if (!intersection.isEmpty()) {
+                return "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection);
+            }
+        }
+        return null;
     }
     
     /**

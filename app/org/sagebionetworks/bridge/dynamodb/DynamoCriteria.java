@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -96,9 +97,7 @@ public final class DynamoCriteria implements Criteria {
         return allOfGroups;
     }
     public void setAllOfGroups(Set<String> allOfGroups) {
-        if (allOfGroups != null) {
-            this.allOfGroups = allOfGroups;  
-        }
+        this.allOfGroups = (allOfGroups != null) ? allOfGroups : Sets.newHashSet();
     }
     @Override
     @DynamoDBAttribute
@@ -107,9 +106,7 @@ public final class DynamoCriteria implements Criteria {
         return noneOfGroups;
     }
     public void setNoneOfGroups(Set<String> noneOfGroups) {
-        if (noneOfGroups != null) {
-            this.noneOfGroups = noneOfGroups;    
-        }
+        this.noneOfGroups = (noneOfGroups != null) ? noneOfGroups : Sets.newHashSet();
     }
 
     @Override
@@ -119,9 +116,7 @@ public final class DynamoCriteria implements Criteria {
         return allOfSubstudyIds;
     }
     public void setAllOfSubstudyIds(Set<String> allOfSubstudyIds) {
-        if (allOfSubstudyIds != null) {
-            this.allOfSubstudyIds = allOfSubstudyIds;    
-        }
+        this.allOfSubstudyIds = (allOfSubstudyIds != null) ? allOfSubstudyIds : Sets.newHashSet();
     }
     @Override
     @DynamoDBAttribute
@@ -130,9 +125,7 @@ public final class DynamoCriteria implements Criteria {
         return noneOfSubstudyIds;
     }
     public void setNoneOfSubstudyIds(Set<String> noneOfSubstudyIds) {
-        if (noneOfSubstudyIds != null) {
-            this.noneOfSubstudyIds = noneOfSubstudyIds;
-        }
+        this.noneOfSubstudyIds = (noneOfSubstudyIds != null) ? noneOfSubstudyIds : Sets.newHashSet();
     }
     
     /**

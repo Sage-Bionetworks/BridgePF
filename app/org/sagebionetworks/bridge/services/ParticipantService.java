@@ -199,14 +199,16 @@ public class ParticipantService {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no request info");
         }
+        Set<String> substudyIds = account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withUserId(userId)
                 .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
                 .withLanguages(requestInfo.getLanguages())
-                .withUserDataGroups(requestInfo.getUserDataGroups())
-                .withUserSubstudyIds(requestInfo.getUserSubstudyIds())
+                .withUserDataGroups(account.getDataGroups())
+                .withUserSubstudyIds(substudyIds)
                 .build();
 
         // Participant must be consented.
@@ -861,7 +863,7 @@ public class ParticipantService {
     }
      
     
-    private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
+    protected CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         

@@ -63,7 +63,7 @@ public class ScheduleControllerTest {
                 return null;
             }
             @Override
-            public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
+            public void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors) {
             }
             @Override
             public List<Schedule> getAllPossibleSchedules() {

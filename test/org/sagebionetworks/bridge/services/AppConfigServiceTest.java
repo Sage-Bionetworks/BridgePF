@@ -74,6 +74,9 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
+    private SubstudyService substudyService;
+    
+    @Mock
     private SurveyService mockSurveyService;
     
     @Mock
@@ -111,6 +114,7 @@ public class AppConfigServiceTest {
         service.setStudyService(mockStudyService);
         service.setSurveyService(mockSurveyService);
         service.setUploadSchemaService(mockSchemaService);
+        service.setSubstudyService(substudyService);
         service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());

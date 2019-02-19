@@ -47,6 +47,8 @@ public class DynamoCriteriaDaoTest {
         criteria.setMaxAppVersion(IOS, 8);
         criteria.setAllOfGroups(ALL_OF_GROUPS);
         criteria.setNoneOfGroups(NONE_OF_GROUPS);
+        criteria.setAllOfSubstudyIds(ALL_OF_GROUPS);
+        criteria.setNoneOfSubstudyIds(NONE_OF_GROUPS);
         
         Criteria result = criteriaDao.createOrUpdateCriteria(criteria);
         assertEquals("key", result.getKey());
@@ -55,6 +57,8 @@ public class DynamoCriteriaDaoTest {
         assertEquals(new Integer(8), result.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, result.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, result.getNoneOfGroups());
+        assertEquals(ALL_OF_GROUPS, result.getAllOfSubstudyIds());
+        assertEquals(NONE_OF_GROUPS, result.getNoneOfSubstudyIds());
         
         Criteria retrieved = criteriaDao.getCriteria("key");
         assertEquals("key", retrieved.getKey());
@@ -63,6 +67,8 @@ public class DynamoCriteriaDaoTest {
         assertEquals(new Integer(8), retrieved.getMaxAppVersion(IOS));
         assertEquals(ALL_OF_GROUPS, retrieved.getAllOfGroups());
         assertEquals(NONE_OF_GROUPS, retrieved.getNoneOfGroups());
+        assertEquals(ALL_OF_GROUPS, retrieved.getAllOfSubstudyIds());
+        assertEquals(NONE_OF_GROUPS, retrieved.getNoneOfSubstudyIds());
         
         // Try nullifying this, setting a property
         criteria.setAllOfGroups(null);
