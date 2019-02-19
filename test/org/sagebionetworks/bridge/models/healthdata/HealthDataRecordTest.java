@@ -14,6 +14,8 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.google.common.collect.ImmutableMap;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -104,6 +106,13 @@ public class HealthDataRecordTest {
         HealthDataRecord record = makeValidRecord();
         record.setUserDataGroups(new HashSet<>());
         assertNull(record.getUserDataGroups());
+    }
+    
+    @Test
+    public void emptySubstudyMembershipsConvertedToNull() {
+        HealthDataRecord record = makeValidRecord();
+        record.setUserSubstudyMemberships(ImmutableMap.of());
+        assertNull(record.getUserSubstudyMemberships());
     }
 
     @Test(expected = InvalidEntityException.class)
