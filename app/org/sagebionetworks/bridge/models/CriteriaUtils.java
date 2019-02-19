@@ -124,10 +124,6 @@ public class CriteriaUtils {
     
     /**
      * This is called externally by AccountSummarySearchValidator.
-     * @param errors
-     * @param fieldName
-     * @param fullSet
-     * @param setItems
      */
     public static List<String> validateSetItemsExist(Set<String> fullSet, Set<String> setItems){
         List<String> errors = new ArrayList<String>();
@@ -150,20 +146,9 @@ public class CriteriaUtils {
     }
     
     private static void validateSetItemsExist(Errors errors, String fieldName, Set<String> fullSet, Set<String> setItems) {
-        if (setItems == null) {
-            errors.rejectValue(fieldName, "cannot be null");
-        } else {
-            for (String item : setItems) {
-                if (!fullSet.contains(item)) {
-                    String message = "'" + item + "' is not in enumeration: ";
-                    if (fullSet.isEmpty()) {
-                        message = message + "<empty>";
-                    } else {
-                        message = message + COMMA_SPACE_JOINER.join(fullSet);
-                    }
-                    errors.rejectValue(fieldName, message);
-                }
-            }
+        List<String> errorMessages = validateSetItemsExist(fullSet, setItems);
+        for (String errorMessage : errorMessages) {
+            errors.rejectValue(fieldName, errorMessage);
         }
     }
     
@@ -179,17 +164,12 @@ public class CriteriaUtils {
     
     /**
      * Can't logically have a data group that is both required and prohibited, so check for this.
-     * @param criteria
-     * @param errors
      */
     private static void validateSetItemsDoNotOverlap(Errors errors, String fieldName, Set<String> setA,
             Set<String> setB) {
-        if (setA != null && setB != null) {
-            Set<String> intersection = Sets.intersection(setA, setB);
-            if (!intersection.isEmpty()) {
-                errors.rejectValue(fieldName,
-                        "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection));
-            }
+        String errorMessage = validateSetItemsDoNotOverlap(setA, setB);
+        if (errorMessage != null) {
+            errors.rejectValue(fieldName, errorMessage);
         }
     }
 }

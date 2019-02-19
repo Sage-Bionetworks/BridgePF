@@ -934,8 +934,8 @@ public class BaseControllerTest {
 
         // Set up participant and session.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
-                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES)
-                .build();
+                .withDataGroups(TestConstants.USER_DATA_GROUPS).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+                .withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES).build();
 
         UserSession session = new UserSession(participant);
         session.setIpAddress(IP_ADDRESS);
@@ -949,6 +949,7 @@ public class BaseControllerTest {
         assertEquals(IP_ADDRESS, context.getIpAddress());
         assertEquals(USER_ID, context.getUserId());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
         assertEquals(TEST_STUDY, context.getStudyIdentifier());
     }
 

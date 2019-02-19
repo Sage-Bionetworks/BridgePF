@@ -161,6 +161,7 @@ public class SubpopulationServiceTest {
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
         verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test

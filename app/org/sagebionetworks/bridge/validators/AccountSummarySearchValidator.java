@@ -53,12 +53,10 @@ public class AccountSummarySearchValidator implements Validator {
                 errors.rejectValue("noneOfGroups", errorMsg);    
             }
         }
-        if (!search.getAllOfGroups().isEmpty() && !search.getNoneOfGroups().isEmpty()) {
-            String errorMessage = CriteriaUtils.validateSetItemsDoNotOverlap(search.getAllOfGroups(),
-                    search.getNoneOfGroups());
-            if (errorMessage != null) {
-                errors.rejectValue("allOfGroups", errorMessage);
-            }
+        String errorMessage = CriteriaUtils.validateSetItemsDoNotOverlap(
+                search.getAllOfGroups(), search.getNoneOfGroups());
+        if (errorMessage != null) {
+            errors.rejectValue("allOfGroups", errorMessage);
         }
     }
 }

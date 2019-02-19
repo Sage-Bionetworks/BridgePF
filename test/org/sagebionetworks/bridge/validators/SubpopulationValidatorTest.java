@@ -38,6 +38,8 @@ public class SubpopulationValidatorTest {
         subpop.setGuidString("AAA");
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB"));
         subpop.setCriteria(criteria);
         
         Validate.entityThrowingException(validator, subpop);
@@ -48,6 +50,8 @@ public class SubpopulationValidatorTest {
         Subpopulation subpop = Subpopulation.create();
         
         Criteria criteria = TestUtils.createCriteria(-10, -2, null, ImmutableSet.of("wrongGroup"));
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyC"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
         subpop.setCriteria(criteria);
         try {
             Validate.entityThrowingException(validator, subpop);
@@ -59,6 +63,8 @@ public class SubpopulationValidatorTest {
             assertMessage(e, "name", " is required");
             assertMessage(e, "guid", " is required");
             assertMessage(e, "noneOfGroups", " 'wrongGroup' is not in enumeration");
+            assertMessage(e, "allOfSubstudyIds", " 'substudyC' is not in enumeration");
+            assertMessage(e, "noneOfSubstudyIds", " 'substudyD' is not in enumeration");
         }
     }
     

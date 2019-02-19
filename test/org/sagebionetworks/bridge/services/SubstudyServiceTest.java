@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -58,6 +59,16 @@ public class SubstudyServiceTest {
         assertEquals(substudy, returnedValue);
         
         verify(substudyDao).getSubstudy(TestConstants.TEST_STUDY, "id");
+    }
+    
+    @Test
+    public void getSubstudyIds() {
+        SUBSTUDIES.get(0).setId("substudyA");
+        SUBSTUDIES.get(1).setId("substudyB");
+        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(SUBSTUDIES);
+        
+        Set<String> substudyIds = service.getSubstudyIds(TestConstants.TEST_STUDY);
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, substudyIds);
     }
     
     @Test(expected = EntityNotFoundException.class)

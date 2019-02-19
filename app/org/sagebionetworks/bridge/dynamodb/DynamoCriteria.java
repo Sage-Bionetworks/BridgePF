@@ -97,7 +97,7 @@ public final class DynamoCriteria implements Criteria {
         return allOfGroups;
     }
     public void setAllOfGroups(Set<String> allOfGroups) {
-        this.allOfGroups = (allOfGroups != null) ? allOfGroups : Sets.newHashSet();
+        this.allOfGroups = (allOfGroups == null) ? new HashSet<>() : allOfGroups;
     }
     @Override
     @DynamoDBAttribute
@@ -106,7 +106,7 @@ public final class DynamoCriteria implements Criteria {
         return noneOfGroups;
     }
     public void setNoneOfGroups(Set<String> noneOfGroups) {
-        this.noneOfGroups = (noneOfGroups != null) ? noneOfGroups : Sets.newHashSet();
+        this.noneOfGroups = (noneOfGroups == null) ? new HashSet<>() : noneOfGroups;
     }
 
     @Override
@@ -116,7 +116,7 @@ public final class DynamoCriteria implements Criteria {
         return allOfSubstudyIds;
     }
     public void setAllOfSubstudyIds(Set<String> allOfSubstudyIds) {
-        this.allOfSubstudyIds = (allOfSubstudyIds != null) ? allOfSubstudyIds : Sets.newHashSet();
+        this.allOfSubstudyIds = (allOfSubstudyIds == null) ? new HashSet<>() : allOfSubstudyIds;
     }
     @Override
     @DynamoDBAttribute
@@ -125,7 +125,7 @@ public final class DynamoCriteria implements Criteria {
         return noneOfSubstudyIds;
     }
     public void setNoneOfSubstudyIds(Set<String> noneOfSubstudyIds) {
-        this.noneOfSubstudyIds = (noneOfSubstudyIds != null) ? noneOfSubstudyIds : Sets.newHashSet();
+        this.noneOfSubstudyIds = (noneOfSubstudyIds == null) ? new HashSet<>() : noneOfSubstudyIds;
     }
     
     /**

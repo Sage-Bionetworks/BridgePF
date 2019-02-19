@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -210,6 +211,7 @@ public class SchedulePlanServiceMockTest {
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>", e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0));
         }
     }
 
@@ -224,6 +226,7 @@ public class SchedulePlanServiceMockTest {
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>", e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0));
         }
     }
     
@@ -268,6 +271,7 @@ public class SchedulePlanServiceMockTest {
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());
         
         Criteria criteria = TestUtils.createCriteria(null, null, Sets.newHashSet("FFF"), null);
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();

@@ -26,9 +26,9 @@ import org.sagebionetworks.bridge.validators.Validate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -114,7 +114,7 @@ public class ABTestScheduleStrategyTest {
     public void validatesNewABTestingPlan() {
         SchedulePlan plan = new DynamoSchedulePlan();
         
-        Set<String> taskIdentifiers = Sets.newHashSet("taskIdentifierA");
+        Set<String> taskIdentifiers = ImmutableSet.of("taskIdentifierA");
         
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(20, TestUtils.getSchedule("A Schedule"));

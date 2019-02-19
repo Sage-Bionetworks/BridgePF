@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -29,6 +30,8 @@ public class CriteriaContextTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
         assertEquals(ImmutableList.of(), context.getLanguages());
+        assertEquals(ImmutableSet.of(), context.getUserDataGroups());
+        assertEquals(ImmutableSet.of(), context.getUserSubstudyIds());
     }
     
     @Test(expected = NullPointerException.class)

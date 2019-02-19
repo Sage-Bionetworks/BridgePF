@@ -226,10 +226,12 @@ public class AppConfigValidatorTest {
     public void criteriaAreValidated() { 
         Criteria criteria = Criteria.create();
         criteria.setNoneOfGroups(Sets.newHashSet("bad-group"));
+        criteria.setAllOfSubstudyIds(Sets.newHashSet("wrong-group"));
         
         appConfig.setCriteria(criteria);
         
         assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: group1, group2");
+        assertValidatorMessage(newValidator, appConfig, "allOfSubstudyIds", "'wrong-group' is not in enumeration: substudyA, substudyB");
     }
     
     @Test

@@ -76,7 +76,7 @@ public class CriteriaScheduleStrategyTest {
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         
         setUpStrategyWithAppVersions();
-        setUpStrategyWithRequiredAndProhibitedDataGroups();
+        setUpStrategyWithRequiredAndProhibitedSets();
         
         String json = mapper.writeValueAsString(strategy);
         JsonNode node = mapper.readTree(json);
@@ -107,6 +107,12 @@ public class CriteriaScheduleStrategyTest {
         Set<String> noneOfGroups = arrayToSet(criteriaNode2.get("noneOfGroups"));
         assertTrue(noneOfGroups.contains("proh1"));
         assertTrue(noneOfGroups.contains("proh2"));
+        
+        Set<String> allOfSubstudyIds = arrayToSet(criteriaNode2.get("allOfSubstudyIds"));
+        assertTrue(allOfSubstudyIds.contains("substudyA"));
+        assertTrue(allOfSubstudyIds.contains("substudyB"));
+        Set<String> noneOfSubstudyIds = arrayToSet(criteriaNode2.get("noneOfSubstudyIds"));
+        assertTrue(noneOfSubstudyIds.contains("substudyC"));
         
         // But mostly, if this isn't all serialized, and then deserialized, these won't be equal
         CriteriaScheduleStrategy newStrategy = mapper.readValue(json, CriteriaScheduleStrategy.class);
@@ -428,8 +434,10 @@ public class CriteriaScheduleStrategyTest {
         strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS, criteria));
     }
 
-    private void setUpStrategyWithRequiredAndProhibitedDataGroups() {
+    private void setUpStrategyWithRequiredAndProhibitedSets() {
         Criteria criteria = TestUtils.createCriteria(null, null, Sets.newHashSet("req1", "req2"), Sets.newHashSet("proh1","proh2"));
+        criteria.setAllOfSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyC"));
         strategy.addCriteria(new ScheduleCriteria(SCHEDULE_FOR_STRATEGY_WITH_APP_VERSIONS, criteria));
     }
     
