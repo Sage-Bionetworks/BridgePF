@@ -45,6 +45,22 @@ public interface Criteria extends BridgeEntity {
     void setNoneOfGroups(Set<String> noneOfGroups);
     
     /**
+     * The object associated with these criteria should be matched only if the user is associated to 
+     * all of the substudies in this set of substudy IDs. If the set is empty, there are no required 
+     * substudies. 
+     */
+    Set<String> getAllOfSubstudyIds();
+    void setAllOfSubstudyIds(Set<String> substudyIds);
+    
+    /**
+     * The object associated with these criteria should be matched only if the user is associated to 
+     * none of the substudies contained in this set of substudy IDs. If the set is empty, there are 
+     * no prohibited substudies. 
+     */
+    Set<String> getNoneOfSubstudyIds();
+    void setNoneOfSubstudyIds(Set<String> substudyIds);
+    
+    /**
      * Minimum required app version for this criteria to match, specified for an operating system. If 
      * the operating system name is specified in the User-Agent string, then the app version must be 
      * equal to or greater than this value.

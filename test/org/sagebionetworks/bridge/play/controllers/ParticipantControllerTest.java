@@ -541,7 +541,8 @@ public class ParticipantControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
                 .withRoles(ImmutableSet.of(Roles.DEVELOPER)) // <-- should not be passed along
-                .withSubstudyIds(ImmutableSet.of("substudyA", "substudyB"))
+                .withDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
                 .withHealthCode("healthCode").build();
         
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
@@ -567,7 +568,8 @@ public class ParticipantControllerTest {
         assertEquals("FirstName", captured.getFirstName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getSharingScope());
         assertTrue(captured.isNotifyByEmail());
-        assertEquals(Sets.newHashSet("group1"), captured.getDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, captured.getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, captured.getSubstudyIds());
         assertEquals("true", captured.getAttributes().get("can_be_recontacted"));
     }
     

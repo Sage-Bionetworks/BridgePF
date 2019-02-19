@@ -461,6 +461,7 @@ public class AuthenticationService {
                 .withHealthCode(session.getHealthCode())
                 .withLanguages(session.getParticipant().getLanguages())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
                 .withUserId(session.getId())
                 .build();
     }

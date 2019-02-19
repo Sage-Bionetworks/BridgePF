@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -33,6 +32,8 @@ public final class DynamoCriteria implements Criteria {
     private String language;
     private Set<String> allOfGroups = Sets.newHashSet();
     private Set<String> noneOfGroups = Sets.newHashSet();
+    private Set<String> allOfSubstudyIds = Sets.newHashSet();
+    private Set<String> noneOfSubstudyIds = Sets.newHashSet();
     private Map<String, Integer> minAppVersions = Maps.newHashMap();
     private Map<String, Integer> maxAppVersions = Maps.newHashMap();
     
@@ -95,7 +96,9 @@ public final class DynamoCriteria implements Criteria {
         return allOfGroups;
     }
     public void setAllOfGroups(Set<String> allOfGroups) {
-        this.allOfGroups = (allOfGroups == null) ? new HashSet<>() : allOfGroups;
+        if (allOfGroups != null) {
+            this.allOfGroups = allOfGroups;  
+        }
     }
     @Override
     @DynamoDBAttribute
@@ -104,7 +107,32 @@ public final class DynamoCriteria implements Criteria {
         return noneOfGroups;
     }
     public void setNoneOfGroups(Set<String> noneOfGroups) {
-        this.noneOfGroups = (noneOfGroups == null) ? new HashSet<>() : noneOfGroups;
+        if (noneOfGroups != null) {
+            this.noneOfGroups = noneOfGroups;    
+        }
+    }
+
+    @Override
+    @DynamoDBAttribute
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getAllOfSubstudyIds() {
+        return allOfSubstudyIds;
+    }
+    public void setAllOfSubstudyIds(Set<String> allOfSubstudyIds) {
+        if (allOfSubstudyIds != null) {
+            this.allOfSubstudyIds = allOfSubstudyIds;    
+        }
+    }
+    @Override
+    @DynamoDBAttribute
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getNoneOfSubstudyIds() {
+        return noneOfSubstudyIds;
+    }
+    public void setNoneOfSubstudyIds(Set<String> noneOfSubstudyIds) {
+        if (noneOfSubstudyIds != null) {
+            this.noneOfSubstudyIds = noneOfSubstudyIds;
+        }
     }
     
     /**
@@ -167,7 +195,8 @@ public final class DynamoCriteria implements Criteria {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups);
+        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups, allOfSubstudyIds,
+                noneOfSubstudyIds);
     }
     @Override
     public boolean equals(Object obj) {
@@ -180,6 +209,8 @@ public final class DynamoCriteria implements Criteria {
                 Objects.equals(language, other.language) && 
                 Objects.equals(noneOfGroups, other.noneOfGroups) && 
                 Objects.equals(allOfGroups, other.allOfGroups) && 
+                Objects.equals(noneOfSubstudyIds, other.noneOfSubstudyIds) && 
+                Objects.equals(allOfSubstudyIds, other.allOfSubstudyIds) && 
                 Objects.equals(minAppVersions, other.minAppVersions) && 
                 Objects.equals(maxAppVersions, other.maxAppVersions);
     }

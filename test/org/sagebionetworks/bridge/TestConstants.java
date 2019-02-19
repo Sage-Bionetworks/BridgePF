@@ -83,7 +83,7 @@ public class TestConstants {
             .put(SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid()), REQUIRED_UNSIGNED).build();
     
     public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
-    
+    public static final Set<String> USER_SUBSTUDY_IDS = Sets.newHashSet("substudyA","substudyB");
     public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     
     public static final Phone PHONE = new Phone("9712486796", "US");

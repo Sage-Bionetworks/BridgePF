@@ -11,7 +11,6 @@ import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -33,6 +32,8 @@ public class CriteriaUtils {
         checkNotNull(context.getUserDataGroups());
         checkNotNull(criteria.getAllOfGroups());
         checkNotNull(criteria.getNoneOfGroups());
+        checkNotNull(criteria.getAllOfSubstudyIds());
+        checkNotNull(criteria.getNoneOfSubstudyIds());
         
         Integer appVersion = context.getClientInfo().getAppVersion();
         String appOs = context.getClientInfo().getOsName();
@@ -53,6 +54,15 @@ public class CriteriaUtils {
                 return false;
             }
         }
+        Set<String> substudies = context.getUserSubstudyIds();
+        if (substudies != null) {
+            if (!substudies.containsAll(criteria.getAllOfSubstudyIds())) {
+                return false;
+            }
+            if (!Collections.disjoint(substudies, criteria.getNoneOfSubstudyIds())) {
+                return false;
+            }
+        }        
         if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
             return false;
         }
@@ -63,7 +73,7 @@ public class CriteriaUtils {
      * Validate that the criteria are correct (e.g. including the same data group in both required and prohibited sets,
      * or having a min-max version range out of order, are obviously incorrect because they can never match).
      */
-    public static void validate(Criteria criteria, Set<String> dataGroups, Errors errors) {
+    public static void validate(Criteria criteria, Set<String> dataGroups, Set<String> substudyIds, Errors errors) {
         for (String osName : criteria.getAppVersionOperatingSystems()) {
             Integer minAppVersion = criteria.getMinAppVersion(osName);
             Integer maxAppVersion = criteria.getMaxAppVersion(osName);
@@ -79,9 +89,14 @@ public class CriteriaUtils {
                 pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be negative");
             }
         }
-        validateDataGroups(errors, dataGroups, criteria.getAllOfGroups(), "allOfGroups");
-        validateDataGroups(errors, dataGroups, criteria.getNoneOfGroups(), "noneOfGroups");
-        validateDataGroupNotRequiredAndProhibited(criteria, errors);
+        validateSetItemsExist(errors, "allOfGroups", dataGroups, criteria.getAllOfGroups());
+        validateSetItemsExist(errors, "noneOfGroups", dataGroups, criteria.getNoneOfGroups());
+        validateSetItemsDoNotOverlap(errors, "allOfGroups", criteria.getAllOfGroups(), criteria.getNoneOfGroups());
+        
+        validateSetItemsExist(errors, "allOfSubstudyIds", substudyIds, criteria.getAllOfSubstudyIds());
+        validateSetItemsExist(errors, "noneOfSubstudyIds", substudyIds, criteria.getNoneOfSubstudyIds());
+        validateSetItemsDoNotOverlap(errors, "allOfSubstudyIds", criteria.getAllOfSubstudyIds(),
+                criteria.getNoneOfSubstudyIds());
     }
     
     private static void pushSubpathError(Errors errors, String subpath, String errorKey, String error) {
@@ -106,57 +121,37 @@ public class CriteriaUtils {
         return true;
     }
     
+    private static void validateSetItemsExist(Errors errors, String fieldName, Set<String> fullSet, Set<String> setItems) {
+        if (setItems == null) {
+            errors.rejectValue(fieldName, "cannot be null");
+        } else {
+            for (String item : setItems) {
+                if (!fullSet.contains(item)) {
+                    String message = "'" + item + "' is not in enumeration: ";
+                    if (setItems.isEmpty()) {
+                        message += "<empty>";
+                    } else {
+                        message += COMMA_SPACE_JOINER.join(fullSet);
+                    }
+                    errors.rejectValue(fieldName, message);
+                }
+            }
+        }
+    }
+    
     /**
      * Can't logically have a data group that is both required and prohibited, so check for this.
      * @param criteria
      * @param errors
      */
-    private static void validateDataGroupNotRequiredAndProhibited(Criteria criteria, Errors errors) {
-        String errorMessage = validateDataGroupNotRequiredAndProhibited(criteria.getAllOfGroups(), criteria.getNoneOfGroups());
-        if (errorMessage != null) {
-            errors.rejectValue("allOfGroups", errorMessage);
-        }
-    }
-    
-    public static String validateDataGroupNotRequiredAndProhibited(Set<String> allOfGroups, Set<String> noneOfGroups) {
-        if (allOfGroups != null && noneOfGroups != null) {
-            Set<String> intersection = Sets.intersection(allOfGroups, noneOfGroups);
+    private static void validateSetItemsDoNotOverlap(Errors errors, String fieldName, Set<String> setA,
+            Set<String> setB) {
+        if (setA != null && setB != null) {
+            Set<String> intersection = Sets.intersection(setA, setB);
             if (!intersection.isEmpty()) {
-                return "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection);
+                errors.rejectValue(fieldName,
+                        "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection));
             }
         }
-        return null;
     }
-    
-    private static void validateDataGroups(Errors errors, Set<String> dataGroups, Set<String> criteriaGroups, String propName) {
-        List<String> errorMessages = validateDataGroups(dataGroups, criteriaGroups);
-        for (String oneMessage : errorMessages) {
-            errors.rejectValue(propName, oneMessage);
-        }
-    }
-    
-    public static List<String> validateDataGroups(Set<String> dataGroups, Set<String> criteriaGroups) {
-        List<String> list = Lists.newArrayList();
-        if (criteriaGroups == null) {
-            list.add("cannot be null");
-        } else {
-            for (String dataGroup : criteriaGroups) {
-                if (!dataGroups.contains(dataGroup)) {
-                    list.add(getDataGroupMessage(dataGroup, dataGroups));
-                }
-            }
-        }
-        return list;
-    }
-    
-    private static String getDataGroupMessage(String identifier, Set<String> dataGroups) {
-        String message = "'" + identifier + "' is not in enumeration: ";
-        if (dataGroups.isEmpty()) {
-            message += "<no data groups declared>";
-        } else {
-            message += COMMA_SPACE_JOINER.join(dataGroups);
-        }
-        return message;
-    }
-
 }

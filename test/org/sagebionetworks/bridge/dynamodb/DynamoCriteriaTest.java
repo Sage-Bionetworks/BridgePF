@@ -40,6 +40,8 @@ public class DynamoCriteriaTest {
         Criteria criteria = TestUtils.createCriteria(2, 8, SET_A, SET_B);
         criteria.setMinAppVersion(ANDROID, 10);
         criteria.setMaxAppVersion(ANDROID, 15);
+        criteria.setAllOfSubstudyIds(SET_A);
+        criteria.setNoneOfSubstudyIds(SET_B);
         criteria.setKey("subpopulation:AAA");
         criteria.setLanguage("fr");
         
@@ -47,6 +49,8 @@ public class DynamoCriteriaTest {
         assertEquals("fr", node.get("language").asText());
         assertEquals(SET_A, JsonUtils.asStringSet(node, "allOfGroups"));
         assertEquals(SET_B, JsonUtils.asStringSet(node, "noneOfGroups"));
+        assertEquals(SET_A, JsonUtils.asStringSet(node, "allOfSubstudyIds"));
+        assertEquals(SET_B, JsonUtils.asStringSet(node, "noneOfSubstudyIds"));
         
         JsonNode minValues = node.get("minAppVersions");
         assertEquals(2, minValues.get(IOS).asInt());
@@ -58,10 +62,11 @@ public class DynamoCriteriaTest {
         
         assertEquals("Criteria", node.get("type").asText());
         assertNull(node.get("key"));
-        assertEquals(6, node.size()); // Nothing else is serialized here. (That's important.)
+        assertEquals(8, node.size()); // Nothing else is serialized here. (That's important.)
         
         // However, we will except the older variant of JSON for the time being
-        String json = makeJson("{'minAppVersion':2,'maxAppVersion':8,'language':'de','allOfGroups':['a','b'],'noneOfGroups':['c','d']}");
+        String json = makeJson("{'minAppVersion':2,'maxAppVersion':8,'language':'de','allOfGroups':['a','b'],"+
+        "'noneOfGroups':['c','d'],'allOfSubstudyIds':['a','b'],'noneOfSubstudyIds':['c','d']}");
         
         Criteria crit = BridgeObjectMapper.get().readValue(json, Criteria.class);
         assertEquals(new Integer(2), crit.getMinAppVersion(IOS));
@@ -69,6 +74,8 @@ public class DynamoCriteriaTest {
         assertEquals("de", crit.getLanguage());
         assertEquals(SET_A, crit.getAllOfGroups());
         assertEquals(SET_B, crit.getNoneOfGroups());
+        assertEquals(SET_A, crit.getAllOfSubstudyIds());
+        assertEquals(SET_B, crit.getNoneOfSubstudyIds());
         assertNull(crit.getKey());
     }
 

@@ -26,6 +26,7 @@ public final class RequestInfo {
     private final String userAgent;
     private final List<String> languages;
     private final Set<String> userDataGroups;
+    private final Set<String> userSubstudyIds;
     private final DateTime activitiesAccessedOn;
     private final DateTime signedInOn;
     private final DateTime uploadedOn;
@@ -36,14 +37,17 @@ public final class RequestInfo {
     private RequestInfo(@JsonProperty("userId") String userId, @JsonProperty("clientInfo") ClientInfo clientInfo,
             @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") List<String> languages,
             @JsonProperty("userDataGroups") Set<String> userDataGroups,
+            @JsonProperty("userSubstudyIds") Set<String> userSubstudyIds,
             @JsonProperty("activitiesAccessedOn") DateTime activitiesAccessedOn,
-            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn, 
-            @JsonProperty("timeZone") DateTimeZone timeZone, @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
+            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn,
+            @JsonProperty("timeZone") DateTimeZone timeZone,
+            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
         this.userId = userId;
         this.clientInfo = clientInfo;
         this.userAgent = userAgent;
         this.languages = languages;
         this.userDataGroups = userDataGroups;
+        this.userSubstudyIds = userSubstudyIds;
         this.activitiesAccessedOn = activitiesAccessedOn;
         this.signedInOn = signedInOn;
         this.uploadedOn = uploadedOn;
@@ -71,6 +75,10 @@ public final class RequestInfo {
         return userDataGroups;
     }
 
+    public Set<String> getUserSubstudyIds() {
+        return userSubstudyIds;
+    }
+    
     @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getActivitiesAccessedOn() {
         return (activitiesAccessedOn == null) ? null : activitiesAccessedOn.withZone(timeZone);
@@ -97,7 +105,7 @@ public final class RequestInfo {
     @Override
     public int hashCode() {
         return Objects.hash(getActivitiesAccessedOn(), clientInfo, userAgent, languages, getSignedInOn(),
-                userDataGroups, userId, timeZone, uploadedOn, studyIdentifier);
+                userDataGroups, userSubstudyIds, userId, timeZone, uploadedOn, studyIdentifier);
     }
 
     @Override
@@ -114,6 +122,7 @@ public final class RequestInfo {
                Objects.equals(getSignedInOn(), other.getSignedInOn()) && 
                Objects.equals(getUploadedOn(), other.getUploadedOn()) &&
                Objects.equals(userDataGroups, other.userDataGroups) && 
+               Objects.equals(userSubstudyIds, other.userSubstudyIds) && 
                Objects.equals(userId, other.userId) && 
                Objects.equals(timeZone, other.timeZone) && 
                Objects.equals(studyIdentifier, other.studyIdentifier);
@@ -122,9 +131,10 @@ public final class RequestInfo {
     @Override
     public String toString() {
         return "RequestInfo [userId=" + userId + ", userAgent=" + userAgent + ", languages=" + languages
-                + ", userDataGroups=" + userDataGroups + ", activitiesAccessedOn=" + getActivitiesAccessedOn()
-                + ", signedInOn=" + getSignedInOn() + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone
-                + ", studyIdentifier=" + studyIdentifier + "]";
+                + ", userDataGroups=" + userDataGroups + ", userSubstudyIds=" + userSubstudyIds 
+                + ", activitiesAccessedOn=" + getActivitiesAccessedOn() + ", signedInOn=" + getSignedInOn() 
+                + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone + ", studyIdentifier=" 
+                + studyIdentifier + "]";
     }
 
     public static class Builder {
@@ -133,6 +143,7 @@ public final class RequestInfo {
         private String userAgent;
         private List<String> languages;
         private Set<String> userDataGroups;
+        private Set<String> userSubstudyIds;
         private DateTime activitiesAccessedOn;
         private DateTime signedInOn;
         private DateTime uploadedOn;
@@ -146,6 +157,7 @@ public final class RequestInfo {
                 withUserAgent(requestInfo.getUserAgent());
                 withLanguages(requestInfo.getLanguages());
                 withUserDataGroups(requestInfo.getUserDataGroups());
+                withUserSubstudyIds(requestInfo.getUserSubstudyIds());
                 withActivitiesAccessedOn(requestInfo.getActivitiesAccessedOn());
                 withSignedInOn(requestInfo.getSignedInOn());
                 withUploadedOn(requestInfo.getUploadedOn());
@@ -184,6 +196,12 @@ public final class RequestInfo {
             }
             return this;
         }
+        public Builder withUserSubstudyIds(Set<String> userSubstudyIds) {
+            if (userSubstudyIds != null) {
+                this.userSubstudyIds = userSubstudyIds;
+            }
+            return this;
+        }
         public Builder withActivitiesAccessedOn(DateTime activitiesAccessedOn) {
             if (activitiesAccessedOn != null) {
                 this.activitiesAccessedOn = activitiesAccessedOn;
@@ -216,8 +234,8 @@ public final class RequestInfo {
         }
         
         public RequestInfo build() {
-            return new RequestInfo(userId, clientInfo, userAgent, languages, userDataGroups, activitiesAccessedOn,
-                    signedInOn, uploadedOn, timeZone, studyIdentifier);
+            return new RequestInfo(userId, clientInfo, userAgent, languages, userDataGroups, userSubstudyIds,
+                    activitiesAccessedOn, signedInOn, uploadedOn, timeZone, studyIdentifier);
         }
     }
     

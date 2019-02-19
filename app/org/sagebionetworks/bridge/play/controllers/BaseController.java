@@ -335,6 +335,7 @@ public abstract class BaseController extends Controller {
             .withIpAddress(session.getIpAddress())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
+            .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();
     }
@@ -482,6 +483,7 @@ public abstract class BaseController extends Controller {
         builder.withUserAgent(request().getHeader(USER_AGENT));
         builder.withLanguages(session.getParticipant().getLanguages());
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
+        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
         builder.withStudyIdentifier(session.getStudyIdentifier());
         return builder;

@@ -206,6 +206,7 @@ public class ParticipantService {
                 .withClientInfo(requestInfo.getClientInfo())
                 .withLanguages(requestInfo.getLanguages())
                 .withUserDataGroups(requestInfo.getUserDataGroups())
+                .withUserSubstudyIds(requestInfo.getUserSubstudyIds())
                 .build();
 
         // Participant must be consented.
@@ -296,6 +297,7 @@ public class ParticipantService {
                         .withClientInfo(requestInfo.getClientInfo())
                         .withLanguages(requestInfo.getLanguages())
                         .withUserDataGroups(requestInfo.getUserDataGroups())
+                        .withUserSubstudyIds(requestInfo.getUserSubstudyIds())
                         .build();
                 Map<SubpopulationGuid, ConsentStatus> consentStatusMap = consentService.getConsentStatuses(
                         criteriaContext, account);
@@ -869,6 +871,7 @@ public class ParticipantService {
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)
             .withUserDataGroups(participant.getDataGroups())
+            .withUserSubstudyIds(participant.getSubstudyIds())
             .withLanguages(participant.getLanguages()).build();
     }
 

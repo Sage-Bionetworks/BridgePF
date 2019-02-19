@@ -42,11 +42,13 @@ public class CriteriaContextTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withUserId(USER_ID)
                 .withClientInfo(CLIENT_INFO)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
         
         // There are defaults
         assertEquals(CLIENT_INFO, context.getClientInfo());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
         
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(CLIENT_INFO, copy.getClientInfo());

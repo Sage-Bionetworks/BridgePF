@@ -46,6 +46,7 @@ public class RequestInfoTest {
                 .withClientInfo(CLIENT_INFO)
                 .withUserAgent(USER_AGENT_STRING)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
                 .withLanguages(LANGUAGES)
                 .withUserId(USER_ID)
                 .withTimeZone(MST)
@@ -55,29 +56,35 @@ public class RequestInfoTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
 
-        assertEquals("userId", node.get("userId").asText());
-        assertEquals(ACTIVITIES_REQUESTED_ON.withZone(MST).toString(), node.get("activitiesAccessedOn").asText());
-        assertEquals(UPLOADED_ON.withZone(MST).toString(), node.get("uploadedOn").asText());
-        assertEquals("en", node.get("languages").get(0).asText());
-        assertEquals("fr", node.get("languages").get(1).asText());
+        assertEquals("userId", node.get("userId").textValue());
+        assertEquals(ACTIVITIES_REQUESTED_ON.withZone(MST).toString(), node.get("activitiesAccessedOn").textValue());
+        assertEquals(UPLOADED_ON.withZone(MST).toString(), node.get("uploadedOn").textValue());
+        assertEquals("en", node.get("languages").get(0).textValue());
+        assertEquals("fr", node.get("languages").get(1).textValue());
         Set<String> groups = Sets.newHashSet(
-            node.get("userDataGroups").get(0).asText(),
-            node.get("userDataGroups").get(1).asText()
+            node.get("userDataGroups").get(0).textValue(),
+            node.get("userDataGroups").get(1).textValue()
         );
         assertEquals(TestConstants.USER_DATA_GROUPS, groups);
-        assertEquals(SIGNED_IN_ON.withZone(MST).toString(), node.get("signedInOn").asText());
-        assertEquals("+03:00", node.get("timeZone").asText());
-        assertEquals("RequestInfo", node.get("type").asText());
-        assertEquals(USER_AGENT_STRING, node.get("userAgent").asText());
-        assertEquals(11, node.size());
+        
+        Set<String> substudyIds = Sets.newHashSet(
+            node.get("userSubstudyIds").get(0).textValue(),
+            node.get("userSubstudyIds").get(1).textValue()
+        );
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, substudyIds);
+        assertEquals(SIGNED_IN_ON.withZone(MST).toString(), node.get("signedInOn").textValue());
+        assertEquals("+03:00", node.get("timeZone").textValue());
+        assertEquals("RequestInfo", node.get("type").textValue());
+        assertEquals(USER_AGENT_STRING, node.get("userAgent").textValue());
+        assertEquals(12, node.size());
         
         JsonNode studyIdNode = node.get("studyIdentifier");
-        assertEquals("test-study", studyIdNode.get("identifier").asText());
-        assertEquals("StudyIdentifier", studyIdNode.get("type").asText());
+        assertEquals("test-study", studyIdNode.get("identifier").textValue());
+        assertEquals("StudyIdentifier", studyIdNode.get("type").textValue());
         assertEquals(2, studyIdNode.size());
         
         JsonNode clientInfoNode = node.get("clientInfo");
-        assertEquals("app", clientInfoNode.get("appName").asText());
+        assertEquals("app", clientInfoNode.get("appName").textValue());
         assertEquals(20, clientInfoNode.get("appVersion").asInt());
         
         RequestInfo deserClientInfo = BridgeObjectMapper.get().readValue(node.toString(), RequestInfo.class);
@@ -95,8 +102,8 @@ public class RequestInfoTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
         
         assertEquals(ACTIVITIES_REQUESTED_ON.withZone(DateTimeZone.UTC).toString(),
-                node.get("activitiesAccessedOn").asText());
+                node.get("activitiesAccessedOn").textValue());
         assertEquals(SIGNED_IN_ON.withZone(DateTimeZone.UTC).toString(), 
-                node.get("signedInOn").asText());
+                node.get("signedInOn").textValue());
     }
 }
