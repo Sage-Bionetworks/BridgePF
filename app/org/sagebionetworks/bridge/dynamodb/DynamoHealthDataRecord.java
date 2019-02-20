@@ -307,7 +307,8 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     /** @see #getUserSubstudyMemberships() */
     @Override
     public void setUserSubstudyMemberships(Map<String, String> userSubstudyMemberships) {
-        this.userSubstudyMemberships = userSubstudyMemberships;
+        this.userSubstudyMemberships = (userSubstudyMemberships != null && !userSubstudyMemberships.isEmpty())
+                ? userSubstudyMemberships : null;
     }
 
     /** {@inheritDoc} */

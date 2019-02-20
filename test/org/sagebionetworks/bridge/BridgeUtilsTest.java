@@ -64,10 +64,10 @@ public class BridgeUtilsTest {
         
         Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
         assertEquals(4, results.size());
-        assertEquals("", results.get("subA"));
+        assertEquals("<none>", results.get("subA"));
         assertEquals("extB", results.get("subB"));
         assertEquals("extC", results.get("subC"));
-        assertEquals("", results.get("subD"));
+        assertEquals("<none>", results.get("subD"));
     }
     
     @Test
