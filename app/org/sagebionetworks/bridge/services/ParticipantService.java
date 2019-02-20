@@ -281,6 +281,7 @@ public class ParticipantService {
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
+            // The history includes all subpopulations whether they match the user or not.
             List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
@@ -288,8 +289,8 @@ public class ParticipantService {
                 consentHistories.put(subpop.getGuidString(), history);
             }
             builder.withConsentHistories(consentHistories);
-
-            // To calculate consent status, we need construct a CriteriaContext from RequestInfo.
+            // To calculate consent status, we need construct a CriteriaContext from RequestInfo (only for the 
+            // information we don't store in account).
             RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
             if (requestInfo != null) {
                 CriteriaContext criteriaContext = new CriteriaContext.Builder()
@@ -298,8 +299,8 @@ public class ParticipantService {
                         .withHealthCode(account.getHealthCode())
                         .withClientInfo(requestInfo.getClientInfo())
                         .withLanguages(requestInfo.getLanguages())
-                        .withUserDataGroups(requestInfo.getUserDataGroups())
-                        .withUserSubstudyIds(requestInfo.getUserSubstudyIds())
+                        .withUserDataGroups(account.getDataGroups())
+                        .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
                         .build();
                 Map<SubpopulationGuid, ConsentStatus> consentStatusMap = consentService.getConsentStatuses(
                         criteriaContext, account);
