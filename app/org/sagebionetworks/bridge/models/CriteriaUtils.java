@@ -47,23 +47,19 @@ public class CriteriaUtils {
             }
         }
         Set<String> dataGroups = context.getUserDataGroups();
-        if (dataGroups != null) {
-            if (!dataGroups.containsAll(criteria.getAllOfGroups())) {
-                return false;
-            }
-            if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
-                return false;
-            }
+        if (!dataGroups.containsAll(criteria.getAllOfGroups())) {
+            return false;
+        }
+        if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
+            return false;
         }
         Set<String> substudies = context.getUserSubstudyIds();
-        if (substudies != null) {
-            if (!substudies.containsAll(criteria.getAllOfSubstudyIds())) {
-                return false;
-            }
-            if (!Collections.disjoint(substudies, criteria.getNoneOfSubstudyIds())) {
-                return false;
-            }
-        }        
+        if (!substudies.containsAll(criteria.getAllOfSubstudyIds())) {
+            return false;
+        }
+        if (!Collections.disjoint(substudies, criteria.getNoneOfSubstudyIds())) {
+            return false;
+        }
         if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
             return false;
         }
@@ -129,17 +125,13 @@ public class CriteriaUtils {
         List<String> errors = new ArrayList<String>();
         if (setItems == null) {
             errors.add("cannot be null");
-        } else {
-            for (String item : setItems) {
-                if (!fullSet.contains(item)) {
-                    String message = "'" + item + "' is not in enumeration: ";
-                    if (fullSet.isEmpty()) {
-                        message += "<empty>";
-                    } else {
-                        message += COMMA_SPACE_JOINER.join(fullSet);
-                    }
-                    errors.add(message);
-                }
+            return errors;
+        }
+        for (String item : setItems) {
+            if (!fullSet.contains(item)) {
+                String listStr = (fullSet.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(fullSet);
+                String message = String.format("'%s' is not in enumeration: %s", item, listStr);
+                errors.add(message);
             }
         }
         return errors;
