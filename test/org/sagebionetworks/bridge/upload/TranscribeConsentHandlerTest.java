@@ -56,7 +56,7 @@ public class TranscribeConsentHandlerTest {
         assertEquals(Sets.newHashSet("test-group1","test-group2"), outputRecord.getUserDataGroups());
         
         Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
-        assertEquals("", substudyMemberships.get("subA"));
+        assertEquals("<none>", substudyMemberships.get("subA"));
         assertEquals("extB", substudyMemberships.get("subB"));
     }
 
