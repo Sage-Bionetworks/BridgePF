@@ -88,11 +88,12 @@ public class CriteriaUtils {
         }
         validateSetItemsExist(errors, "allOfGroups", dataGroups, criteria.getAllOfGroups());
         validateSetItemsExist(errors, "noneOfGroups", dataGroups, criteria.getNoneOfGroups());
-        validateSetItemsDoNotOverlap(errors, "allOfGroups", criteria.getAllOfGroups(), criteria.getNoneOfGroups());
+        validateSetItemsDoNotOverlap(errors, "data groups", "allOfGroups", criteria.getAllOfGroups(),
+                criteria.getNoneOfGroups());
         
         validateSetItemsExist(errors, "allOfSubstudyIds", substudyIds, criteria.getAllOfSubstudyIds());
         validateSetItemsExist(errors, "noneOfSubstudyIds", substudyIds, criteria.getNoneOfSubstudyIds());
-        validateSetItemsDoNotOverlap(errors, "allOfSubstudyIds", criteria.getAllOfSubstudyIds(),
+        validateSetItemsDoNotOverlap(errors, "substudies", "allOfSubstudyIds", criteria.getAllOfSubstudyIds(),
                 criteria.getNoneOfSubstudyIds());
     }
     
@@ -144,11 +145,11 @@ public class CriteriaUtils {
         }
     }
     
-    public static String validateSetItemsDoNotOverlap(Set<String> setA, Set<String> setB) {
+    public static String validateSetItemsDoNotOverlap(String setItemTypeName, Set<String> setA, Set<String> setB) {
         if (setA != null && setB != null) {
             Set<String> intersection = Sets.intersection(setA, setB);
             if (!intersection.isEmpty()) {
-                return "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection);
+                return "includes these excluded " + setItemTypeName + ": " + COMMA_SPACE_JOINER.join(intersection);
             }
         }
         return null;
@@ -157,9 +158,9 @@ public class CriteriaUtils {
     /**
      * Can't logically have a data group that is both required and prohibited, so check for this.
      */
-    private static void validateSetItemsDoNotOverlap(Errors errors, String fieldName, Set<String> setA,
-            Set<String> setB) {
-        String errorMessage = validateSetItemsDoNotOverlap(setA, setB);
+    private static void validateSetItemsDoNotOverlap(Errors errors, String setItemTypeName, String fieldName,
+            Set<String> setA, Set<String> setB) {
+        String errorMessage = validateSetItemsDoNotOverlap(setItemTypeName, setA, setB);
         if (errorMessage != null) {
             errors.rejectValue(fieldName, errorMessage);
         }

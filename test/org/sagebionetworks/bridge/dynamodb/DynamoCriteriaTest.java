@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
@@ -132,6 +133,20 @@ public class DynamoCriteriaTest {
         criteria.setMaxAppVersion(null);
         assertFalse(criteria.getMinAppVersions().containsKey(IOS));
         assertFalse(criteria.getMaxAppVersions().containsKey(IOS));
+    }
+    
+    @Test
+    public void nullForSetFieldsConvertedToEmptySets() {
+        DynamoCriteria criteria = new DynamoCriteria();
+        criteria.setAllOfGroups(null);
+        criteria.setNoneOfGroups(null);
+        criteria.setAllOfSubstudyIds(null);
+        criteria.setNoneOfSubstudyIds(null);
+        
+        assertTrue(criteria.getAllOfGroups().isEmpty());
+        assertTrue(criteria.getNoneOfGroups().isEmpty());
+        assertTrue(criteria.getAllOfSubstudyIds().isEmpty());
+        assertTrue(criteria.getNoneOfSubstudyIds().isEmpty());
     }
     
     private String makeJson(String string) {

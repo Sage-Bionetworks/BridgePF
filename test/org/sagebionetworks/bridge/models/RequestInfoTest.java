@@ -41,18 +41,7 @@ public class RequestInfoTest {
     
     @Test
     public void canSerialize() throws Exception {
-        RequestInfo requestInfo = new RequestInfo.Builder()
-                .withStudyIdentifier(STUDY_ID)
-                .withClientInfo(CLIENT_INFO)
-                .withUserAgent(USER_AGENT_STRING)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
-                .withLanguages(LANGUAGES)
-                .withUserId(USER_ID)
-                .withTimeZone(MST)
-                .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
-                .withUploadedOn(UPLOADED_ON)
-                .withSignedInOn(SIGNED_IN_ON).build();
+        RequestInfo requestInfo = createRequestInfo();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
 
@@ -106,4 +95,39 @@ public class RequestInfoTest {
         assertEquals(SIGNED_IN_ON.withZone(DateTimeZone.UTC).toString(), 
                 node.get("signedInOn").textValue());
     }
+    
+    @Test
+    public void copyOf() {
+        RequestInfo requestInfo = createRequestInfo();
+        
+        RequestInfo copy = new RequestInfo.Builder().copyOf(requestInfo).build();
+        assertEquals(STUDY_ID, copy.getStudyIdentifier());
+        assertEquals(CLIENT_INFO, copy.getClientInfo());
+        assertEquals(USER_AGENT_STRING, copy.getUserAgent());
+        assertEquals(TestConstants.USER_DATA_GROUPS, copy.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, copy.getUserSubstudyIds());
+        assertEquals(LANGUAGES, copy.getLanguages());
+        assertEquals(USER_ID, copy.getUserId());
+        assertEquals(MST, copy.getTimeZone());
+        assertEquals(ACTIVITIES_REQUESTED_ON.withZone(copy.getTimeZone()), copy.getActivitiesAccessedOn());
+        assertEquals(UPLOADED_ON.withZone(copy.getTimeZone()), copy.getUploadedOn());
+        assertEquals(SIGNED_IN_ON.withZone(copy.getTimeZone()), copy.getSignedInOn());
+    }
+
+    private RequestInfo createRequestInfo() {
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withStudyIdentifier(STUDY_ID)
+                .withClientInfo(CLIENT_INFO)
+                .withUserAgent(USER_AGENT_STRING)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+                .withLanguages(LANGUAGES)
+                .withUserId(USER_ID)
+                .withTimeZone(MST)
+                .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
+                .withUploadedOn(UPLOADED_ON)
+                .withSignedInOn(SIGNED_IN_ON).build();
+        return requestInfo;
+    }
+    
 }

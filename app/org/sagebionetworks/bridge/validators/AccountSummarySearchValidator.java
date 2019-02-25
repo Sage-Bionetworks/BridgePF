@@ -54,7 +54,7 @@ public class AccountSummarySearchValidator implements Validator {
             }
         }
         String errorMessage = CriteriaUtils.validateSetItemsDoNotOverlap(
-                search.getAllOfGroups(), search.getNoneOfGroups());
+                "data groups", search.getAllOfGroups(), search.getNoneOfGroups());
         if (errorMessage != null) {
             errors.rejectValue("allOfGroups", errorMessage);
         }

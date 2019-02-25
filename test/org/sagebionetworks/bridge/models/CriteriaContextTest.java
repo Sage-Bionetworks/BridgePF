@@ -55,7 +55,10 @@ public class CriteriaContextTest {
         
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(CLIENT_INFO, copy.getClientInfo());
+        assertEquals(TestConstants.TEST_STUDY, copy.getStudyIdentifier());
+        assertEquals(USER_ID, copy.getUserId());
         assertEquals(TestConstants.USER_DATA_GROUPS, copy.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, copy.getUserSubstudyIds());
     }
     
     @Test

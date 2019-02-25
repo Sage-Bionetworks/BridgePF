@@ -305,6 +305,7 @@ public class UserProfileControllerTest {
         assertEquals("First", participant.getFirstName());
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, participant.getSubstudyIds());
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, contextCaptor.getValue().getUserSubstudyIds());
         
         // Session continues to be initialized
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());

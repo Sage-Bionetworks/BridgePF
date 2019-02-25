@@ -63,9 +63,14 @@ public class SubstudyServiceTest {
     
     @Test
     public void getSubstudyIds() {
-        SUBSTUDIES.get(0).setId("substudyA");
-        SUBSTUDIES.get(1).setId("substudyB");
-        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(SUBSTUDIES);
+        Substudy substudyA = Substudy.create();
+        substudyA.setId("substudyA");
+        
+        Substudy substudyB = Substudy.create();
+        substudyB.setId("substudyB");
+        List<Substudy> substudies = ImmutableList.of(substudyA, substudyB); 
+        
+        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(substudies);
         
         Set<String> substudyIds = service.getSubstudyIds(TestConstants.TEST_STUDY);
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, substudyIds);

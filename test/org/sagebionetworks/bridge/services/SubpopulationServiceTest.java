@@ -226,6 +226,7 @@ public class SubpopulationServiceTest {
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(subpopDao).updateSubpopulation(subpop);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test

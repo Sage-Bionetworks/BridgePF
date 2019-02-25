@@ -280,6 +280,31 @@ public class CriteriaUtilsTest {
     }
     
     @Test
+    public void validateSubstudyIdCannotBeWrong() {
+        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB"));
+        
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("substudyC"), errors);
+        assertEquals("'substudyA' is not in enumeration: substudyC", errors.getFieldErrors("allOfSubstudyIds").get(0).getCode());
+        assertEquals("'substudyB' is not in enumeration: substudyC", errors.getFieldErrors("noneOfSubstudyIds").get(0).getCode());
+    }
+    
+    @Test
+    public void validateSubstudyIdNotBothRequiredAndProhibited() {
+        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA", "substudyB", "substudyC"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB", "substudyC"));
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("substudyA", "substudyB", "substudyC"), errors);
+        // It's a set so validate without describing the order of the groups in the error message
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("includes these excluded substudies: "));
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyB"));
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyC"));
+    }
+    
+    @Test
     public void matchesLanguage() {
         // If a language is declared, the user has to match it.
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);

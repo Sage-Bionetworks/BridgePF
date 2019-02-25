@@ -884,6 +884,7 @@ public class ParticipantServiceTest {
         assertEquals(CLIENT_INFO, criteriaContext.getClientInfo());
         assertEquals(TestConstants.LANGUAGES, criteriaContext.getLanguages());
         assertEquals(TestConstants.USER_DATA_GROUPS, criteriaContext.getUserDataGroups());
+        assertEquals(ImmutableSet.of("substudyA", "substudyB", "substudyC"), criteriaContext.getUserSubstudyIds());
     }
     
     @Test

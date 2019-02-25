@@ -864,7 +864,7 @@ public class ParticipantService {
     }
      
     
-    protected CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
+    private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
