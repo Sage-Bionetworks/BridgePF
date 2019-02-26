@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 
 import java.util.List;
 
@@ -157,6 +158,7 @@ public class ScheduledActivityControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withDataGroups(USER_DATA_GROUPS)
+                .withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withLanguages(LANGUAGES)
                 .withCreatedOn(ACCOUNT_CREATED_ON)
                 .withId(ID).build();
@@ -248,6 +250,7 @@ public class ScheduledActivityControllerTest {
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(LANGUAGES, critContext.getLanguages());
+        assertEquals(USER_SUBSTUDY_IDS, critContext.getUserSubstudyIds());
         assertEquals(TEST_STUDY_IDENTIFIER, critContext.getStudyIdentifier().getIdentifier());
         assertEquals(CLIENT_INFO, critContext.getClientInfo());
         
@@ -256,6 +259,7 @@ public class ScheduledActivityControllerTest {
         assertEquals("id", requestInfo.getUserId());
         assertEquals(LANGUAGES, requestInfo.getLanguages());
         assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+        assertEquals(USER_SUBSTUDY_IDS, requestInfo.getUserSubstudyIds());
         assertNotNull(requestInfo.getActivitiesAccessedOn());
         assertEquals(MSK, requestInfo.getActivitiesAccessedOn().getZone());
         assertEquals(MSK, requestInfo.getTimeZone());
@@ -507,6 +511,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(USER_AGENT, requestInfo.getUserAgent());
         assertEquals(LANGUAGES, requestInfo.getLanguages());
         assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+        assertEquals(USER_SUBSTUDY_IDS, requestInfo.getUserSubstudyIds());
         assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
         assertNull(requestInfo.getSignedInOn());
         assertEquals(zone, requestInfo.getTimeZone());
@@ -527,6 +532,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(ID, critContext.getUserId());
         assertEquals(CLIENT_INFO, critContext.getClientInfo());
         assertEquals(USER_DATA_GROUPS, critContext.getUserDataGroups());
+        assertEquals(USER_SUBSTUDY_IDS, critContext.getUserSubstudyIds());
         assertEquals(LANGUAGES, critContext.getLanguages());
     }
     

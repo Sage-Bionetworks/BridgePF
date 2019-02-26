@@ -644,6 +644,10 @@ public class ParticipantServiceTest {
         // Mock account w/ phone.
         mockHealthCodeAndAccountRetrieval(null, PHONE);
         account.setPhoneVerified(true);
+        account.setDataGroups(TestConstants.USER_DATA_GROUPS);
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ID);
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
 
         // Mock request info.
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
@@ -676,6 +680,7 @@ public class ParticipantServiceTest {
         assertEquals(CLIENT_INFO, criteriaContext.getClientInfo());
         assertEquals(TestConstants.LANGUAGES, criteriaContext.getLanguages());
         assertEquals(TestConstants.USER_DATA_GROUPS, criteriaContext.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, criteriaContext.getUserSubstudyIds());
 
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(HEALTH_CODE, registration.getHealthCode());
@@ -879,6 +884,7 @@ public class ParticipantServiceTest {
         assertEquals(CLIENT_INFO, criteriaContext.getClientInfo());
         assertEquals(TestConstants.LANGUAGES, criteriaContext.getLanguages());
         assertEquals(TestConstants.USER_DATA_GROUPS, criteriaContext.getUserDataGroups());
+        assertEquals(ImmutableSet.of("substudyA", "substudyB", "substudyC"), criteriaContext.getUserSubstudyIds());
     }
     
     @Test

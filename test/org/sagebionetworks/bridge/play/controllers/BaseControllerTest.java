@@ -67,7 +67,6 @@ public class BaseControllerTest {
     private static final String HEALTH_CODE = "health-code";
     private static final String IP_ADDRESS = "dummy IP address";
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
-    private static final Set<String> GROUPS = Sets.newHashSet("group1");
     private static final ClientInfo CLIENTINFO = ClientInfo.fromUserAgentCache("app/10");
     private static final DateTime UPLOADED_ON = DateTime.now().minusHours(1);
     private static final String USER_ID = "user-id";
@@ -883,7 +882,8 @@ public class BaseControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withId("userId")
                 .withLanguages(LANGUAGES)
-                .withDataGroups(GROUPS)
+                .withDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
                 .withTimeZone(MSK)
                 .build();
         session.setParticipant(participant);
@@ -899,7 +899,8 @@ public class BaseControllerTest {
         
         assertEquals("userId", info.getUserId());
         assertEquals(LANGUAGES, info.getLanguages());
-        assertEquals(GROUPS, info.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, info.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, info.getUserSubstudyIds());
         assertEquals(MSK, info.getTimeZone());
         assertEquals("app/10", info.getUserAgent());
         assertEquals(CLIENTINFO, info.getClientInfo());
@@ -933,8 +934,8 @@ public class BaseControllerTest {
 
         // Set up participant and session.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
-                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES)
-                .build();
+                .withDataGroups(TestConstants.USER_DATA_GROUPS).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+                .withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES).build();
 
         UserSession session = new UserSession(participant);
         session.setIpAddress(IP_ADDRESS);
@@ -948,6 +949,7 @@ public class BaseControllerTest {
         assertEquals(IP_ADDRESS, context.getIpAddress());
         assertEquals(USER_ID, context.getUserId());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
         assertEquals(TEST_STUDY, context.getStudyIdentifier());
     }
 

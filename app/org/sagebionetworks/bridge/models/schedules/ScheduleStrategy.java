@@ -29,7 +29,7 @@ public interface ScheduleStrategy {
     /**
      * Validate that the strategy implementation instance is valid.
      */
-    void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors);
+    void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors);
     
     /**
      * Get all possible schedules that this schedule strategy might schedule. This can be used to 

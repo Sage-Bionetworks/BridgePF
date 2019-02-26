@@ -199,13 +199,16 @@ public class ParticipantService {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no request info");
         }
+        Set<String> substudyIds = account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withUserId(userId)
                 .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
                 .withLanguages(requestInfo.getLanguages())
-                .withUserDataGroups(requestInfo.getUserDataGroups())
+                .withUserDataGroups(account.getDataGroups())
+                .withUserSubstudyIds(substudyIds)
                 .build();
 
         // Participant must be consented.
@@ -278,6 +281,7 @@ public class ParticipantService {
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
+            // The history includes all subpopulations whether they match the user or not.
             List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
@@ -285,8 +289,8 @@ public class ParticipantService {
                 consentHistories.put(subpop.getGuidString(), history);
             }
             builder.withConsentHistories(consentHistories);
-
-            // To calculate consent status, we need construct a CriteriaContext from RequestInfo.
+            // To calculate consent status, we need construct a CriteriaContext from RequestInfo (only for the 
+            // information we don't store in account).
             RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
             if (requestInfo != null) {
                 CriteriaContext criteriaContext = new CriteriaContext.Builder()
@@ -295,7 +299,8 @@ public class ParticipantService {
                         .withHealthCode(account.getHealthCode())
                         .withClientInfo(requestInfo.getClientInfo())
                         .withLanguages(requestInfo.getLanguages())
-                        .withUserDataGroups(requestInfo.getUserDataGroups())
+                        .withUserDataGroups(account.getDataGroups())
+                        .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
                         .build();
                 Map<SubpopulationGuid, ConsentStatus> consentStatusMap = consentService.getConsentStatuses(
                         criteriaContext, account);
@@ -869,6 +874,7 @@ public class ParticipantService {
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)
             .withUserDataGroups(participant.getDataGroups())
+            .withUserSubstudyIds(participant.getSubstudyIds())
             .withLanguages(participant.getLanguages()).build();
     }
 

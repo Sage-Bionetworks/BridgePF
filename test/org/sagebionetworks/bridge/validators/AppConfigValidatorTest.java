@@ -68,8 +68,10 @@ public class AppConfigValidatorTest {
         appConfig = AppConfig.create();
         appConfig.setStudyId(TEST_STUDY_IDENTIFIER);
         
-        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), true);
-        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), false);
+        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, true);
+        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, false);
     }
     
     @Test
@@ -224,10 +226,12 @@ public class AppConfigValidatorTest {
     public void criteriaAreValidated() { 
         Criteria criteria = Criteria.create();
         criteria.setNoneOfGroups(Sets.newHashSet("bad-group"));
+        criteria.setAllOfSubstudyIds(Sets.newHashSet("wrong-group"));
         
         appConfig.setCriteria(criteria);
         
-        assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
+        assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: group1, group2");
+        assertValidatorMessage(newValidator, appConfig, "allOfSubstudyIds", "'wrong-group' is not in enumeration: substudyA, substudyB");
     }
     
     @Test

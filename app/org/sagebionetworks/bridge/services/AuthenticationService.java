@@ -439,8 +439,8 @@ public class AuthenticationService {
 
         // Create new session.
         UserSession session = new UserSession(participant);
-        session.setSessionToken(BridgeUtils.generateGuid());
-        session.setInternalSessionToken(BridgeUtils.generateGuid());
+        session.setSessionToken(getGuid());
+        session.setInternalSessionToken(getGuid());
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setIpAddress(context.getIpAddress());
@@ -461,7 +461,12 @@ public class AuthenticationService {
                 .withHealthCode(session.getHealthCode())
                 .withLanguages(session.getParticipant().getLanguages())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
                 .withUserId(session.getId())
                 .build();
+    }
+    
+    protected String getGuid() {
+        return BridgeUtils.generateGuid();
     }
 }

@@ -74,6 +74,9 @@ public class SubpopulationServiceTest {
     SubpopulationDao subpopDao;
     
     @Mock
+    SubstudyService substudyService;
+    
+    @Mock
     Study study;
     
     @Mock
@@ -103,6 +106,7 @@ public class SubpopulationServiceTest {
         service.setStudyConsentService(studyConsentService);
         service.setStudyConsentDao(studyConsentDao);
         service.setDefaultConsentForm(form);
+        service.setSubstudyService(substudyService);
         service.setCacheProvider(cacheProvider);
         
         subpop = Subpopulation.create();
@@ -157,6 +161,7 @@ public class SubpopulationServiceTest {
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
         verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
@@ -221,6 +226,7 @@ public class SubpopulationServiceTest {
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(subpopDao).updateSubpopulation(subpop);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test

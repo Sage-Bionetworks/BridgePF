@@ -29,6 +29,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -279,7 +280,7 @@ public class UserProfileControllerTest {
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS) // which includes substudyA
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
@@ -302,11 +303,13 @@ public class UserProfileControllerTest {
         assertEquals(ID, participant.getId());
         assertEquals(dataGroupSet, participant.getDataGroups());
         assertEquals("First", participant.getFirstName());
-        
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, participant.getSubstudyIds());
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, contextCaptor.getValue().getUserSubstudyIds());
         
         // Session continues to be initialized
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, session.getParticipant().getSubstudyIds());
         assertEquals("healthCode", session.getParticipant().getHealthCode());
         assertEquals("First", session.getParticipant().getFirstName());
     }

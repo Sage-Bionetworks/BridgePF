@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -127,7 +128,8 @@ public class AuthenticationServiceMockTest {
     private static final String HEALTH_CODE = "health-code";
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
-            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withLanguages(LANGUAGES).build();
+            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+            .withLanguages(LANGUAGES).build();
 
     @Mock
     private CacheProvider cacheProvider;
@@ -157,6 +159,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<AccountId> accountIdCaptor;
     @Captor
     private ArgumentCaptor<Tuple<String>> tupleCaptor;
+    @Captor
+    private ArgumentCaptor<CriteriaContext> contextCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -193,6 +197,54 @@ public class AuthenticationServiceMockTest {
     @After
     public void after() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test // Test some happy path stuff, like the correct initialization of the user session
+    public void signIn() {
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
+        
+        when(service.getGuid()).thenReturn("SESSION_TOKEN");
+        
+        when(config.getEnvironment()).thenReturn(Environment.PROD);
+        
+        account.setReauthToken("REAUTH_TOKEN");
+        account.setHealthCode(HEALTH_CODE);
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        account.setId(USER_ID);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withLanguages(LANGUAGES)
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
+            .withIpAddress("127.1.1.11").build();
+
+        
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(contextCaptor.capture(), any());
+        
+        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+        
+        verify(cacheProvider).setUserSession(session);
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
+        
+        assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
+        assertTrue(session.isAuthenticated());
+        assertEquals("127.1.1.11", session.getIpAddress());
+        assertEquals("SESSION_TOKEN", session.getSessionToken());
+        assertEquals("SESSION_TOKEN", session.getInternalSessionToken());
+        assertEquals("REAUTH_TOKEN", session.getReauthToken());
+        assertEquals(Environment.PROD, session.getEnvironment());
+        assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
+
+        // updated context
+        CriteriaContext updatedContext = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedContext.getHealthCode());
+        assertEquals(LANGUAGES, updatedContext.getLanguages());
+        assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, updatedContext.getUserSubstudyIds());
+        assertEquals(USER_ID, updatedContext.getUserId());
     }
     
     @Test

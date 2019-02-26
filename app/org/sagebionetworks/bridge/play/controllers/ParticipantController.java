@@ -119,6 +119,7 @@ public class ParticipantController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
+                .withUserSubstudyIds(updated.getSubstudyIds())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
         

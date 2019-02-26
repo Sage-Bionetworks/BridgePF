@@ -33,6 +33,8 @@ public final class DynamoCriteria implements Criteria {
     private String language;
     private Set<String> allOfGroups = Sets.newHashSet();
     private Set<String> noneOfGroups = Sets.newHashSet();
+    private Set<String> allOfSubstudyIds = Sets.newHashSet();
+    private Set<String> noneOfSubstudyIds = Sets.newHashSet();
     private Map<String, Integer> minAppVersions = Maps.newHashMap();
     private Map<String, Integer> maxAppVersions = Maps.newHashMap();
     
@@ -106,6 +108,25 @@ public final class DynamoCriteria implements Criteria {
     public void setNoneOfGroups(Set<String> noneOfGroups) {
         this.noneOfGroups = (noneOfGroups == null) ? new HashSet<>() : noneOfGroups;
     }
+
+    @Override
+    @DynamoDBAttribute
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getAllOfSubstudyIds() {
+        return allOfSubstudyIds;
+    }
+    public void setAllOfSubstudyIds(Set<String> allOfSubstudyIds) {
+        this.allOfSubstudyIds = (allOfSubstudyIds == null) ? new HashSet<>() : allOfSubstudyIds;
+    }
+    @Override
+    @DynamoDBAttribute
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getNoneOfSubstudyIds() {
+        return noneOfSubstudyIds;
+    }
+    public void setNoneOfSubstudyIds(Set<String> noneOfSubstudyIds) {
+        this.noneOfSubstudyIds = (noneOfSubstudyIds == null) ? new HashSet<>() : noneOfSubstudyIds;
+    }
     
     /**
      * The map-based getter and setter supports DynamoDB persistence and the return of a JSON object/map in the API. In
@@ -167,7 +188,8 @@ public final class DynamoCriteria implements Criteria {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups);
+        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups, allOfSubstudyIds,
+                noneOfSubstudyIds);
     }
     @Override
     public boolean equals(Object obj) {
@@ -180,6 +202,8 @@ public final class DynamoCriteria implements Criteria {
                 Objects.equals(language, other.language) && 
                 Objects.equals(noneOfGroups, other.noneOfGroups) && 
                 Objects.equals(allOfGroups, other.allOfGroups) && 
+                Objects.equals(noneOfSubstudyIds, other.noneOfSubstudyIds) && 
+                Objects.equals(allOfSubstudyIds, other.allOfSubstudyIds) && 
                 Objects.equals(minAppVersions, other.minAppVersions) && 
                 Objects.equals(maxAppVersions, other.maxAppVersions);
     }

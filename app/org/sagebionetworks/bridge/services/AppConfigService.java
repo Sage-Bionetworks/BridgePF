@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
@@ -47,6 +48,8 @@ public class AppConfigService {
     
     private StudyService studyService;
     
+    private SubstudyService substudyService;
+    
     private SurveyService surveyService;
     
     private UploadSchemaService schemaService;
@@ -59,6 +62,11 @@ public class AppConfigService {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
     }
     
     @Autowired
@@ -177,8 +185,11 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
+        
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
-                study.getDataGroups(), true);
+                study.getDataGroups(), substudyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -207,8 +218,11 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
+        
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
-                study.getDataGroups(), false);
+                study.getDataGroups(), substudyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.

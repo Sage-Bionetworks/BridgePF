@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -52,6 +53,7 @@ public class SchedulePlanServiceMockTest {
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
+    private SubstudyService mockSubstudyService;
     
     @Before
     public void before() {
@@ -62,10 +64,12 @@ public class SchedulePlanServiceMockTest {
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
+        mockSubstudyService = mock(SubstudyService.class);
         
         service = new SchedulePlanService();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
+        service.setSubstudyService(mockSubstudyService);
         
         Survey survey1 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey1.setIdentifier("identifier1");
@@ -75,6 +79,7 @@ public class SchedulePlanServiceMockTest {
         when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
+        
     }
     
     @Test
@@ -206,6 +211,7 @@ public class SchedulePlanServiceMockTest {
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>", e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0));
         }
     }
 
@@ -220,6 +226,7 @@ public class SchedulePlanServiceMockTest {
         } catch(InvalidEntityException e) {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
+            assertEquals("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>", e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0));
         }
     }
     
@@ -264,6 +271,7 @@ public class SchedulePlanServiceMockTest {
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());
         
         Criteria criteria = TestUtils.createCriteria(null, null, Sets.newHashSet("FFF"), null);
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();

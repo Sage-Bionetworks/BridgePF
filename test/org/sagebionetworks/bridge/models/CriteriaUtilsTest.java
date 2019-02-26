@@ -20,12 +20,11 @@ import org.sagebionetworks.bridge.validators.Validate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class CriteriaUtilsTest {
     
     private static final String KEY = "key";
-    private static final Set<String> EMPTY_SET = Sets.newHashSet();
+    private static final Set<String> EMPTY_SET = ImmutableSet.of();
     
     // All tests are against v4 of the app.
     private static ClientInfo IOS_SHORT_INFO = ClientInfo.fromUserAgentCache("Unknown Client/14");
@@ -112,24 +111,47 @@ public class CriteriaUtilsTest {
     @Test
     public void allOfGroupsMatch() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO); // has group1, and group2
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null, null)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1"), EMPTY_SET, null, null, null)));
         // Two groups are required, that still matches
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(Sets.newHashSet("group1", "group2"), EMPTY_SET, null, null, null)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1", "group2"), EMPTY_SET, null, null, null)));
         // but this doesn't
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(Sets.newHashSet("group1", "group3"), EMPTY_SET, null, null, null)));
+        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1", "group3"), EMPTY_SET, null, null, null)));
     }
     
     @Test
     public void noneOfGroupsMatch() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO); // has group1, and group2
         // Here, any group at all prevents a match.
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, Sets.newHashSet("group3", "group1"), null, null, null)));
+        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, ImmutableSet.of("group3", "group1"), null, null, null)));
     }
 
     @Test
     public void noneOfGroupsDefinedButDontPreventMatch() {
         CriteriaContext context = getContext(IOS_CLIENT_INFO); // does not have group3, so it is matched
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, Sets.newHashSet("group3"), null, null, null)));
+        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, ImmutableSet.of("group3"), null, null, null)));
+    }
+    
+    @Test
+    public void allOfSubstudyIdsMatch() {
+        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // has substudyA, and substudyB
+        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA"), EMPTY_SET, null, null, null)));
+        // Two groups are required, that still matches
+        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA", "substudyB"), EMPTY_SET, null, null, null)));
+        // but this doesn't
+        assertFalse(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA", "substudyC"), EMPTY_SET, null, null, null)));
+    }
+    
+    @Test
+    public void noneOfSubstudyIdsMatch() {
+        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // has substudyA, and substudyB
+        // Here, any group at all prevents a match.
+        assertFalse(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(EMPTY_SET, ImmutableSet.of("substudyC", "substudyA"), null, null, null)));
+    }
+
+    @Test
+    public void noneOfSubstudyIdsDefinedButDontPreventMatch() {
+        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // does not have substudyC, so it is matched
+        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(EMPTY_SET, ImmutableSet.of("substudyC"), null, null, null)));
     }
     
     @Test
@@ -138,7 +160,7 @@ public class CriteriaUtilsTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
         assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, null, null, null)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(Sets.newHashSet("group1"), EMPTY_SET, null, null, null)));
+        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1"), EMPTY_SET, null, null, null)));
     }
     
     @Test
@@ -146,7 +168,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, 1);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertFalse(errors.hasErrors());
     }
 
@@ -155,7 +177,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, 2, 1);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertEquals("cannot be less than minAppVersions.iphone_os", errors.getFieldErrors("maxAppVersions.iphone_os").get(0).getCode());
     }
     
@@ -164,7 +186,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertEquals("cannot be negative", errors.getFieldErrors("minAppVersions.iphone_os").get(0).getCode());
     }
     
@@ -175,7 +197,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, 1);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertFalse(errors.hasErrors());
     }
 
@@ -184,7 +206,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 2, 1);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertEquals("cannot be less than minAppVersions.android", errors.getFieldErrors("maxAppVersions.android").get(0).getCode());
     }
     
@@ -193,7 +215,7 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, -2, null);
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertEquals("cannot be negative", errors.getFieldErrors("minAppVersions.android").get(0).getCode());
     }
     
@@ -207,6 +229,8 @@ public class CriteriaUtilsTest {
             private Map<String,Integer> maxAppVersions = Maps.newHashMap();
             private Set<String> allOfGroups;
             private Set<String> noneOfGroups;
+            private Set<String> allOfSubstudies;
+            private Set<String> noneOfSubstudies;
             public void setKey(String key) { this.key = key; }
             public String getKey() { return key; }
             public void setLanguage(String language) { this.language = language; }
@@ -219,34 +243,65 @@ public class CriteriaUtilsTest {
             public Set<String> getAllOfGroups() { return allOfGroups; }
             public void setNoneOfGroups(Set<String> noneOfGroups) { this.noneOfGroups = noneOfGroups; }
             public Set<String> getNoneOfGroups() { return noneOfGroups; }
+            public void setAllOfSubstudyIds(Set<String> allOfSubstudies) { this.allOfSubstudies = allOfSubstudies; }
+            public Set<String> getAllOfSubstudyIds() { return allOfSubstudies; }
+            public void setNoneOfSubstudyIds(Set<String> noneOfSubstudies) { this.noneOfSubstudies = noneOfSubstudies; }
+            public Set<String> getNoneOfSubstudyIds() { return noneOfSubstudies; }
             public Set<String> getAppVersionOperatingSystems() { return new ImmutableSet.Builder<String>()
                 .addAll(minAppVersions.keySet()).addAll(maxAppVersions.keySet()).build(); }
         };
         
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, EMPTY_SET, errors);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
         assertEquals("cannot be null", errors.getFieldErrors("allOfGroups").get(0).getCode());
         assertEquals("cannot be null", errors.getFieldErrors("noneOfGroups").get(0).getCode());
+        assertEquals("cannot be null", errors.getFieldErrors("allOfSubstudyIds").get(0).getCode());
+        assertEquals("cannot be null", errors.getFieldErrors("noneOfSubstudyIds").get(0).getCode());
     }
     
     @Test
     public void validateDataGroupCannotBeWrong() {
-        Criteria criteria = getCriteria(Sets.newHashSet("group1"), Sets.newHashSet("group2"), null, null, null);
+        Criteria criteria = getCriteria(ImmutableSet.of("group1"), ImmutableSet.of("group2"), null, null, null);
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, Sets.newHashSet("group3"), errors);
+        CriteriaUtils.validate(criteria, ImmutableSet.of("group3"), EMPTY_SET, errors);
         assertEquals("'group1' is not in enumeration: group3", errors.getFieldErrors("allOfGroups").get(0).getCode());
         assertEquals("'group2' is not in enumeration: group3", errors.getFieldErrors("noneOfGroups").get(0).getCode());
     }
     
     @Test
     public void validateDataGroupNotBothRequiredAndProhibited() {
-        Criteria criteria = getCriteria(Sets.newHashSet("group1","group2","group3"), Sets.newHashSet("group2","group3"), null, null, null);
+        Criteria criteria = getCriteria(ImmutableSet.of("group1","group2","group3"), ImmutableSet.of("group2","group3"), null, null, null);
         Errors errors = Validate.getErrorsFor(criteria);
-        CriteriaUtils.validate(criteria, Sets.newHashSet("group1","group2","group3","group4"), errors);
+        CriteriaUtils.validate(criteria, ImmutableSet.of("group1","group2","group3","group4"), EMPTY_SET, errors);
         // It's a set so validate without describing the order of the groups in the error message
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these excluded data groups: "));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group2"));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
+    }
+    
+    @Test
+    public void validateSubstudyIdCannotBeWrong() {
+        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB"));
+        
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("substudyC"), errors);
+        assertEquals("'substudyA' is not in enumeration: substudyC", errors.getFieldErrors("allOfSubstudyIds").get(0).getCode());
+        assertEquals("'substudyB' is not in enumeration: substudyC", errors.getFieldErrors("noneOfSubstudyIds").get(0).getCode());
+    }
+    
+    @Test
+    public void validateSubstudyIdNotBothRequiredAndProhibited() {
+        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
+        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA", "substudyB", "substudyC"));
+        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB", "substudyC"));
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("substudyA", "substudyB", "substudyC"), errors);
+        // It's a set so validate without describing the order of the groups in the error message
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("includes these excluded substudies: "));
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyB"));
+        assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyC"));
     }
     
     @Test
@@ -322,6 +377,20 @@ public class CriteriaUtilsTest {
         return criteria;
     }
     
+    private Criteria getSubstudyCriteria(Set<String> required, Set<String> prohibited, String os, Integer min, Integer max) {
+        Criteria criteria = Criteria.create();
+        criteria.setKey(KEY);
+        if (min != null) {
+            criteria.setMinAppVersion(os, min);    
+        }
+        if (max != null) {
+            criteria.setMaxAppVersion(os, max);    
+        }
+        criteria.setAllOfSubstudyIds(required);
+        criteria.setNoneOfSubstudyIds(prohibited);
+        return criteria;
+    }    
+    
     private CriteriaContext getContextWithLanguage(String lang) {
         List<String> list = (lang == null) ? Lists.newArrayList() : Lists.newArrayList(lang);
         return new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
@@ -332,6 +401,14 @@ public class CriteriaUtilsTest {
         return new CriteriaContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withClientInfo(clientInfo)
-                .withUserDataGroups(Sets.newHashSet("group1", "group2")).build();
+                .withUserDataGroups(ImmutableSet.of("group1", "group2")).build();
     }
+    
+    private CriteriaContext getSubstudyContext(ClientInfo clientInfo) {
+        return new CriteriaContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withClientInfo(clientInfo)
+                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
+    }
+    
 }

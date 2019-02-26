@@ -34,7 +34,7 @@ public final class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
+    public void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors) {
         if (schedule == null) {
             errors.rejectValue("schedule", "is required");
         } else {

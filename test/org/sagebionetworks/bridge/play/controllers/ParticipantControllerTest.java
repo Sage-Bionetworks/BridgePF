@@ -61,6 +61,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -540,9 +541,13 @@ public class ParticipantControllerTest {
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
+                .withId(ID)
+                .withLanguages(TestConstants.LANGUAGES)
                 .withRoles(ImmutableSet.of(Roles.DEVELOPER)) // <-- should not be passed along
-                .withSubstudyIds(ImmutableSet.of("substudyA", "substudyB"))
+                .withDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
                 .withHealthCode("healthCode").build();
+        session.setParticipant(participant);
         
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
         
@@ -567,8 +572,20 @@ public class ParticipantControllerTest {
         assertEquals("FirstName", captured.getFirstName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getSharingScope());
         assertTrue(captured.isNotifyByEmail());
-        assertEquals(Sets.newHashSet("group1"), captured.getDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, captured.getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, captured.getSubstudyIds());
         assertEquals("true", captured.getAttributes().get("can_be_recontacted"));
+        
+        verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY, context.getStudyIdentifier());
+        assertEquals("healthCode", context.getHealthCode());
+        assertEquals(ID, context.getUserId());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
+        assertEquals(null, context.getIpAddress());
+        assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
+        assertEquals(TestConstants.LANGUAGES, context.getLanguages());
     }
     
     // Some values will be missing in the JSON and should be preserved from this original participant object.

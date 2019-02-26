@@ -33,6 +33,7 @@ public class SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
     private SurveyService surveyService;
+    private SubstudyService substudyService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
@@ -41,6 +42,10 @@ public class SchedulePlanService {
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
+    }
+    @Autowired
+    public final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
     }
 
     public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
@@ -74,7 +79,10 @@ public class SchedulePlanService {
                 }
             }
         }
-        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
+        Validate.entityThrowingException(
+                new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
 
         lookupSurveyReferenceIdentifiers(study.getStudyIdentifier(), plan);
         return schedulePlanDao.createSchedulePlan(study.getStudyIdentifier(), plan);
@@ -107,7 +115,10 @@ public class SchedulePlanService {
                 }
             }
         }
-        Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
+        Validate.entityThrowingException(
+                new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
         lookupSurveyReferenceIdentifiers(studyId, plan);
