@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -81,7 +80,7 @@ public class StudyConsentController extends BaseController {
     // V2: consents associated to a subpopulation
     
     public Result getAllConsentsV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -93,7 +92,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getActiveConsentV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -105,7 +104,7 @@ public class StudyConsentController extends BaseController {
     }
     
     public Result getMostRecentConsentV2(String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER,RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
@@ -117,7 +116,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getConsentV2(String guid, String createdOn) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER,RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
