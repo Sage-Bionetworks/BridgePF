@@ -270,31 +270,6 @@ public class HibernateAccountDao implements AccountDao {
         return true;
     }
     
-    /** {@inheritDoc} */
-    @Override
-    public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
-        // Set basic params from inputs.
-        Account account = Account.create();
-        account.setId(generateGUID());
-        account.setStudyId(study.getIdentifier());
-        account.setEmail(email);
-        account.setPhone(phone);
-        account.setEmailVerified(Boolean.FALSE);
-        account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthCode(generateGUID());
-        account.setExternalId(externalId);
-
-        // Hash password if it has been supplied.
-        if (password != null) {
-            PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-            String passwordHash = hashCredential(passwordAlgorithm, "password", password);
-
-            account.setPasswordAlgorithm(passwordAlgorithm);
-            account.setPasswordHash(passwordHash);
-        }
-        return account;
-    }
-    
     // Provided to override in tests
     protected String generateGUID() {
         return BridgeUtils.generateGuid();

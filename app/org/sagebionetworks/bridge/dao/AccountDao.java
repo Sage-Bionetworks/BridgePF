@@ -7,7 +7,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -63,13 +62,6 @@ public interface AccountDao {
      * This method returns null if the Account does not exist.
      */
     Account getAccountAfterAuthentication(AccountId accountId);
-    
-    /**
-     * A factory method to construct a valid Account object that will work with our
-     * underlying persistence store. This does NOT save the account, you must call
-     * createAccount() after the account has been updated.
-     */
-    Account constructAccount(Study study, String email, Phone phone, String externalId, String password);
     
     /**
      * Create an account. The account object should initially be retrieved from the 
