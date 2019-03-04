@@ -339,21 +339,25 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, EMAIL);
         
         Account account = accountCaptor.getValue();
+        assertEquals(ID, account.getId());
         assertEquals(STUDY.getIdentifier(), account.getStudyId());
+        // Not healthCode because the mock always returns the ID value, but this is
+        // set by calling the generateGUID() method, which is correct.
+        assertEquals(ID, account.getHealthCode());
         assertEquals(EMAIL, account.getEmail());
+        assertFalse(account.getEmailVerified());
         assertEquals(PHONE, account.getPhone());
+        assertFalse(account.getPhoneVerified());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNotNull(account.getPasswordHash());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
         assertNotEquals(PASSWORD, account.getPasswordHash());
-        
         assertEquals(FIRST_NAME, account.getFirstName());
         assertEquals(LAST_NAME, account.getLastName());
         assertEquals("true", account.getAttributes().get("can_be_recontacted"));
         assertEquals(DEV_CALLER_ROLES, account.getRoles());
         assertEquals(TestUtils.getClientData(), account.getClientData());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
-        assertFalse(account.getEmailVerified());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());
         assertEquals(Boolean.TRUE, account.getNotifyByEmail());
         assertEquals(EXTERNAL_ID, account.getExternalId());

@@ -823,41 +823,6 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
-    public void constructAccount() throws Exception {
-        // execute and validate
-        Account account = dao.constructAccount(study, EMAIL, PHONE, EXTERNAL_ID, DUMMY_PASSWORD);
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
-        assertEquals(EMAIL, account.getEmail());
-        assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
-        assertEquals(Boolean.FALSE, account.getEmailVerified());
-        assertEquals(Boolean.FALSE, account.getPhoneVerified());
-        // These are the same because we've mocked the GUID-creation method to always return
-        // this value.
-        assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_CODE, account.getId());
-        assertEquals(EXTERNAL_ID, account.getExternalId());
-        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
-
-        // validate password hash
-        assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(account.getPasswordHash(), DUMMY_PASSWORD));
-    }
-    
-    @Test
-    public void constructAccountWithoutPasswordWorks() throws Exception {
-        // execute and validate
-        Account account = dao.constructAccount(study, EMAIL, PHONE, EXTERNAL_ID, null);
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
-        assertEquals(EMAIL, account.getEmail());
-        assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
-        assertEquals(Boolean.FALSE, account.getEmailVerified());
-        assertEquals(Boolean.FALSE, account.getPhoneVerified());
-        assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(EXTERNAL_ID, account.getExternalId());
-        assertNull(account.getPasswordHash());
-        assertNull(account.getPasswordAlgorithm());
-    }
-
-    @Test
     public void createAccountSuccess() {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
         // the account have a different study.
