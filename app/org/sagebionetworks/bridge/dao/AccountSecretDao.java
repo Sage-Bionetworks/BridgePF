@@ -1,0 +1,33 @@
+package org.sagebionetworks.bridge.dao;
+
+import java.util.Optional;
+
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountSecret;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
+
+public interface AccountSecretDao {
+    /**
+     * Add a secret to the set of secrets. 
+     */
+    void createSecret(AccountSecretType type, String accountId, String plaintext);
+    
+    /**
+     * Retrieve N secret records (indicated by rotations), and compare the provided secret 
+     * against all of those secrets looking for a match. Return the record if a match is found,
+     * or null otherwise.
+     */
+    Optional<AccountSecret> verifySecret(AccountSecretType type, String accountId, String plaintext, int rotations);
+    
+    /**
+     * The Account record contains the legacy reauthentication token. While transitioning to this 
+     * table, we need to check those columns until they are rotated out of the set. After migration, 
+     * this method can be removed.
+     */
+    Optional<AccountSecret> verifySecret(Account account, AccountSecretType type, String plaintext, int rotations);
+    
+    /**
+     * Delete all secrets for the indicated user, of the indicated type.
+     */
+    void removeSecrets(AccountSecretType type, String accountId);
+}

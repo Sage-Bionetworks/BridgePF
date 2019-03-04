@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -44,9 +45,8 @@ import org.mockito.Mockito;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -55,6 +55,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecret;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -119,10 +121,12 @@ public class HibernateAccountDaoTest {
     @Mock
     Consumer<Account> accountConsumer;
     
+    @Mock
+    private AccountSecretDao accountSecretDao;
+    
     private Study study;
     private HibernateAccountDao dao;
     private HibernateHelper mockHibernateHelper;
-    private CacheProvider mockCacheProvider;
 
     @BeforeClass
     public static void mockNow() {
@@ -137,7 +141,6 @@ public class HibernateAccountDaoTest {
     @Before
     public void before() {
         mockHibernateHelper = mock(HibernateHelper.class);
-        mockCacheProvider = mock(CacheProvider.class);
         
         // Mock successful update.
         when(mockHibernateHelper.update(any(), eq(null))).thenAnswer(invocation -> {
@@ -150,7 +153,7 @@ public class HibernateAccountDaoTest {
         
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
-        dao.setCacheProvider(mockCacheProvider);
+        dao.setAccountSecretDao(accountSecretDao);
         when(dao.generateGUID()).thenReturn(HEALTH_CODE);
         
         study = Study.create();
@@ -529,11 +532,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
         
-        CacheKey key = CacheKey.reauthTokenLookupKey(ACCOUNT_ID, TestConstants.TEST_STUDY);
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(REAUTH_TOKEN);
-        
         Account account = dao.authenticate(study, PASSWORD_SIGNIN);
-        verify(mockCacheProvider).getObject(key, String.class);
         verify(mockHibernateHelper, never()).update(any(), eq(null));
         assertEquals(REAUTH_TOKEN, account.getReauthToken());
         assertEquals(originalReauthHash, hibernateAccount.getReauthTokenHash());
@@ -613,6 +612,11 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
 
+        AccountSecret secret = AccountSecret.create();
+        
+        when(accountSecretDao.verifySecret(hibernateAccount, AccountSecretType.REAUTH, REAUTH_TOKEN,
+                HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
+        
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
         Account account = dao.reauthenticate(study, REAUTH_SIGNIN);
         assertEquals(ACCOUNT_ID, account.getId());
