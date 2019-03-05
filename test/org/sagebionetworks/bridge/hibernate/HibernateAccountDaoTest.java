@@ -14,6 +14,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 
 import java.util.HashMap;
 import java.util.List;
@@ -154,7 +155,6 @@ public class HibernateAccountDaoTest {
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
         dao.setAccountSecretDao(accountSecretDao);
-        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
         
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -441,6 +441,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void authenticateSuccessWithHealthCode() throws Exception {
+        when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "+
                 "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
                 "acct.email=:email GROUP BY acct.id";
@@ -471,11 +473,15 @@ public class HibernateAccountDaoTest {
         
         // healthCodes have not been changed
         assertEquals("original-" + HEALTH_CODE, accountCaptor.getValue().getHealthCode());
-        assertNotEquals(originalReauthTokenHash, accountCaptor.getValue().getReauthTokenHash());
+        assertNull(accountCaptor.getValue().getReauthTokenHash());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
     }
 
     @Test
     public void authenticateSuccessCreateNewHealthCode() throws Exception {
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
+        
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "+
                 "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
                 "acct.email=:email GROUP BY acct.id";
@@ -521,23 +527,6 @@ public class HibernateAccountDaoTest {
         assertEquals(originalReauthHash, hibernateAccount.getReauthTokenHash());
     }
     
-    @Test
-    public void authenticateWithCachedReauthentication() throws Exception {
-        study.setReauthenticationEnabled(true);
-        
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
-        String originalReauthHash = hibernateAccount.getReauthTokenHash();
-        
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-        
-        Account account = dao.authenticate(study, PASSWORD_SIGNIN);
-        verify(mockHibernateHelper, never()).update(any(), eq(null));
-        assertEquals(REAUTH_TOKEN, account.getReauthToken());
-        assertEquals(originalReauthHash, hibernateAccount.getReauthTokenHash());
-    }
-
     @Test(expected = EntityNotFoundException.class)
     public void authenticateAccountNotFound() throws Exception {
         // mock hibernate
@@ -603,7 +592,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void reauthenticateSuccess() throws Exception {
+    public void reauthenticateSuccessWithMigration() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
                 "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
                 "acct.email=:email GROUP BY acct.id";
@@ -613,9 +602,56 @@ public class HibernateAccountDaoTest {
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
 
         AccountSecret secret = AccountSecret.create();
-        
-        when(accountSecretDao.verifySecret(hibernateAccount, AccountSecretType.REAUTH, REAUTH_TOKEN,
+        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
                 HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
+        
+        when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        Account account = dao.reauthenticate(study, REAUTH_SIGNIN);
+        assertEquals(ACCOUNT_ID, account.getId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
+        assertEquals(EMAIL, account.getEmail());
+        assertNotEquals(originalReauthTokenHash, account.getReauthToken());
+        // This has been incremented by the reauth token update
+        assertEquals(3, account.getVersion());
+        
+        // verify query
+        verify(mockHibernateHelper, times(2)).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
+
+        // We update the account twice in this scenario
+        verify(mockHibernateHelper, times(2)).update(hibernateAccount, null);
+        // These fields should be cleared
+        assertNull(hibernateAccount.getReauthTokenHash());
+        assertNull(hibernateAccount.getReauthTokenAlgorithm());
+        assertNull(hibernateAccount.getReauthTokenModifiedOn());
+        // This has been hashed
+        assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
+        
+        // A new secret has been created
+        verify(accountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
+    }
+    
+    @Test
+    public void reauthenticateSuccessNoMigration() throws Exception {
+        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
+                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
+                "acct.email=:email GROUP BY acct.id";
+        // mock hibernate
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        // In this case, the reauth token has been rotated or it doesn't exist.
+        hibernateAccount.setReauthTokenAlgorithm(null);
+        hibernateAccount.setReauthTokenHash(null);
+        hibernateAccount.setReauthTokenModifiedOn(null);
+        
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
+        String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
+
+        AccountSecret secret = AccountSecret.create();
+        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+                HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
+        
+        when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
         
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
         Account account = dao.reauthenticate(study, REAUTH_SIGNIN);
@@ -629,12 +665,17 @@ public class HibernateAccountDaoTest {
         // verify query
         verify(mockHibernateHelper).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
 
-        // We update the account with a reauthentication token
+        // We update the account twice in this scenario
         verify(mockHibernateHelper).update(hibernateAccount, null);
-        // The hash has been changed
-        assertNotEquals(originalReauthTokenHash, hibernateAccount.getReauthTokenHash());
+        // These fields have remained null.
+        assertNull(hibernateAccount.getReauthTokenHash());
+        assertNull(hibernateAccount.getReauthTokenAlgorithm());
+        assertNull(hibernateAccount.getReauthTokenModifiedOn());
         // This has been hashed
         assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
+        
+        // A new secret has been created
+        verify(accountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
     }
     
     @Test
@@ -666,6 +707,10 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
         hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
+        
+        AccountSecret secret = AccountSecret.create();
+        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+                HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
 
         // execute
         dao.reauthenticate(study, REAUTH_SIGNIN);
@@ -677,6 +722,10 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
         hibernateAccount.setStatus(AccountStatus.DISABLED);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
+        
+        AccountSecret secret = AccountSecret.create();
+        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+                HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
 
         // execute
         dao.reauthenticate(study, REAUTH_SIGNIN);
@@ -687,7 +736,9 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(
                 ImmutableList.of(makeValidHibernateAccount(false, false)));
-
+        
+        // It also has no record in the secrets table...
+        
         // execute
         dao.reauthenticate(study, REAUTH_SIGNIN);
     }
@@ -731,6 +782,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void getAccountAsAuthenticated() throws Exception {
+        when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
@@ -742,13 +795,11 @@ public class HibernateAccountDaoTest {
         assertNotEquals(originalReauthTokenHash, newHash);
         
         ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        
         verify(mockHibernateHelper).update(accountCaptor.capture(), eq(null));
-        
         HibernateAccount captured = accountCaptor.getValue();
-        
-        assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(captured.getReauthTokenHash(),
-                account.getReauthToken()));
+        assertEquals(REAUTH_TOKEN, captured.getReauthToken());
+
+        verify(accountSecretDao).createSecret(REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
     }
 
     @Test
@@ -770,6 +821,8 @@ public class HibernateAccountDaoTest {
         assertNull(captured.getReauthTokenAlgorithm());
         assertNull(captured.getReauthTokenHash());
         assertNull(captured.getReauthTokenModifiedOn());
+        
+        verify(accountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -782,9 +835,12 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        // Just quietly succeeds without doing any work.
+        // Just quietly succeeds without doing any account update.
         dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
         verify(mockHibernateHelper, never()).update(any(), eq(null));
+        
+        // But we do always call this.
+        verify(accountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -793,6 +849,7 @@ public class HibernateAccountDaoTest {
         dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockHibernateHelper, never()).update(any(), eq(null));
+        verify(accountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -828,6 +885,8 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void constructAccount() throws Exception {
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
+        
         // execute and validate
         Account account = dao.constructAccount(study, EMAIL, PHONE, EXTERNAL_ID, DUMMY_PASSWORD);
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
@@ -848,6 +907,8 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void constructAccountWithoutPasswordWorks() throws Exception {
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
+        
         // execute and validate
         Account account = dao.constructAccount(study, EMAIL, PHONE, EXTERNAL_ID, null);
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
@@ -1044,6 +1105,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void getByIdSuccessCreateNewHealthCode() throws Exception {
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
+        
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // Clear these fields to verify that they are created
@@ -1099,6 +1162,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void getByEmailSuccessCreateNewHealthCode() throws Exception {
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
+        
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "+
                 "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "+
                 "WHERE acct.studyId = :studyId AND acct.email=:email GROUP BY acct.id";

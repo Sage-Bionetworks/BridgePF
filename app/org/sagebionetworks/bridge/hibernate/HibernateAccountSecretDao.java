@@ -12,11 +12,12 @@ import java.util.Optional;
 
 import javax.annotation.Resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -25,6 +26,8 @@ import org.sagebionetworks.bridge.time.DateUtils;
 /** Hibernate implementation of Account Secret Dao. */
 @Component
 public class HibernateAccountSecretDao implements AccountSecretDao {
+    private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountSecretDao.class);
+    
     static final String GET_QUERY = "SELECT secret FROM HibernateAccountSecret AS secret " + 
             "WHERE accountId = :accountId AND type = :type ORDER BY createdOn DESC";
     
@@ -63,57 +66,38 @@ public class HibernateAccountSecretDao implements AccountSecretDao {
     }
 
     @Override
-    public Optional<AccountSecret> verifySecret(AccountSecretType type, String accountId, String plaintext, int rotations) {
-        return verifySecretInternal(null, type, accountId, plaintext, rotations);
-    }
-    
-    @Override
-    public Optional<AccountSecret> verifySecret(Account account, AccountSecretType type, String plaintext, int rotations) {
-        if (account.getReauthTokenHash() != null) {
-            HibernateAccountSecret secret = new HibernateAccountSecret();
-            secret.setAlgorithm(account.getReauthTokenAlgorithm());
-            secret.setHash(account.getReauthTokenHash());
-            secret.setType(type);
-            return verifySecretInternal(secret, type, account.getId(), plaintext, rotations);
-        }
-        return verifySecretInternal(null, type, account.getId(), plaintext, rotations);
-    }
-    
-    private Optional<AccountSecret> verifySecretInternal(HibernateAccountSecret secret, AccountSecretType type,
-            String accountId, String plaintext, int rotations) {
+    public Optional<AccountSecret> verifySecret(AccountSecretType type, String accountId, String plaintext,
+            int rotations) {
+        checkNotNull(type);
+        checkNotNull(accountId);
+        checkNotNull(plaintext);
+        
         Map<String,Object> params = new HashMap<>();
         params.put("accountId", accountId);
         params.put("type", type);
         
-        List<HibernateAccountSecret> secrets = hibernateHelper.queryGet(GET_QUERY, params, 0, rotations,
-                HibernateAccountSecret.class);
-        // Allows us to include the legacy reauthentication token in the accounts record, until it is 
-        // rotated out.
-        if (secrets.size() < rotations && secret != null) {
-            secrets.add(secret);
-        }
-        if (secrets.isEmpty()) {
-            return Optional.empty();
-        }
-        // Because we're always going to use the same hash, unless we change this, it's sufficient to 
-        // hash once and cache. We don't need to keep a map by hashing algorithm or anything like that.
-        // Nevertheless, we'll verify the algorithm hasn't changed with each pass.
-        PasswordAlgorithm lastAlgorithm = null;
-        String lastHash = null;
+        List<HibernateAccountSecret> secrets = hibernateHelper.queryGet(
+                GET_QUERY, params, 0, rotations, HibernateAccountSecret.class);
         for (HibernateAccountSecret accountSecret : secrets) {
-            if (accountSecret.getAlgorithm() != lastAlgorithm) {
-                lastAlgorithm = accountSecret.getAlgorithm();
-                lastHash = generateHash(lastAlgorithm, plaintext);
-            }
-            if (accountSecret.getHash().equals(lastHash)) {
-                return Optional.of(accountSecret);
+            try {
+                // It's not possible to cache the hashed plaintext, as it is being compared to a hash
+                // that has been seeded with a random salt (in the default algorithm's case). So we
+                // must extract and use that salt + iterations to compare the hashes.
+                if (accountSecret.getAlgorithm().checkHash(accountSecret.getHash(), plaintext)) {
+                    return Optional.of(accountSecret);
+                }
+            } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
+                LOG.error("Error checking reauthenticatio token", e);
             }
         }
         return Optional.empty();
     }
-
+    
     @Override
     public void removeSecrets(AccountSecretType type, String accountId) {
+        checkNotNull(type);
+        checkNotNull(accountId);
+        
         Map<String,Object> params = new HashMap<>();
         params.put("accountId", accountId);
         params.put("type", type);

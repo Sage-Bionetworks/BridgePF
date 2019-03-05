@@ -953,7 +953,6 @@ public class ParticipantServiceTest {
         assertEquals(EMAIL, accountIdCaptor.getValue().getEmail());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
@@ -1617,7 +1616,6 @@ public class ParticipantServiceTest {
         verify(accountDao, never()).updateAccount(any(), any());
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void updateIdentifiersAssignsExternalIdEvenWhenAlreadyAssigned() {
         // Fully associated external ID can be changed by an update.
@@ -2210,7 +2208,6 @@ public class ParticipantServiceTest {
         verify(accountDao).updateAccount(account, null);
         assertNull(account.getExternalId());
     }
-    @SuppressWarnings("unchecked")
     @Test
     public void updateParticipantNoExternalIdsOneAddedUpdates() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
@@ -2272,7 +2269,6 @@ public class ParticipantServiceTest {
         verify(accountDao).updateAccount(account, null);
         assertNull(account.getExternalId());
     }
-    @SuppressWarnings("unchecked")
     @Test
     public void updateParticipantAsResearcherNoExternalIdsOneAddedUpdates() {
         STUDY.setExternalIdValidationEnabled(true);
@@ -2287,7 +2283,6 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService).commitAssignExternalId(EXT_ID);
     }
-    @SuppressWarnings("unchecked")
     @Test
     public void updateParticipantAsResearcherExternalIdsExistNoneMatchOneAddedUpdates() {
         STUDY.setExternalIdValidationEnabled(true);
@@ -2376,7 +2371,6 @@ public class ParticipantServiceTest {
         verify(activityEventService).getActivityEventList(HEALTH_CODE);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void normalUserCanAddExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
@@ -2405,7 +2399,6 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void researcherCanChangeUnmanagedExternalIdOnUpdate() {
         mockHealthCodeAndAccountRetrieval();
@@ -2421,7 +2414,6 @@ public class ParticipantServiceTest {
         verify(externalIdService).commitAssignExternalId(null);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void researcherCanChangeManagedExternalIdOnUpdate() {
         mockHealthCodeAndAccountRetrieval();

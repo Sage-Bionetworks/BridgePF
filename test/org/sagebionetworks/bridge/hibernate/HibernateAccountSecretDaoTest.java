@@ -2,12 +2,17 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +29,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -34,8 +38,7 @@ public class HibernateAccountSecretDaoTest {
 
     private static final DateTime CREATED_ON = DateTime.parse("2018-10-10T03:10:30.000Z");
     private static final String ACCOUNT_ID = "id";
-    private static final String PLAINTEXT = "plainttext";
-    private static final String HASH = "hash";
+    private static final String TOKEN = "token";
     private static final int ROTATIONS = 4;
     
     @Spy
@@ -53,7 +56,7 @@ public class HibernateAccountSecretDaoTest {
     @Before
     public void before() {
         dao.setHibernateHelper(helper);
-        when(dao.generateHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, PLAINTEXT)).thenReturn(HASH);
+        when(dao.generateHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, TOKEN)).thenReturn(TOKEN);
         DateTimeUtils.setCurrentMillisFixed(CREATED_ON.getMillis());
     }
     
@@ -64,22 +67,24 @@ public class HibernateAccountSecretDaoTest {
     
     @Test
     public void createSecret() {
-        dao.createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, PLAINTEXT);
+        dao.createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN);
         
         verify(helper).create(secretCaptor.capture(), eq(null));
         AccountSecret secret = secretCaptor.getValue();
         assertEquals(ACCOUNT_ID, secret.getAccountId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, secret.getAlgorithm());
-        assertEquals(HASH, secret.getHash());
+        assertEquals(TOKEN, secret.getHash());
         assertEquals(AccountSecretType.REAUTH, secret.getType());
         assertEquals(CREATED_ON, secret.getCreatedOn());
     }
     
     @Test
-    public void verifySecret() {
-        makeResults(HASH);
+    public void verifySecret() throws Exception {
+        makeResults(TOKEN);
         
-        assertTrue(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, PLAINTEXT, ROTATIONS).isPresent());
+        AccountSecret secret = dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).get();
+        assertNotEquals(secret.getHash(), TOKEN); // it is actually encrypted
+        assertNotNull(secret);
         
         verify(helper).queryGet(eq(HibernateAccountSecretDao.GET_QUERY), paramsCaptor.capture(), 
                 eq(0), eq(ROTATIONS), eq(HibernateAccountSecret.class));
@@ -89,55 +94,24 @@ public class HibernateAccountSecretDaoTest {
     }
     
     @Test
-    public void verifySecretSucceedsAfterRotation() {
-        makeResults("ABC", HASH, "DEF");
+    public void verifySecretSucceedsAfterRotation() throws Exception {
+        makeResults("ABC", TOKEN, "DEF");
         
-        assertTrue(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, PLAINTEXT, ROTATIONS).isPresent());
+        assertTrue(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).isPresent());
     }
     
     @Test
-    public void verifySecretFailsOnEmpty() {
+    public void verifySecretFailsOnEmpty() throws Exception {
         makeResults();
         
-        assertFalse(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, PLAINTEXT, ROTATIONS).isPresent());
+        assertFalse(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).isPresent());
     }
     
     @Test
-    public void verifySecretFailsWhenNoMatch() {
+    public void verifySecretFailsWhenNoMatch() throws Exception {
         makeResults("ABC", "DEF");
         
-        assertFalse(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, PLAINTEXT, ROTATIONS).isPresent());
-    }
-    
-    @Test
-    public void accountContainsReauthToken() {
-        Account account = Account.create();
-        account.setId(ACCOUNT_ID);
-        account.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        account.setReauthTokenHash(HASH);
-        makeResults("ABC", "DEF", "GHI");
-        
-        assertTrue(dao.verifySecret(account, AccountSecretType.REAUTH, PLAINTEXT, ROTATIONS).isPresent());
-    }
-    
-    @Test
-    public void accountContainsReauthTokenButItsRotatedOut() {
-        Account account = Account.create();
-        account.setId(ACCOUNT_ID);
-        account.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        account.setReauthTokenHash(HASH);
-        makeResults("ABC", "DEF", "GHI", "JKL");
-        
-        assertFalse(dao.verifySecret(account, AccountSecretType.REAUTH, PLAINTEXT, ROTATIONS).isPresent());
-    }
-    
-    @Test
-    public void accountDoesNotContainReauthTokenButVerifySucceeds() {
-        Account account = Account.create();
-        account.setId(ACCOUNT_ID);
-        makeResults("ABC", "DEF", HASH);
-        
-        assertTrue(dao.verifySecret(account, AccountSecretType.REAUTH, PLAINTEXT, ROTATIONS).isPresent());
+        assertFalse(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).isPresent());
     }
     
     @Test
@@ -150,12 +124,12 @@ public class HibernateAccountSecretDaoTest {
         assertEquals(AccountSecretType.REAUTH, params.get("type"));
     }
     
-    private List<HibernateAccountSecret> makeResults(String... hashes) {
+    private List<HibernateAccountSecret> makeResults(String... hashes) throws InvalidKeyException, InvalidKeySpecException, NoSuchAlgorithmException {
         List<HibernateAccountSecret> results = new ArrayList<>();
         for (String hash : hashes) {
             HibernateAccountSecret secret = new HibernateAccountSecret();
             secret.setAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-            secret.setHash(hash);
+            secret.setHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(hash));
             results.add(secret);
         }
         when(helper.queryGet(eq(HibernateAccountSecretDao.GET_QUERY), any(), 

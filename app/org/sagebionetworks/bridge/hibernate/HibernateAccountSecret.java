@@ -43,7 +43,8 @@ public class HibernateAccountSecret implements AccountSecret {
     public void setHash(String hash) {
         this.hash = hash;
     }
-
+    
+    @Enumerated(EnumType.STRING)
     @Override
     public PasswordAlgorithm getAlgorithm() {
         return algorithm;

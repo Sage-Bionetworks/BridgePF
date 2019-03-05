@@ -4,11 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.apache.commons.lang3.StringUtils;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -203,33 +201,11 @@ public class AuthenticationService {
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
         LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
 
-        CacheKey reauthCacheKey = CacheKey.reauthCacheKey(signIn.getReauthToken(), signIn.getStudyId());
-        
-        // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
-        // creates a grace period during which concurrent requests with the same reauth token will work.
-        Tuple<String> persisedReauthTuple = cacheProvider.getObject(reauthCacheKey, TUPLE_TYPE);
-        if (persisedReauthTuple != null) {
-            String sessionToken = persisedReauthTuple.getLeft();
-            String reauthToken = persisedReauthTuple.getRight();
-            
-            // Is it possible for this not to resolve to a session? Play it safe and check
-            UserSession session = cacheProvider.getUserSession(sessionToken);
-            if (session == null) {
-                throw new EntityNotFoundException(Account.class);
-            }
-            session.setReauthToken(reauthToken);
-            return session;
-        }
-        
         Account account = accountDao.reauthenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
-
-        Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
         cacheProvider.setUserSession(session);
-        // Longer than the caching of the reauthentication token, which provides a grace period for sign ins.
-        cacheProvider.setObject(reauthCacheKey, reauthTuple, BridgeConstants.REAUTH_TOKEN_GRACE_PERIOD_SECONDS);
-        
+
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }

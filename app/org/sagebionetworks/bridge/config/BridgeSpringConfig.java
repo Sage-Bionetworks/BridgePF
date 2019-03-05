@@ -82,6 +82,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.AccountSecretsExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
@@ -561,6 +562,7 @@ public class BridgeSpringConfig {
         metadataSources.addAnnotatedClass(HibernateSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateAccountSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
+        metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
 
         return metadataSources.buildMetadata().buildSessionFactory();
     }

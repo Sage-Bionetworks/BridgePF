@@ -40,6 +40,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecret;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -79,6 +81,16 @@ public class HibernateAccountDao implements AccountDao {
     @Autowired
     public final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
         this.accountSecretDao = accountSecretDao;
+    }
+    
+    // Provided to override in tests
+    protected String generateGUID() {
+        return BridgeUtils.generateGuid();
+    }
+    
+    // Provided to override in tests
+    protected String generateReauthToken() {
+        return SecureTokenGenerator.INSTANCE.nextToken();
     }
 
     /**
@@ -173,12 +185,28 @@ public class HibernateAccountDao implements AccountDao {
         if (!study.isReauthenticationEnabled()) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
-        Account hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(study, hibernateAccount, signIn, true);
+        Account account = fetchHibernateAccount(signIn);
+        if (account.getReauthTokenHash() != null) {
+            // Rotate the token to the secrets table before verifying. This migrates the tables if
+            // a reauthentication call occurs before we run a migration on this record.
+            AccountSecret secret = AccountSecret.create();
+            secret.setAccountId(account.getId());
+            secret.setAlgorithm(account.getReauthTokenAlgorithm());
+            secret.setHash(account.getReauthTokenHash());
+            secret.setType(AccountSecretType.REAUTH);
+            secret.setCreatedOn(account.getReauthTokenModifiedOn());
+            hibernateHelper.create(secret, null);
+            
+            account.setReauthTokenHash(null);
+            account.setReauthTokenAlgorithm(null);
+            account.setReauthTokenModifiedOn(null);
+            hibernateHelper.update(account, null);
+            account = fetchHibernateAccount(signIn);
+        }        
+        return authenticateInternal(study, account, signIn, true);
     }
     
     private Account authenticateInternal(Study study, Account hibernateAccount, SignIn signIn, boolean isReauth) {
-
         // First check and throw an entity not found exception if the secret is wrong.
         if (isReauth) {
             verifyReauthToken(hibernateAccount, signIn.getReauthToken());
@@ -233,11 +261,14 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void deleteReauthToken(AccountId accountId) {
         Account hibernateAccount = getHibernateAccount(accountId);
-        if (hibernateAccount != null && hibernateAccount.getReauthTokenHash() != null) {
-            hibernateAccount.setReauthTokenHash(null);
-            hibernateAccount.setReauthTokenAlgorithm(null);
-            hibernateAccount.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(hibernateAccount, null);
+        if (hibernateAccount != null) {
+            if (hibernateAccount.getReauthTokenHash() != null) {
+                hibernateAccount.setReauthTokenHash(null);
+                hibernateAccount.setReauthTokenAlgorithm(null);
+                hibernateAccount.setReauthTokenModifiedOn(null);
+                hibernateHelper.update(hibernateAccount, null);
+            }
+            accountSecretDao.removeSecrets(AccountSecretType.REAUTH, hibernateAccount.getId());
         }
     }
     
@@ -246,9 +277,17 @@ public class HibernateAccountDao implements AccountDao {
             hibernateAccount.setReauthToken(null);
             return false;
         }
-        String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
+        String reauthToken = generateReauthToken();
         accountSecretDao.createSecret(REAUTH, hibernateAccount.getId(), reauthToken);
         hibernateAccount.setReauthToken(reauthToken);
+        
+        // Going to rotate this out immediately upon getting saving the first reauth 
+        // token in the new table.
+        if (hibernateAccount.getReauthTokenHash() != null) {
+            hibernateAccount.setReauthTokenHash(null);
+            hibernateAccount.setReauthTokenAlgorithm(null);
+            hibernateAccount.setReauthTokenModifiedOn(null);
+        }
         return true;
     }
     
@@ -275,11 +314,6 @@ public class HibernateAccountDao implements AccountDao {
             account.setPasswordHash(passwordHash);
         }
         return account;
-    }
-    
-    // Provided to override in tests
-    protected String generateGUID() {
-        return BridgeUtils.generateGuid();
     }
 
     /** {@inheritDoc} */
@@ -377,18 +411,16 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     private void verifyReauthToken(Account account, String plaintext) {
-        accountSecretDao.verifySecret(account, REAUTH, plaintext, ROTATIONS)
+        accountSecretDao.verifySecret(REAUTH, account.getId(), plaintext, ROTATIONS)
             .orElseThrow(() -> new EntityNotFoundException(Account.class));
     }    
     
     private String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
-        String hash = null;
         try {
-            hash = algorithm.generateHash(value);
+            return algorithm.generateHash(value);
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
             throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
         }
-        return hash;
     }
 
     // Helper method to get a single account for a given study and id, email address, or phone number.
