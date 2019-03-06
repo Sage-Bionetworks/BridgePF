@@ -29,7 +29,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -442,8 +444,9 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         
         verify(accountDao).reauthenticate(study, REAUTH_REQUEST);
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
-        verify(cacheProvider).setUserSession(sessionCaptor.capture());
+        InOrder inOrder = Mockito.inOrder(cacheProvider);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(cacheProvider).setUserSession(sessionCaptor.capture());
         
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());

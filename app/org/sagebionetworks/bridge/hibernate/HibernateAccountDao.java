@@ -202,7 +202,7 @@ public class HibernateAccountDao implements AccountDao {
             account.setReauthTokenModifiedOn(null);
             hibernateHelper.update(account, null);
             account = fetchHibernateAccount(signIn);
-        }        
+        }
         return authenticateInternal(study, account, signIn, true);
     }
     
@@ -280,14 +280,6 @@ public class HibernateAccountDao implements AccountDao {
         String reauthToken = generateReauthToken();
         accountSecretDao.createSecret(REAUTH, hibernateAccount.getId(), reauthToken);
         hibernateAccount.setReauthToken(reauthToken);
-        
-        // Going to rotate this out immediately upon getting saving the first reauth 
-        // token in the new table.
-        if (hibernateAccount.getReauthTokenHash() != null) {
-            hibernateAccount.setReauthTokenHash(null);
-            hibernateAccount.setReauthTokenAlgorithm(null);
-            hibernateAccount.setReauthTokenModifiedOn(null);
-        }
         return true;
     }
     

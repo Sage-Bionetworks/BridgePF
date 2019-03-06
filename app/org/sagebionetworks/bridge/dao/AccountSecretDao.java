@@ -5,6 +5,10 @@ import java.util.Optional;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 
+/**
+ * DAO to manage the creation and verification of passwords and reauthentication tokens. 
+ * (Note though that passwords are currently still stored in the Accounts table.)
+ */
 public interface AccountSecretDao {
     /**
      * Add a secret to the set of secrets. 

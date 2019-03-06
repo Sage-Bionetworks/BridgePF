@@ -4,11 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -123,11 +123,14 @@ public class HibernateAccountDaoTest {
     Consumer<Account> accountConsumer;
     
     @Mock
-    private AccountSecretDao accountSecretDao;
+    private AccountSecretDao mockAccountSecretDao;
+    
+    @Mock
+    private HibernateHelper mockHibernateHelper;
     
     private Study study;
     private HibernateAccountDao dao;
-    private HibernateHelper mockHibernateHelper;
+    
 
     @BeforeClass
     public static void mockNow() {
@@ -141,8 +144,6 @@ public class HibernateAccountDaoTest {
 
     @Before
     public void before() {
-        mockHibernateHelper = mock(HibernateHelper.class);
-        
         // Mock successful update.
         when(mockHibernateHelper.update(any(), eq(null))).thenAnswer(invocation -> {
             HibernateAccount account = invocation.getArgument(0);
@@ -154,7 +155,7 @@ public class HibernateAccountDaoTest {
         
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
-        dao.setAccountSecretDao(accountSecretDao);
+        dao.setAccountSecretDao(mockAccountSecretDao);
         
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -475,7 +476,7 @@ public class HibernateAccountDaoTest {
         assertEquals("original-" + HEALTH_CODE, accountCaptor.getValue().getHealthCode());
         assertNull(accountCaptor.getValue().getReauthTokenHash());
         
-        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
+        verify(mockAccountSecretDao).createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
     }
 
     @Test
@@ -602,7 +603,7 @@ public class HibernateAccountDaoTest {
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
 
         AccountSecret secret = AccountSecret.create();
-        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+        when(mockAccountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
                 HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
         
         when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
@@ -629,7 +630,7 @@ public class HibernateAccountDaoTest {
         assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
         
         // A new secret has been created
-        verify(accountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
+        verify(mockAccountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
     }
     
     @Test
@@ -648,7 +649,7 @@ public class HibernateAccountDaoTest {
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
 
         AccountSecret secret = AccountSecret.create();
-        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+        when(mockAccountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
                 HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
         
         when(dao.generateReauthToken()).thenReturn(REAUTH_TOKEN);
@@ -675,7 +676,7 @@ public class HibernateAccountDaoTest {
         assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
         
         // A new secret has been created
-        verify(accountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
+        verify(mockAccountSecretDao).createSecret(eq(REAUTH), eq(ACCOUNT_ID), eq(REAUTH_TOKEN));
     }
     
     @Test
@@ -709,7 +710,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
         
         AccountSecret secret = AccountSecret.create();
-        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+        when(mockAccountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
                 HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
 
         // execute
@@ -724,7 +725,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
         
         AccountSecret secret = AccountSecret.create();
-        when(accountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
+        when(mockAccountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
                 HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
 
         // execute
@@ -741,6 +742,60 @@ public class HibernateAccountDaoTest {
         
         // execute
         dao.reauthenticate(study, REAUTH_SIGNIN);
+    }
+    
+    @Test
+    public void reauthenticateMigratesReauthTokenFromAccount() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+        
+        AccountSecret secret = AccountSecret.create();
+        when(mockAccountSecretDao.verifySecret(any(), any(), any(), any(Integer.class))).thenReturn(Optional.of(secret));
+        
+        dao.reauthenticate(study, REAUTH_SIGNIN);
+        
+        ArgumentCaptor<AccountSecret> secretCaptor = ArgumentCaptor.forClass(AccountSecret.class);
+        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+        
+        InOrder inOrder = Mockito.inOrder(mockHibernateHelper, mockAccountSecretDao);
+        
+        inOrder.verify(mockHibernateHelper).create(secretCaptor.capture(), eq(null));
+        AccountSecret capturedSecret = secretCaptor.getValue();
+        assertEquals(hibernateAccount.getId(), capturedSecret.getAccountId());
+        assertNotNull(capturedSecret.getAlgorithm());
+        assertNotNull(capturedSecret.getCreatedOn());
+        assertNotNull(capturedSecret.getHash());
+        assertEquals(AccountSecretType.REAUTH, capturedSecret.getType());
+        
+        inOrder.verify(mockHibernateHelper).update(accountCaptor.capture(), eq(null));
+        assertSame(hibernateAccount, accountCaptor.getValue());
+        assertNull(accountCaptor.getValue().getReauthTokenHash());
+        assertNull(accountCaptor.getValue().getReauthTokenAlgorithm());
+        assertNull(accountCaptor.getValue().getReauthTokenModifiedOn());
+        
+        inOrder.verify(mockAccountSecretDao).verifySecret(REAUTH, ACCOUNT_ID, REAUTH_TOKEN, 3);
+        
+        verify(mockHibernateHelper, times(1)).create(any(), any());
+        verify(mockHibernateHelper, times(2)).update(any(), any());
+    }
+    
+    @Test
+    public void reauthenticateNoMigrationFromAccount() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        hibernateAccount.setReauthTokenAlgorithm(null);
+        hibernateAccount.setReauthTokenHash(null);
+        hibernateAccount.setReauthTokenModifiedOn(null);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+        
+        AccountSecret secret = AccountSecret.create();
+        when(mockAccountSecretDao.verifySecret(any(), any(), any(), any(Integer.class))).thenReturn(Optional.of(secret));
+        
+        dao.reauthenticate(study, REAUTH_SIGNIN);
+        
+        verify(mockHibernateHelper, never()).create(any(), any());
+        verify(mockHibernateHelper, times(1)).update(any(), any());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -799,7 +854,7 @@ public class HibernateAccountDaoTest {
         HibernateAccount captured = accountCaptor.getValue();
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
 
-        verify(accountSecretDao).createSecret(REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
+        verify(mockAccountSecretDao).createSecret(REAUTH, ACCOUNT_ID, REAUTH_TOKEN);
     }
 
     @Test
@@ -822,7 +877,7 @@ public class HibernateAccountDaoTest {
         assertNull(captured.getReauthTokenHash());
         assertNull(captured.getReauthTokenModifiedOn());
         
-        verify(accountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
+        verify(mockAccountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -840,7 +895,7 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper, never()).update(any(), eq(null));
         
         // But we do always call this.
-        verify(accountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
+        verify(mockAccountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -849,7 +904,7 @@ public class HibernateAccountDaoTest {
         dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockHibernateHelper, never()).update(any(), eq(null));
-        verify(accountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
+        verify(mockAccountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
     @Test
@@ -870,9 +925,6 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).update(accountCaptor.capture(), eq(null));
         HibernateAccount captured = accountCaptor.getValue();
         
-        assertNotEquals(PasswordAlgorithm.BCRYPT, captured.getReauthTokenAlgorithm());
-        assertNotEquals("AAA", captured.getReauthTokenHash());
-        assertNotEquals(originalTimestamp, captured.getReauthTokenModifiedOn());
         // version has been incremented because reauth token was rotated
         assertEquals(2, captured.getVersion()); 
     }
@@ -2049,15 +2101,18 @@ public class HibernateAccountDaoTest {
         
         if (generatePasswordHash) {
             // Password hashes are expensive to generate. Only generate them if the test actually needs them.
-            hibernateAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-            hibernateAccount.setPasswordHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(
-                    DUMMY_PASSWORD));
+            hibernateAccount.setPasswordAlgorithm(
+                    PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+            hibernateAccount.setPasswordHash(
+                    PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(DUMMY_PASSWORD));
         }
         if (generateReauthHash) {
             // Hashes are expensive to generate. Only generate them if the test actually needs them.
-            hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-            hibernateAccount
-                    .setReauthTokenHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(REAUTH_TOKEN));
+            hibernateAccount.setReauthTokenAlgorithm(
+                    PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+            hibernateAccount.setReauthTokenHash(
+                    PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(REAUTH_TOKEN));
+            hibernateAccount.setReauthTokenModifiedOn(DateTime.now());
         }
         return hibernateAccount;
     }

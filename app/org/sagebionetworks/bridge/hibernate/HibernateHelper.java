@@ -118,6 +118,9 @@ public class HibernateHelper {
         });
     }
     
+    /**
+     * Execute SQL query with no return value, like a batch delete. 
+     */
     public void query(String queryString, Map<String,Object> parameters) {
         executeWithExceptionHandling(null, session -> { 
             Query<?> query = session.createQuery(queryString);

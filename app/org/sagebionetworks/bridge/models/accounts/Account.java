@@ -220,7 +220,7 @@ public interface Account extends BridgeEntity {
     
     PasswordAlgorithm getPasswordAlgorithm();
     void setPasswordAlgorithm(PasswordAlgorithm passwordAlgorithm);
-
+    
     PasswordAlgorithm getReauthTokenAlgorithm();
     void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm);
     
@@ -229,7 +229,7 @@ public interface Account extends BridgeEntity {
     
     DateTime getReauthTokenModifiedOn();
     void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn);
-
+    
     void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies);
     Set<AccountSubstudy> getAccountSubstudies();
 }

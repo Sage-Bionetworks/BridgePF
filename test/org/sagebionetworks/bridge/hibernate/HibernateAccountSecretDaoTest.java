@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -26,9 +28,11 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -56,7 +60,7 @@ public class HibernateAccountSecretDaoTest {
     @Before
     public void before() {
         dao.setHibernateHelper(helper);
-        when(dao.generateHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, TOKEN)).thenReturn(TOKEN);
+        //when(dao.generateHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, TOKEN)).thenReturn(TOKEN);
         DateTimeUtils.setCurrentMillisFixed(CREATED_ON.getMillis());
     }
     
@@ -70,10 +74,11 @@ public class HibernateAccountSecretDaoTest {
         dao.createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN);
         
         verify(helper).create(secretCaptor.capture(), eq(null));
+        
         AccountSecret secret = secretCaptor.getValue();
         assertEquals(ACCOUNT_ID, secret.getAccountId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, secret.getAlgorithm());
-        assertEquals(TOKEN, secret.getHash());
+        assertNotEquals(TOKEN, secret.getHash());
         assertEquals(AccountSecretType.REAUTH, secret.getType());
         assertEquals(CREATED_ON, secret.getCreatedOn());
     }
@@ -83,7 +88,7 @@ public class HibernateAccountSecretDaoTest {
         makeResults(TOKEN);
         
         AccountSecret secret = dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).get();
-        assertNotEquals(secret.getHash(), TOKEN); // it is actually encrypted
+        assertNotEquals(secret.getHash(), TOKEN); // it is encrypted but matches
         assertNotNull(secret);
         
         verify(helper).queryGet(eq(HibernateAccountSecretDao.GET_QUERY), paramsCaptor.capture(), 
@@ -115,6 +120,22 @@ public class HibernateAccountSecretDaoTest {
     }
     
     @Test
+    public void verifySecretExceptionIsSuppressed() throws Exception {
+        PasswordAlgorithm algorithm = Mockito.mock(PasswordAlgorithm.class);
+        
+        HibernateAccountSecret secret = Mockito.mock(HibernateAccountSecret.class);
+        when(secret.getAlgorithm()).thenReturn(algorithm);
+        
+        when(algorithm.checkHash(any(), any())).thenThrow(new InvalidKeyException());
+        
+        when(helper.queryGet(eq(HibernateAccountSecretDao.GET_QUERY), any(), 
+                eq(0), eq(ROTATIONS), eq(HibernateAccountSecret.class)))
+            .thenReturn(ImmutableList.of(secret));
+        
+        assertFalse(dao.verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN, ROTATIONS).isPresent());
+    }
+    
+    @Test
     public void removeSecrets() {
         dao.removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
         
@@ -122,6 +143,14 @@ public class HibernateAccountSecretDaoTest {
         Map<String, Object> params = paramsCaptor.getValue();
         assertEquals(ACCOUNT_ID, params.get("accountId"));
         assertEquals(AccountSecretType.REAUTH, params.get("type"));
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void generateHashConvertsException() throws Exception {
+        PasswordAlgorithm algorithm = Mockito.mock(PasswordAlgorithm.class);
+        when(algorithm.generateHash(any())).thenThrow(new InvalidKeyException());
+        
+        dao.generateHash(algorithm, "whatever");
     }
     
     private List<HibernateAccountSecret> makeResults(String... hashes) throws InvalidKeyException, InvalidKeySpecException, NoSuchAlgorithmException {

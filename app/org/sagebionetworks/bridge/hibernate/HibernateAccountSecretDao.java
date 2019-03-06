@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.time.DateUtils;
 public class HibernateAccountSecretDao implements AccountSecretDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountSecretDao.class);
     
-    static final String GET_QUERY = "SELECT secret FROM HibernateAccountSecret AS secret " + 
+    static final String GET_QUERY = "SELECT secret FROM HibernateAccountSecret as secret " + 
             "WHERE accountId = :accountId AND type = :type ORDER BY createdOn DESC";
     
     static final String DELETE_QUERY = "DELETE FROM HibernateAccountSecret WHERE " + 
@@ -87,7 +87,7 @@ public class HibernateAccountSecretDao implements AccountSecretDao {
                     return Optional.of(accountSecret);
                 }
             } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
-                LOG.error("Error checking reauthenticatio token", e);
+                LOG.error("Error checking reauthentication token", e);
             }
         }
         return Optional.empty();
