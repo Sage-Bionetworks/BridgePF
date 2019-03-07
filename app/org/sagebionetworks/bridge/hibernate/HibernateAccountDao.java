@@ -44,7 +44,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -268,31 +267,6 @@ public class HibernateAccountDao implements AccountDao {
         // account, even in the same call, will fail (e.g. to update languages captured from a request).
         hibernateAccount.setReauthToken(reauthToken);
         return true;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
-        // Set basic params from inputs.
-        Account account = Account.create();
-        account.setId(generateGUID());
-        account.setStudyId(study.getIdentifier());
-        account.setEmail(email);
-        account.setPhone(phone);
-        account.setEmailVerified(Boolean.FALSE);
-        account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthCode(generateGUID());
-        account.setExternalId(externalId);
-
-        // Hash password if it has been supplied.
-        if (password != null) {
-            PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-            String passwordHash = hashCredential(passwordAlgorithm, "password", password);
-
-            account.setPasswordAlgorithm(passwordAlgorithm);
-            account.setPasswordHash(passwordHash);
-        }
-        return account;
     }
     
     // Provided to override in tests

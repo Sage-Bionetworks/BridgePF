@@ -6,6 +6,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
@@ -49,6 +53,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -349,12 +354,30 @@ public class ParticipantService {
                 true);
         Validate.entityThrowingException(validator, participant);
         
-        Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
-                participant.getExternalId(), participant.getPassword());
-
-        updateAccountAndRoles(study, account, participant, true);
-        
+        // Set basic params from inputs.
+        Account account = getAccount();
+        account.setId(generateGUID());
+        account.setStudyId(study.getIdentifier());
+        account.setEmail(participant.getEmail());
+        account.setPhone(participant.getPhone());
+        account.setEmailVerified(Boolean.FALSE);
+        account.setPhoneVerified(Boolean.FALSE);
+        account.setHealthCode(generateGUID());
+        account.setExternalId(participant.getExternalId());
         account.setStatus(AccountStatus.UNVERIFIED);
+
+        // Hash password if it has been supplied.
+        if (participant.getPassword() != null) {
+            try {
+                PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+                String passwordHash = passwordAlgorithm.generateHash(participant.getPassword());
+                account.setPasswordAlgorithm(passwordAlgorithm);
+                account.setPasswordHash(passwordHash);
+            } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+                throw new BridgeServiceException("Error creating password: " + ex.getMessage(), ex);
+            }
+        }
+        updateAccountAndRoles(study, account, participant, true);
 
         // enabled unless we need any kind of verification
         boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
@@ -407,6 +430,16 @@ public class ParticipantService {
             accountWorkflowService.sendPhoneVerificationToken(study, account.getId(), phone);
         }
         return new IdentifierHolder(account.getId());
+    }
+    
+    // Provided to override in tests
+    protected Account getAccount() {
+        return Account.create();
+    }
+    
+    // Provided to override in tests
+    protected String generateGUID() {
+        return BridgeUtils.generateGuid();
     }
     
     private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
