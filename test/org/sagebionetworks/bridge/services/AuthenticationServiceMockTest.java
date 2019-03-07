@@ -463,16 +463,51 @@ public class AuthenticationServiceMockTest {
     public void reauthenticationFromCache() {
         Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
         
-        UserSession session = new UserSession();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
+        UserSession oldSession = new UserSession();
+        oldSession.setStudyIdentifier(study.getStudyIdentifier());
+        oldSession.setParticipant(participant);
+        oldSession.setConsentStatuses(UNCONSENTED_STATUS_MAP);
+        
         doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
-        doReturn(session).when(cacheProvider).getUserSession(TOKEN);
+        doReturn(oldSession).when(cacheProvider).getUserSession(TOKEN);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Re-checking the consent status, we see the user is consented, despite the 
+        // cached session.
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), USER_ID);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(accountId);
+        account.setReauthToken("newReauthToken");
         
         UserSession returned = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
-        assertEquals(session, returned);
-        assertEquals("newReauthToken", session.getReauthToken());
+        assertEquals("newReauthToken", returned.getReauthToken());
         
         // We don't have to retrieve this.
         verify(accountDao, never()).reauthenticate(any(), any());
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void reauthenticationFromCacheFailsOnConsent() {
+        Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
+        UserSession oldSession = new UserSession();
+        oldSession.setStudyIdentifier(study.getStudyIdentifier());
+        oldSession.setParticipant(participant);
+        oldSession.setConsentStatuses(CONSENTED_STATUS_MAP);
+        
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
+        doReturn(oldSession).when(cacheProvider).getUserSession(TOKEN);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Re-checking the consent status, we see the user is no longer consented, 
+        // despite the cached session.
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), USER_ID);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(accountId);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
     @Test(expected = EntityNotFoundException.class)

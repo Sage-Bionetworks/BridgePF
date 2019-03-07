@@ -208,28 +208,34 @@ public class AuthenticationService {
         // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
         // creates a grace period during which concurrent requests with the same reauth token will work.
         Tuple<String> persisedReauthTuple = cacheProvider.getObject(reauthCacheKey, TUPLE_TYPE);
+        
+        Account account = null;
+        boolean cacheReauthentication = false;
         if (persisedReauthTuple != null) {
             String sessionToken = persisedReauthTuple.getLeft();
-            String reauthToken = persisedReauthTuple.getRight();
+            // reauthToken is no longer needed, as a new one will be created by re-creating the session
+            // Leaving the tuple data structure in place for compatibility.
             
             // Is it possible for this not to resolve to a session? Play it safe and check
             UserSession session = cacheProvider.getUserSession(sessionToken);
             if (session == null) {
                 throw new EntityNotFoundException(Account.class);
             }
-            session.setReauthToken(reauthToken);
-            return session;
+            AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
+            account = accountDao.getAccountAfterAuthentication(accountId);
+        } else {
+            account = accountDao.reauthenticate(study, signIn);
+            cacheReauthentication = true;
         }
-        
-        Account account = accountDao.reauthenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
-
-        Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
         cacheProvider.setUserSession(session);
-        // Longer than the caching of the reauthentication token, which provides a grace period for sign ins.
-        cacheProvider.setObject(reauthCacheKey, reauthTuple, BridgeConstants.REAUTH_TOKEN_GRACE_PERIOD_SECONDS);
         
+        if (cacheReauthentication) {
+            // We do not reset the expiration period on re-retrievals of a successful reauthentication.
+            Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
+            cacheProvider.setObject(reauthCacheKey, reauthTuple, BridgeConstants.REAUTH_TOKEN_GRACE_PERIOD_SECONDS);
+        }
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
