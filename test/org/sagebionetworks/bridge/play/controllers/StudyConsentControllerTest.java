@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 
 import java.util.List;
@@ -87,7 +88,7 @@ public class StudyConsentControllerTest {
     
     @Test
     public void getAllConsentsV2() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         List<StudyConsent> consents = Lists.newArrayList(new DynamoStudyConsent1(), new DynamoStudyConsent1());
         when(studyConsentService.getAllConsents(SUBPOP_GUID)).thenReturn(consents);
@@ -102,7 +103,7 @@ public class StudyConsentControllerTest {
 
     @Test
     public void getActiveConsentV2() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getActiveConsent(any())).thenReturn(view);
@@ -116,7 +117,7 @@ public class StudyConsentControllerTest {
     
     @Test
     public void getMostRecentConsentV2() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getMostRecentConsent(SUBPOP_GUID)).thenReturn(view);
@@ -130,7 +131,7 @@ public class StudyConsentControllerTest {
 
     @Test
     public void getConsentV2() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getConsent(SUBPOP_GUID, DateTime.parse(DATETIME_STRING).getMillis())).thenReturn(view);

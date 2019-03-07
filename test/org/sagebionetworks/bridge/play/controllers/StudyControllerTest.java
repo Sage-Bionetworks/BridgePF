@@ -307,7 +307,7 @@ public class StudyControllerTest {
     
     @Test
     public void getEmailStatus() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         Result result = controller.getEmailStatus();
         TestUtils.assertResult(result, 200);
@@ -424,7 +424,7 @@ public class StudyControllerTest {
     @SuppressWarnings("deprecation")
     @Test
     public void canGetUploadsForStudy() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");

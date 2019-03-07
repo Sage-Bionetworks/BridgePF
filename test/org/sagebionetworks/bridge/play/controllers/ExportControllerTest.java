@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -35,6 +36,6 @@ public class ExportControllerTest {
         Result result = controller.startOnDemandExport();
         TestUtils.assertResult(result, 202);
         verify(mockExportService).startOnDemandExport(TestConstants.TEST_STUDY);
-        verify(controller).getAuthenticatedSession(DEVELOPER);
+        verify(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
     }
 }

@@ -2,16 +2,13 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,7 +24,6 @@ import play.test.Helpers;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -59,7 +55,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.createSchemaRevisionV4();
         TestUtils.assertResult(result, 201);
         assertSchemaInResult(result);
@@ -75,7 +71,7 @@ public class UploadSchemaControllerTest {
                 .thenReturn(makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.createOrUpdateUploadSchema();
         TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
@@ -87,7 +83,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
         Result result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", "false");
         TestUtils.assertResult(result, 200, "Schemas have been deleted.");
@@ -99,7 +95,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
         Result result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", "true");
         TestUtils.assertResult(result, 200, "Schemas have been deleted.");
@@ -111,7 +107,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER);
         
         Result result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", "true");
         TestUtils.assertResult(result, 200, "Schemas have been deleted.");
@@ -123,7 +119,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
         Result result = controller.deleteSchemaRevision("delete-schema", 4, "false");
         TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
@@ -135,7 +131,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
         Result result = controller.deleteSchemaRevision("delete-schema", 4, "true");
         TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
@@ -147,7 +143,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER);
         
         Result result = controller.deleteSchemaRevision("delete-schema", 4, "true");
         TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
@@ -163,7 +159,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
         TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
@@ -177,7 +173,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, WORKER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaByIdAndRev(TEST_SCHEMA_ID, 1);
         TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
@@ -191,7 +187,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, WORKER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaByStudyAndSchemaAndRev(TestConstants.TEST_STUDY_IDENTIFIER,
                 TEST_SCHEMA_ID, 1);
         TestUtils.assertResult(result, 200);
@@ -211,7 +207,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemasForStudy("false");
         TestUtils.assertResult(result, 200);
 
@@ -236,7 +232,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemasForStudy("true");
         TestUtils.assertResult(result, 200);
         
@@ -251,7 +247,7 @@ public class UploadSchemaControllerTest {
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemasForStudy(null);
         TestUtils.assertResult(result, 200);
         
@@ -273,7 +269,7 @@ public class UploadSchemaControllerTest {
                 schema3, schema2, schema1));
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaAllRevisions(schemaId, "false");
         TestUtils.assertResult(result, 200);
 
@@ -311,7 +307,7 @@ public class UploadSchemaControllerTest {
         when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaAllRevisions(schemaId, null);
         TestUtils.assertResult(result, 200);
 
@@ -327,7 +323,7 @@ public class UploadSchemaControllerTest {
         when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaAllRevisions(schemaId, "true");
         TestUtils.assertResult(result, 200);
 
@@ -343,18 +339,18 @@ public class UploadSchemaControllerTest {
                 updatedSchemaCaptor.capture())).thenReturn(makeUploadSchemaForOutput());
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.updateSchemaRevisionV4(TEST_SCHEMA_ID, 1);
         TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
         assertSchemaInArgCaptor(updatedSchemaCaptor);
     }
 
-    private static UploadSchemaController setupControllerWithServiceWithoutSecondRole(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
+    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles... roles) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(roles)).build());
 
         // mock request JSON
         TestUtils.mockPlay().withJsonBody(TEST_SCHEMA_JSON).mock();
@@ -362,40 +358,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(role1, role2);
-        return controller;
-    }
-    
-    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
-        // mock session
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1, role2)).build());
-
-        // mock request JSON
-        TestUtils.mockPlay().withJsonBody(TEST_SCHEMA_JSON).mock();
-
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(svc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(role1, role2);
-        return controller;
-    }
-    
-    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1) throws Exception {
-        // mock session
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
-
-        // mock request JSON
-        TestUtils.mockPlay().withJsonBody(TEST_SCHEMA_JSON).mock();
-
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        controller.setUploadSchemaService(svc);
-        controller.setBridgeConfig(mock(BridgeConfig.class));
-        doReturn(mockSession).when(controller).getAuthenticatedSession(role1);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
         return controller;
     }
 

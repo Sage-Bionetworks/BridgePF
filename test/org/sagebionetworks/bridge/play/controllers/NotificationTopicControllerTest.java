@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 
@@ -74,11 +75,14 @@ public class NotificationTopicControllerTest {
         doReturn(Environment.UAT).when(mockBridgeConfig).getEnvironment();
 
         doReturn(TEST_STUDY).when(mockUserSession).getStudyIdentifier();
+
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
     }
 
     @Test
     public void getAllTopicsIncludeDeleted() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, true);
@@ -97,7 +101,6 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void getAllTopicsExcludeDeleted() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, false);
@@ -112,7 +115,6 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void createTopic() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
         TestUtils.mockPlay().withBody(topic).mock();
         doReturn(topic).when(mockTopicService).createTopic(any());
@@ -131,7 +133,6 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void getTopic() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockTopicService).getTopic(TEST_STUDY, GUID);
@@ -151,7 +152,6 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void updateTopic() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockTopicService).updateTopic(any());
         TestUtils.mockPlay().withBody(topic).mock();
@@ -170,7 +170,6 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void deleteTopic() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
         Result result = controller.deleteTopic(GUID, "false");
         TestUtils.assertResult(result, 200);
 
@@ -179,7 +178,6 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void deleteTopicPermanently() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
         when(mockUserSession.isInRole(ADMIN)).thenReturn(true);
         
         Result result = controller.deleteTopic(GUID, "true");
@@ -191,7 +189,6 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void deleteTopicPermanentlyForDeveloper() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Result result = controller.deleteTopic(GUID, "true");
         TestUtils.assertResult(result, 200);
 
@@ -208,7 +205,7 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void sendNotification() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(RESEARCHER);
 
         NotificationMessage message = TestUtils.getNotificationMessage();
         TestUtils.mockPlay().withBody(message).mock();
