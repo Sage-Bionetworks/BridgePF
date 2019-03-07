@@ -217,6 +217,9 @@ public class AuthenticationService {
             if (session == null) {
                 throw new EntityNotFoundException(Account.class);
             }
+            if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+                throw new ConsentRequiredException(session);
+            }
             session.setReauthToken(reauthToken);
             return session;
         }

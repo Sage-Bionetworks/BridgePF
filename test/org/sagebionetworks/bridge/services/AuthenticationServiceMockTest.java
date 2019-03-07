@@ -464,6 +464,7 @@ public class AuthenticationServiceMockTest {
         Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
         
         UserSession session = new UserSession();
+        session.setConsentStatuses(CONSENTED_STATUS_MAP);
         doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
         doReturn(session).when(cacheProvider).getUserSession(TOKEN);
         
@@ -473,6 +474,18 @@ public class AuthenticationServiceMockTest {
         
         // We don't have to retrieve this.
         verify(accountDao, never()).reauthenticate(any(), any());
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void reauthenticationFromCacheFailsOnConsent() {
+        Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
+        
+        UserSession session = new UserSession();
+        session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
+        doReturn(session).when(cacheProvider).getUserSession(TOKEN);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
     @Test(expected = EntityNotFoundException.class)
