@@ -165,11 +165,6 @@ public class SurveyControllerTest {
             session.setConsentStatuses(consentStatuses);
         }
     }
-
-    @Test
-    public void test() throws Exception {
-        
-    }
     
     @Test
     public void verifyViewCacheIsWorking() throws Exception {
