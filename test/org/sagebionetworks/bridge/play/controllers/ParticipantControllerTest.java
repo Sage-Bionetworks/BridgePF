@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +76,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -514,14 +516,14 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getSelfParticipant() throws Exception {
+    public void getSelfParticipantNoConsentHistories() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
                 .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withFirstName("Test").build();
         
         when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
-        Result result = controller.getSelfParticipant();
+        Result result = controller.getSelfParticipant(false);
         assertResult(result, 200);
         
         verify(mockParticipantService).getParticipant(study, ID, false);
@@ -531,6 +533,65 @@ public class ParticipantControllerTest {
         assertEquals("Test", deserParticipant.getFirstName());
         assertNull(deserParticipant.getHealthCode());
         assertNull(deserParticipant.getEncryptedHealthCode());
+    }
+    
+    @Test
+    public void getSelfParticipantWithConsentHistories() throws Exception {
+        DateTime timestamp = DateTime.now(DateTimeZone.UTC);
+        UserConsentHistory history = new UserConsentHistory.Builder()
+                .withHealthCode("healthCode")
+                .withSubpopulationGuid(SubpopulationGuid.create("guid"))
+                .withConsentCreatedOn(timestamp.getMillis())
+                .withName("Test Name")
+                .withBirthdate("2000-01-01")
+                .withImageData("imageData")
+                .withImageMimeType("imageMimeType")
+                .withSignedOn(timestamp.getMillis())
+                .withWithdrewOn(timestamp.getMillis())
+                .withHasSignedActiveConsent(true).build();
+        
+        Map<String,List<UserConsentHistory>> consentHistories = new HashMap<>();
+        consentHistories.put("guid", ImmutableList.of(history));
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
+                .withFirstName("Test")
+                .withConsentHistories(consentHistories)
+                .build();
+        
+        when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
+
+        Result result = controller.getSelfParticipant(true);
+        assertResult(result, 200);
+        
+        verify(mockParticipantService).getParticipant(study, ID, true);
+        
+        JsonNode nodeParticipant = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode nodeHistory = nodeParticipant.get("consentHistories").get("guid").get(0);
+        // Verify these are formatted correctly. These are just the unusual fields that required an annotation
+        assertEquals(timestamp.toString(), nodeHistory.get("consentCreatedOn").textValue());
+        assertEquals(timestamp.toString(), nodeHistory.get("signedOn").textValue());
+        assertEquals(timestamp.toString(), nodeHistory.get("withdrewOn").textValue());
+        
+        StudyParticipant deserParticipant = MAPPER.treeToValue(nodeParticipant, StudyParticipant.class);
+
+        assertEquals("Test", deserParticipant.getFirstName());
+        assertNull(deserParticipant.getHealthCode());
+        assertNull(deserParticipant.getEncryptedHealthCode());
+        
+        List<UserConsentHistory> deserHistories = deserParticipant.getConsentHistories().get("guid");
+        assertEquals(1, deserHistories.size());
+        
+        UserConsentHistory deserHistory = deserHistories.get(0);
+        assertEquals("guid", deserHistory.getSubpopulationGuid());
+        assertEquals(timestamp.getMillis(), deserHistory.getConsentCreatedOn());
+        assertEquals("Test Name", deserHistory.getName());
+        assertEquals("2000-01-01", deserHistory.getBirthdate());
+        assertEquals("imageData", deserHistory.getImageData());
+        assertEquals("imageMimeType", deserHistory.getImageMimeType());
+        assertEquals(timestamp.getMillis(), deserHistory.getSignedOn());
+        assertEquals(new Long(timestamp.getMillis()), deserHistory.getWithdrewOn());
+        assertTrue(deserHistory.isHasSignedActiveConsent());
     }
     
     @Test

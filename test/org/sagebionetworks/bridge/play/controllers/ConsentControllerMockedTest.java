@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -206,7 +205,6 @@ public class ConsentControllerMockedTest {
         
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
-        System.out.println(node);
 
         assertEquals(7, node.size());
         assertEquals("Jack Aubrey", node.get("name").textValue());

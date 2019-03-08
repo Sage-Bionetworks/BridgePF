@@ -85,7 +85,7 @@ DELETE /v4/participants/:userId/reports/:identifier       @org.sagebionetworks.b
 GET    /v3/participants                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 POST   /v3/participants                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
 POST   /v3/participants/search           @org.sagebionetworks.bridge.play.controllers.ParticipantController.searchForAccountSummaries
-GET    /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
+GET    /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant(consents: Boolean ?= true)
 POST   /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
 POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateIdentifiers
 
