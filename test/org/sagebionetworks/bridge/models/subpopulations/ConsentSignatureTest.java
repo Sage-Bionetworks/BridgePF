@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.subpopulations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -15,17 +14,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConsentSignatureTest {
-    private static final long CONSENT_CREATED_ON_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
-    private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+    private static final DateTime CONSENT_CREATED_ON_TIMESTAMP = DateTime.now(DateTimeZone.UTC).minusDays(1);
+    private static final DateTime SIGNED_ON_TIMESTAMP = DateTime.now(DateTimeZone.UTC);
+    private static final DateTime WITHDREW_ON_TIMESTAMP = DateTime.now(DateTimeZone.UTC).plusDays(1);
     
     @Before
     public void before() {
-        DateTimeUtils.setCurrentMillisFixed(SIGNED_ON_TIMESTAMP);
+        DateTimeUtils.setCurrentMillisFixed(SIGNED_ON_TIMESTAMP.getMillis());
     }
     
     @After
@@ -34,26 +33,27 @@ public class ConsentSignatureTest {
     }
     
     @Test
-    public void allDatesSuppressed() throws Exception {
+    public void allDatesFormattedCorrectly() throws Exception {
         ConsentSignature signature = new ConsentSignature.Builder()
             .withBirthdate("1970-01-01")
             .withName("Dave Test")
-            .withWithdrewOn(SIGNED_ON_TIMESTAMP)
-            .withConsentCreatedOn(SIGNED_ON_TIMESTAMP)
-            .withSignedOn(SIGNED_ON_TIMESTAMP).build();
+            .withWithdrewOn(WITHDREW_ON_TIMESTAMP.getMillis())
+            .withConsentCreatedOn(CONSENT_CREATED_ON_TIMESTAMP.getMillis())
+            .withSignedOn(SIGNED_ON_TIMESTAMP.getMillis()).build();
         
         String json = ConsentSignature.SIGNATURE_WRITER.writeValueAsString(signature);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertNull(node.get("consentCreatedOn"));
-        assertEquals(new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString(),
+        assertEquals(WITHDREW_ON_TIMESTAMP.toString(),
                 node.get("withdrewOn").textValue());
-        assertEquals(new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString(), node.get("signedOn").textValue());
+        assertEquals(SIGNED_ON_TIMESTAMP.toString(), 
+                node.get("signedOn").textValue());
         assertEquals("ConsentSignature", node.get("type").textValue());
         
         ConsentSignature deser = ConsentSignature.fromJSON(node);
         assertEquals("Dave Test", deser.getName());
         assertEquals("1970-01-01", deser.getBirthdate());
-        assertTrue(deser.getSignedOn() > 0L); // this is set in the builder
+        assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), deser.getSignedOn()); // this is set in the builder
         assertEquals(0L, deser.getConsentCreatedOn());
         assertNull(deser.getWithdrewOn());
     }
@@ -61,10 +61,11 @@ public class ConsentSignatureTest {
     @Test
     public void happyCase() {
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("1970-01-01")
-            .withConsentCreatedOn(CONSENT_CREATED_ON_TIMESTAMP).withSignedOn(SIGNED_ON_TIMESTAMP).build();
+                .withConsentCreatedOn(CONSENT_CREATED_ON_TIMESTAMP.getMillis())
+                .withSignedOn(SIGNED_ON_TIMESTAMP.getMillis()).build();
         assertEquals("test name", sig.getName());
         assertEquals("1970-01-01", sig.getBirthdate());
-        assertEquals(CONSENT_CREATED_ON_TIMESTAMP, sig.getConsentCreatedOn());
+        assertEquals(CONSENT_CREATED_ON_TIMESTAMP.getMillis(), sig.getConsentCreatedOn());
         assertNull(sig.getImageData());
         assertNull(sig.getImageMimeType());
     }
@@ -73,7 +74,7 @@ public class ConsentSignatureTest {
     public void withImage() {
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("1970-01-01")
                 .withImageData(TestConstants.DUMMY_IMAGE_DATA).withImageMimeType("image/fake")
-                .withSignedOn(SIGNED_ON_TIMESTAMP).build();
+                .withSignedOn(SIGNED_ON_TIMESTAMP.getMillis()).build();
         assertEquals("test name", sig.getName());
         assertEquals("1970-01-01", sig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, sig.getImageData());
@@ -118,7 +119,7 @@ public class ConsentSignatureTest {
         assertEquals("1970-01-01", sig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, sig.getImageData());
         assertEquals("image/fake", sig.getImageMimeType());
-        assertEquals(SIGNED_ON_TIMESTAMP, sig.getSignedOn());
+        assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), sig.getSignedOn());
     }
     
     @Test
@@ -127,7 +128,7 @@ public class ConsentSignatureTest {
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
         assertEquals("test name", sig.getName());
         assertEquals("1970-01-01", sig.getBirthdate());
-        assertEquals(SIGNED_ON_TIMESTAMP, sig.getSignedOn());
+        assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), sig.getSignedOn());
     }
     
     @Test
@@ -135,15 +136,16 @@ public class ConsentSignatureTest {
         String json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\"}";
         ConsentSignature sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
 
-        ConsentSignature updated = new ConsentSignature.Builder().withConsentSignature(sig).withSignedOn(SIGNED_ON_TIMESTAMP).build();
+        ConsentSignature updated = new ConsentSignature.Builder().withConsentSignature(sig)
+                .withSignedOn(SIGNED_ON_TIMESTAMP.getMillis()).build();
         assertEquals("test name", updated.getName());
         assertEquals("1970-01-01", updated.getBirthdate());
-        assertEquals(SIGNED_ON_TIMESTAMP, updated.getSignedOn());
+        assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), updated.getSignedOn());
         
         String timestamp = new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString();
         json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":\""+timestamp+"\"}";
         sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
-        assertEquals(SIGNED_ON_TIMESTAMP, sig.getSignedOn());
+        assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), sig.getSignedOn());
     }
     
     @Test

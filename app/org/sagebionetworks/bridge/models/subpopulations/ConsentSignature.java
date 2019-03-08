@@ -84,6 +84,7 @@ public final class ConsentSignature implements BridgeEntity {
      * The timestamp of the consent the user has signed. May not be the timestamp of the currently active version of the
      * consent.
      */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public @Nonnull long getConsentCreatedOn() {
         return consentCreatedOn;
     }
@@ -160,6 +161,7 @@ public final class ConsentSignature implements BridgeEntity {
             this.imageMimeType = imageMimeType;
             return this;
         }
+        @JsonDeserialize(using = DateTimeToLongDeserializer.class)
         public Builder withConsentCreatedOn(long consentCreatedOn) {
             this.consentCreatedOn = consentCreatedOn;
             return this;

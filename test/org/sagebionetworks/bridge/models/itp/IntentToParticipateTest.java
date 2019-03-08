@@ -50,7 +50,7 @@ public class IntentToParticipateTest {
         assertEquals("1980-10-10", consentNode.get("birthdate").textValue());
         assertEquals("image-data", consentNode.get("imageData").textValue());
         assertEquals("image/png", consentNode.get("imageMimeType").textValue());
-        assertEquals(TIMESTAMP.getMillis(), consentNode.get("consentCreatedOn").longValue());
+        assertEquals(TIMESTAMP.toString(), consentNode.get("consentCreatedOn").textValue());
         assertEquals(TIMESTAMP.toString(), consentNode.get("signedOn").textValue());
         assertEquals("ConsentSignature", consentNode.get("type").textValue());
         assertEquals(7, consentNode.size());
