@@ -19,6 +19,7 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,7 +74,7 @@ public class ConsentControllerMockedTest {
     
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     
-    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+    private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     
     private ConsentController controller;
 
@@ -101,7 +102,7 @@ public class ConsentControllerMockedTest {
     
     @Before
     public void before() {
-        DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
+        DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
 
         participant = new StudyParticipant.Builder().withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).withDataGroups(TestConstants.USER_DATA_GROUPS)
@@ -195,7 +196,8 @@ public class ConsentControllerMockedTest {
     @SuppressWarnings("deprecation")
     public void consentSignatureJSONCorrectDeprecated() throws Exception {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
-                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(TIMESTAMP.getMillis())
+                .withWithdrewOn(TIMESTAMP.getMillis()).build();
 
         when(consentService.getConsentSignature(study, DEFAULT_SUBPOP_GUID, session.getId())).thenReturn(sig);
 
@@ -204,14 +206,16 @@ public class ConsentControllerMockedTest {
         
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
+        System.out.println(node);
 
-        assertEquals(5, node.size());
-        assertEquals("Jack Aubrey", node.get("name").asText());
-        assertEquals("1970-10-10", node.get("birthdate").asText());
-        assertEquals("ConsentSignature", node.get("type").asText());
-        assertEquals("data:asdf", node.get("imageData").asText());
-        assertEquals("image/png", node.get("imageMimeType").asText());
-        // no signedOn value when serializing
+        assertEquals(7, node.size());
+        assertEquals("Jack Aubrey", node.get("name").textValue());
+        assertEquals("1970-10-10", node.get("birthdate").textValue());
+        assertEquals("ConsentSignature", node.get("type").textValue());
+        assertEquals("data:asdf", node.get("imageData").textValue());
+        assertEquals("image/png", node.get("imageMimeType").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("signedOn").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("withdrewOn").textValue());
     }
 
     @Test
@@ -302,7 +306,8 @@ public class ConsentControllerMockedTest {
     @Test
     public void consentSignatureJSONCorrect() throws Exception {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
-                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(TIMESTAMP.getMillis())
+                .withWithdrewOn(TIMESTAMP.getMillis()).build();
 
         when(consentService.getConsentSignature(study, SUBPOP_GUID, session.getId())).thenReturn(sig);
 
@@ -312,13 +317,14 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, node.size());
-        assertEquals("Jack Aubrey", node.get("name").asText());
-        assertEquals("1970-10-10", node.get("birthdate").asText());
-        assertEquals("ConsentSignature", node.get("type").asText());
-        assertEquals("data:asdf", node.get("imageData").asText());
-        assertEquals("image/png", node.get("imageMimeType").asText());
-        // no signedOn value when serializing
+        assertEquals(7, node.size());
+        assertEquals("Jack Aubrey", node.get("name").textValue());
+        assertEquals("1970-10-10", node.get("birthdate").textValue());
+        assertEquals("ConsentSignature", node.get("type").textValue());
+        assertEquals("data:asdf", node.get("imageData").textValue());
+        assertEquals("image/png", node.get("imageMimeType").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("signedOn").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("withdrewOn").textValue());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -638,7 +644,7 @@ public class ConsentControllerMockedTest {
     }
     
     private void validateSignature(ConsentSignature signature) {
-        assertEquals(UNIX_TIMESTAMP, signature.getSignedOn());
+        assertEquals(TIMESTAMP.getMillis(), signature.getSignedOn());
         assertEquals("Jack Aubrey", signature.getName());
         assertEquals("1970-10-10", signature.getBirthdate());
         assertEquals("data:asdf", signature.getImageData());

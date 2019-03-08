@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -43,10 +44,11 @@ public class ConsentSignatureTest {
         
         String json = ConsentSignature.SIGNATURE_WRITER.writeValueAsString(signature);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
-        assertNull(node.get("signedOn"));
         assertNull(node.get("consentCreatedOn"));
-        assertNull(node.get("withdrewOn"));
-        assertEquals("ConsentSignature", node.get("type").asText());
+        assertEquals(new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString(),
+                node.get("withdrewOn").textValue());
+        assertEquals(new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString(), node.get("signedOn").textValue());
+        assertEquals("ConsentSignature", node.get("type").textValue());
         
         ConsentSignature deser = ConsentSignature.fromJSON(node);
         assertEquals("Dave Test", deser.getName());
@@ -138,7 +140,8 @@ public class ConsentSignatureTest {
         assertEquals("1970-01-01", updated.getBirthdate());
         assertEquals(SIGNED_ON_TIMESTAMP, updated.getSignedOn());
         
-        json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":-10}";
+        String timestamp = new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString();
+        json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":\""+timestamp+"\"}";
         sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
         assertEquals(SIGNED_ON_TIMESTAMP, sig.getSignedOn());
     }
