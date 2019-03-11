@@ -58,9 +58,15 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void itp() {
+    public void itpWithPhone() {
         assertEquals("guid:"+TestConstants.PHONE.getNumber()+":api:itp",
-                CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, TestConstants.PHONE).toString());
+                CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, TestConstants.PHONE, null).toString());
+    }
+    
+    @Test
+    public void itpWithEmail() {
+        assertEquals("guid:email@email.com:api:itp",
+                CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, null, "email@email.com").toString());
     }
     
     @Test

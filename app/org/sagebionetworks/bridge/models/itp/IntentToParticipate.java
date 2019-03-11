@@ -12,15 +12,17 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public class IntentToParticipate implements BridgeEntity {
     private final String studyId;
     private final Phone phone;
+    private final String email;
     private final String subpopGuid;
     private final SharingScope scope;
     private final String osName;
     private final ConsentSignature consentSignature;
     
-    private IntentToParticipate(String studyId, Phone phone, String subpopGuid, SharingScope scope, String osName,
-            ConsentSignature consentSignature) {
+    private IntentToParticipate(String studyId, Phone phone, String email, String subpopGuid, SharingScope scope,
+            String osName, ConsentSignature consentSignature) {
         this.studyId = studyId;
         this.phone = phone;
+        this.email = email;
         this.subpopGuid = subpopGuid;
         this.scope = scope;
         this.osName = osName;
@@ -32,6 +34,9 @@ public class IntentToParticipate implements BridgeEntity {
     }
     public Phone getPhone() {
         return phone;
+    }
+    public String getEmail() {
+        return email;
     }
     public String getSubpopGuid() {
         return subpopGuid;
@@ -49,6 +54,7 @@ public class IntentToParticipate implements BridgeEntity {
     public static class Builder {
         private String studyId;
         private Phone phone;
+        private String email;
         private String subpopGuid;
         private SharingScope scope;
         private String osName;
@@ -57,6 +63,7 @@ public class IntentToParticipate implements BridgeEntity {
         public Builder copyOf(IntentToParticipate intent) {
             this.studyId = intent.studyId;
             this.phone = intent.phone;
+            this.email = intent.email;
             this.subpopGuid = intent.subpopGuid;
             this.scope = intent.scope;
             this.osName = intent.osName;
@@ -69,6 +76,10 @@ public class IntentToParticipate implements BridgeEntity {
         }
         public Builder withPhone(Phone phone) {
             this.phone = phone;
+            return this;
+        }
+        public Builder withEmail(String email) {
+            this.email = email;
             return this;
         }
         public Builder withSubpopGuid(String guid) {
@@ -92,7 +103,7 @@ public class IntentToParticipate implements BridgeEntity {
             if (OperatingSystem.SYNONYMS.containsKey(osName)) {
                 osName = OperatingSystem.SYNONYMS.get(osName);
             }
-            return new IntentToParticipate(studyId, phone, subpopGuid, scope, osName, consentSignature);
+            return new IntentToParticipate(studyId, phone, email, subpopGuid, scope, osName, consentSignature);
         }
     }
 }

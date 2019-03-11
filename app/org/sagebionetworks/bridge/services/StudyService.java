@@ -127,6 +127,8 @@ public class StudyService {
     private String defaultAccountExistsTemplateSubject;
     private String defaultSignedConsentTemplate;
     private String defaultSignedConsentTemplateSubject;
+    private String defaultAppInstallLinkTemplate;
+    private String defaultAppInstallLinkTemplateSubject;
     private String defaultResetPasswordSmsTemplate;
     private String defaultPhoneSignInSmsTemplate;
     private String defaultAppInstallLinkSmsTemplate;
@@ -170,7 +172,6 @@ public class StudyService {
     final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    
     @Value("classpath:study-defaults/signed-consent.txt")
     final void setSignedConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultSignedConsentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
@@ -179,7 +180,14 @@ public class StudyService {
     final void setSignedConsentTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultSignedConsentTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    
+    @Value("classpath:study-defaults/app-install-link.txt")
+    final void setAppInstallLinkTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultAppInstallLinkTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/app-install-link-subject.txt")
+    final void setAppInstallLinkTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultAppInstallLinkTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
     @Value("classpath:templates/study-email-verification.txt")
     final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
             throws IOException {
@@ -300,6 +308,10 @@ public class StudyService {
     
     private EmailTemplate getSignedConsentTemplate() {
         return getTemplate(defaultSignedConsentTemplateSubject, defaultSignedConsentTemplate);
+    }
+    
+    private EmailTemplate getAppInstallLinkTemplate() {
+        return getTemplate(defaultAppInstallLinkTemplateSubject, defaultAppInstallLinkTemplate);
     }
     
     private EmailTemplate getTemplate(String subject, String body) {
@@ -757,6 +769,9 @@ public class StudyService {
         }
         if (study.getSignedConsentTemplate() == null) {
             study.setSignedConsentTemplate( getSignedConsentTemplate() );
+        }
+        if (study.getAppInstallLinkTemplate() == null) {
+            study.setAppInstallLinkTemplate( getAppInstallLinkTemplate() );
         }
         if (study.getResetPasswordSmsTemplate() == null) {
             study.setResetPasswordSmsTemplate(new SmsTemplate(defaultResetPasswordSmsTemplate));

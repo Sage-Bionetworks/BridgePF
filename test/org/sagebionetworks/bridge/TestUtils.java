@@ -311,21 +311,19 @@ public class TestUtils {
         return topic;
     }
     
-    public static final IntentToParticipate getIntentToParticipate(long timestamp) {
+    public static final IntentToParticipate.Builder getIntentToParticipate(long timestamp) {
         ConsentSignature consentSignature = new ConsentSignature.Builder()
                 .withName("Gladlight Stonewell")
                 .withBirthdate("1980-10-10")
                 .withConsentCreatedOn(timestamp)
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
-        IntentToParticipate itp = new IntentToParticipate.Builder()
+        return new IntentToParticipate.Builder()
                 .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")
-                .withConsentSignature(consentSignature)
-                .build();
-        return itp;
+                .withConsentSignature(consentSignature);
     }
     
     public static NotificationRegistration getNotificationRegistration() {
@@ -462,6 +460,7 @@ public class TestUtils {
         study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${url}", MimeType.TEXT));
         study.setAccountExistsTemplate(new EmailTemplate("accountExists subject", "body with ${resetPasswordUrl}", MimeType.TEXT));
         study.setSignedConsentTemplate(new EmailTemplate("signedConsent subject", "body", MimeType.TEXT));
+        study.setAppInstallLinkTemplate(new EmailTemplate("app install subject", "body ${appInstallUrl}", MimeType.TEXT));
         study.setResetPasswordSmsTemplate(new SmsTemplate("resetPasswordSmsTemplate ${resetPasswordUrl}"));
         study.setPhoneSignInSmsTemplate(new SmsTemplate("phoneSignInSmsTemplate ${token}"));
         study.setAppInstallLinkSmsTemplate(new SmsTemplate("appInstallLinkSmsTemplate ${appInstallUrl}"));

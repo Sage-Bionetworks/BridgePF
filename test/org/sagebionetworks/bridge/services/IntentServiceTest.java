@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
+import javax.mail.internet.MimeBodyPart;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,14 +32,21 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -49,7 +58,10 @@ public class IntentServiceTest {
     IntentService service;
 
     @Mock
-    private SmsService mockSmsService;
+    SmsService mockSmsService;
+    
+    @Mock
+    SendMailService mockSendMailService;
 
     @Mock
     StudyService mockStudyService;
@@ -81,10 +93,14 @@ public class IntentServiceTest {
     @Captor
     ArgumentCaptor<SmsMessageProvider> smsMessageProviderCaptor;
     
+    @Captor
+    ArgumentCaptor<MimeTypeEmailProvider> mimeTypeEmailProviderCaptor;
+    
     @Before
     public void before() {
         service = new IntentService();
         service.setSmsService(mockSmsService);
+        service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
         service.setSubpopulationService(mockSubpopService);
         service.setConsentService(mockConsentService);
@@ -94,8 +110,8 @@ public class IntentServiceTest {
     }
     
     @Test
-    public void submitIntentToParticipate() {
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+    public void submitIntentToParticipateWithPhone() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
@@ -106,7 +122,7 @@ public class IntentServiceTest {
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
-                TestConstants.PHONE);
+                TestConstants.PHONE, null);
         
         service.submitIntentToParticipate(intent);
         
@@ -125,9 +141,51 @@ public class IntentServiceTest {
         assertEquals("Transactional", provider.getSmsType());
     }
     
+    @Test
+    public void submitIntentToParticipateWithEmail() throws Exception {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).withPhone(null)
+                .withOsName("iOS").withEmail("email@email.com").build();        
+        
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("iOS", "this-is-a-link");
+        installLinks.put("Android", "the-wrong-link");
+        
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getInstallLinks()).thenReturn(installLinks);
+        when(mockStudy.getAppInstallLinkTemplate()).thenReturn(new EmailTemplate("subject", "body ${appInstallUrl}", MimeType.HTML));
+        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), 
+                TestConstants.TEST_STUDY, null, "email@email.com");
+        
+        service.submitIntentToParticipate(intent);
+        
+        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
+        
+        verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
+        assertEquals(cacheKey, keyCaptor.getValue());
+
+        verify(mockSendMailService).sendEmail(mimeTypeEmailProviderCaptor.capture());
+
+        BasicEmailProvider provider = (BasicEmailProvider)mimeTypeEmailProviderCaptor.getValue();
+        assertEquals(mockStudy, provider.getStudy());
+        assertEquals("email@email.com", Iterables.getFirst(provider.getRecipientEmails(), null));
+        assertEquals(EmailType.APP_INSTALL, provider.getType());
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals("\"null\" <null>", email.getSenderAddress());
+        assertEquals("subject", email.getSubject());
+        MimeBodyPart body = email.getMessageParts().get(0);
+        assertEquals("body this-is-a-link", body.getContent());
+        assertEquals("email@email.com", email.getRecipientAddresses().get(0));
+        assertEquals(1, email.getRecipientAddresses().size());
+        assertEquals(EmailType.APP_INSTALL, email.getType());
+    }    
+    
     @Test(expected = InvalidEntityException.class)
     public void submitIntentToParticipateInvalid() {
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         IntentToParticipate invalid = new IntentToParticipate.Builder().copyOf(intent).withPhone(null).build();
         
         service.submitIntentToParticipate(invalid);
@@ -135,13 +193,13 @@ public class IntentServiceTest {
     
     @Test
     public void submitIntentToParticipateWithoutInstallLinks() {
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
-                TestConstants.PHONE);
+                TestConstants.PHONE, null);
         
         service.submitIntentToParticipate(intent);
         
@@ -158,13 +216,13 @@ public class IntentServiceTest {
     
     @Test
     public void submitIntentToParticipateExists() {
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), new StudyIdentifierImpl("testStudy"),
-                TestConstants.PHONE);
+                TestConstants.PHONE, null);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("testStudy"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
@@ -183,7 +241,7 @@ public class IntentServiceTest {
     
     @Test
     public void submitIntentToParticipateAccountExists() {
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, intent.getPhone()); 
         
@@ -221,7 +279,8 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
-        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE,
+                null);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
@@ -273,8 +332,10 @@ public class IntentServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().build(); 
         
-        CacheKey keyAAA = CacheKey.itp(SubpopulationGuid.create("AAA"), TestConstants.TEST_STUDY, TestConstants.PHONE);
-        CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey keyAAA = CacheKey.itp(SubpopulationGuid.create("AAA"), TestConstants.TEST_STUDY, TestConstants.PHONE,
+                null);
+        CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE,
+                null);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
@@ -317,7 +378,8 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
-        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE,
+                null);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))

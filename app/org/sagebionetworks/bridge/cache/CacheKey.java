@@ -51,8 +51,13 @@ public final class CacheKey {
     public static final CacheKey emailVerification(String email) {
         return new CacheKey(email, "emailVerificationStatus");
     }
-    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, Phone phone) {
-        return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId.getIdentifier(), "itp");
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, Phone phone, String email) {
+        if (phone != null) {
+            return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId.getIdentifier(), "itp");    
+        } else if (email != null) {
+            return new CacheKey(subpopGuid.getGuid(), email, studyId.getIdentifier(), "itp");
+        }
+        throw new IllegalArgumentException("Invalid ITP payload cannot generate cache key");
     }
     public static final CacheKey lock(String value, Class<?> clazz) {
         return new CacheKey(value, clazz.getCanonicalName(), "lock");

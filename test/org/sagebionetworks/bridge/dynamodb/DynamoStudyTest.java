@@ -136,6 +136,8 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "accountExistsTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getSignedConsentTemplate(),
                 JsonUtils.asEntity(node, "signedConsentTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getAppInstallLinkTemplate(),
+                JsonUtils.asEntity(node, "appInstallLinkTemplate", EmailTemplate.class));
         assertEquals(study.getResetPasswordSmsTemplate(),
                 JsonUtils.asEntity(node, "resetPasswordSmsTemplate", SmsTemplate.class));
         assertEquals(study.getPhoneSignInSmsTemplate(),

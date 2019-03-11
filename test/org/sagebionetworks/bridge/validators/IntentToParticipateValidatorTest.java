@@ -15,6 +15,7 @@ public class IntentToParticipateValidatorTest {
     private static final String STUDY = "studyId";
     private static final String SUBPOP_GUID = "subpopGuid";
     private static final String OS_NAME = "Android";
+    private static final String EMAIL = "email@email.com";
     private static final SharingScope SCOPE = SharingScope.SPONSORS_AND_PARTNERS;
     private static final ConsentSignature SIGNATURE = new ConsentSignature.Builder()
             .withName("Test Name")
@@ -32,8 +33,14 @@ public class IntentToParticipateValidatorTest {
     }
     
     @Test
-    public void valid() {
+    public void validWithPhone() {
         IntentToParticipate intent = builder().build();
+        Validate.entityThrowingException(INSTANCE, intent);
+    }
+    
+    @Test
+    public void validWithEmail() {
+        IntentToParticipate intent = builder().withPhone(null).withEmail(EMAIL).build();
         Validate.entityThrowingException(INSTANCE, intent);
     }
     
@@ -62,9 +69,15 @@ public class IntentToParticipateValidatorTest {
     }
 
     @Test
-    public void phoneRequired() {
+    public void phoneOrEmailRequired() {
         IntentToParticipate intent = builder().withPhone(null).build();
-        assertValidatorMessage(INSTANCE, intent, "phone", "is required");
+        assertValidatorMessage(INSTANCE, intent, "IntentToParticipate", "either phone or email is required");
+    }
+    
+    @Test
+    public void phoneAndEmailInvalid() {
+        IntentToParticipate intent = builder().withEmail(EMAIL).build();
+        assertValidatorMessage(INSTANCE, intent, "IntentToParticipate", "one of phone or email should be provided (not both)");
     }
 
     @Test
@@ -73,4 +86,9 @@ public class IntentToParticipateValidatorTest {
         assertValidatorMessage(INSTANCE, intent, "phone", "does not appear to be a phone number");
     }
     
+    @Test
+    public void emailInvalid() {
+        IntentToParticipate intent = builder().withPhone(null).withEmail("bad-email").build();
+        assertValidatorMessage(INSTANCE, intent, "email", "does not appear to be an email address");
+    }
 }
