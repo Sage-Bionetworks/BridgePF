@@ -608,6 +608,16 @@ public class StudyServiceMockTest {
     }
 
     @Test
+    public void loadingStudyWithoutAppInstalLinkTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAppInstallLinkTemplate());
+    }
+    
+    @Test
     public void createStudyWithoutSignedConsentTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setSignedConsentTemplate(null);
@@ -654,6 +664,16 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.getStudy("foo");
         assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutAppInstallLinkTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAppInstallLinkTemplate());
     }
     
     @Test
@@ -1531,7 +1551,7 @@ public class StudyServiceMockTest {
     }
     
     @Test
-    public void testAllFiveTemplatesAreSanitized() {
+    public void testAllSixTemplatesAreSanitized() {
         EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
         Study study = new DynamoStudy();
         study.setEmailSignInTemplate(source);
@@ -1539,6 +1559,7 @@ public class StudyServiceMockTest {
         study.setVerifyEmailTemplate(source);
         study.setAccountExistsTemplate(source);
         study.setSignedConsentTemplate(source);
+        study.setAppInstallLinkTemplate(source);
         
         service.sanitizeHTML(study);
         assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
@@ -1546,6 +1567,7 @@ public class StudyServiceMockTest {
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
         assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
         assertHtmlTemplateSanitized( study.getSignedConsentTemplate() );
+        assertHtmlTemplateSanitized( study.getAppInstallLinkTemplate() );
     }
     
     @Test

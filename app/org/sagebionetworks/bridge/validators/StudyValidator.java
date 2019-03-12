@@ -158,6 +158,10 @@ public class StudyValidator implements Validator {
             validateEmailTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
                     "${emailSignInUrl}", "${resetPasswordUrl}");
         }
+        if (study.getAppInstallLinkTemplate() != null) {
+            validateEmailTemplate(errors, study.getAppInstallLinkTemplate(), "appInstallLinkTemplate", "${url}",
+                    "${appInstallUrl}");
+        }
         validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}", "${resetPasswordUrl}");
         validateSmsTemplate(errors, study.getPhoneSignInSmsTemplate(), "phoneSignInSmsTemplate", "${token}");
         validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}", "${appInstallUrl}");

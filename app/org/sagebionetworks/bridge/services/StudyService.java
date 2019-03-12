@@ -813,6 +813,9 @@ public class StudyService {
         
         template = study.getSignedConsentTemplate();
         study.setSignedConsentTemplate(sanitizeEmailTemplate(template));
+        
+        template = study.getAppInstallLinkTemplate();
+        study.setAppInstallLinkTemplate(sanitizeEmailTemplate(template));
     }
     
     protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
