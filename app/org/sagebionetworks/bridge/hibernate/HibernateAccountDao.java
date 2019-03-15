@@ -45,7 +45,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -231,12 +230,11 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         // Unmarshall account
-        boolean accountUpdated = validateHealthCode(hibernateAccount);
-        accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
-        if (accountUpdated) {
+        if ( validateHealthCode(hibernateAccount) ) {
             Account updated = hibernateHelper.update(hibernateAccount, null);
             hibernateAccount.setVersion(updated.getVersion());
         }
+        updateReauthToken(study, hibernateAccount);
         return hibernateAccount;
     }
 
@@ -245,12 +243,11 @@ public class HibernateAccountDao implements AccountDao {
         Account hibernateAccount = getHibernateAccount(accountId);
 
         if (hibernateAccount != null) {
-            boolean accountUpdated = validateHealthCode(hibernateAccount);
-            accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
-            if (accountUpdated) {
+            if ( validateHealthCode(hibernateAccount) ) {
                 Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
+            updateReauthToken(null, hibernateAccount);
             return hibernateAccount;
         } else {
             // In keeping with the email implementation, just return null
@@ -272,40 +269,14 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private boolean updateReauthToken(Study study, Account hibernateAccount) {
+    private void updateReauthToken(Study study, Account hibernateAccount) {
         if (study != null && !study.isReauthenticationEnabled()) {
             hibernateAccount.setReauthToken(null);
-            return false;
+            return;
         }
         String reauthToken = generateReauthToken();
         accountSecretDao.createSecret(REAUTH, hibernateAccount.getId(), reauthToken);
         hibernateAccount.setReauthToken(reauthToken);
-        return true;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
-        // Set basic params from inputs.
-        Account account = Account.create();
-        account.setId(generateGUID());
-        account.setStudyId(study.getIdentifier());
-        account.setEmail(email);
-        account.setPhone(phone);
-        account.setEmailVerified(Boolean.FALSE);
-        account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthCode(generateGUID());
-        account.setExternalId(externalId);
-
-        // Hash password if it has been supplied.
-        if (password != null) {
-            PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-            String passwordHash = hashCredential(passwordAlgorithm, "password", password);
-
-            account.setPasswordAlgorithm(passwordAlgorithm);
-            account.setPasswordHash(passwordHash);
-        }
-        return account;
     }
 
     /** {@inheritDoc} */
