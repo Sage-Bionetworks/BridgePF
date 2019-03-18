@@ -17,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 
 import java.util.List;
 import java.util.Map;
@@ -29,9 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -43,6 +42,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -150,6 +151,8 @@ public class AuthenticationServiceMockTest {
     private ExternalIdService externalIdService;
     @Mock
     private IntentService intentService;
+    @Mock
+    private AccountSecretDao accountSecretDao;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
@@ -177,6 +180,7 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         account = Account.create();
+        account.setId(USER_ID);
 
         // Wire up service.
         service.setCacheProvider(cacheProvider);
@@ -189,6 +193,7 @@ public class AuthenticationServiceMockTest {
         service.setAccountWorkflowService(accountWorkflowService);
         service.setExternalIdService(externalIdService);
         service.setIntentToParticipateService(intentService);
+        service.setAccountSecretDao(accountSecretDao);
 
         doReturn(study).when(studyService).getStudy(STUDY_ID);
     }
@@ -200,12 +205,10 @@ public class AuthenticationServiceMockTest {
     
     @Test // Test some happy path stuff, like the correct initialization of the user session
     public void signIn() {
+        study.setReauthenticationEnabled(true);
+        
         AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
         AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
-        
-        when(service.getGuid()).thenReturn("SESSION_TOKEN");
-        
-        when(config.getEnvironment()).thenReturn(Environment.PROD);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
@@ -217,11 +220,13 @@ public class AuthenticationServiceMockTest {
             .withLanguages(LANGUAGES)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
             .withIpAddress("127.1.1.11").build();
-
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(contextCaptor.capture(), any());
+        doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
+        doReturn("SESSION_TOKEN").when(service).getGuid();
+        doReturn(Environment.PROD).when(config).getEnvironment();
         
         UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
         
@@ -233,7 +238,7 @@ public class AuthenticationServiceMockTest {
         assertEquals("127.1.1.11", session.getIpAddress());
         assertEquals("SESSION_TOKEN", session.getSessionToken());
         assertEquals("SESSION_TOKEN", session.getInternalSessionToken());
-        assertEquals("REAUTH_TOKEN", session.getReauthToken());
+        assertEquals(REAUTH_TOKEN, session.getReauthToken());
         assertEquals(Environment.PROD, session.getEnvironment());
         assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
 
@@ -244,6 +249,8 @@ public class AuthenticationServiceMockTest {
         assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, updatedContext.getUserSubstudyIds());
         assertEquals(USER_ID, updatedContext.getUserId());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
     
     @Test
@@ -433,8 +440,10 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void reauthentication() {
+        study.setReauthenticationEnabled(true);
         account.setId(USER_ID);
-        account.setReauthToken(REAUTH_TOKEN);
+        
+        doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
 
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
@@ -446,13 +455,13 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         
         verify(accountDao).reauthenticate(study, REAUTH_REQUEST);
-        InOrder inOrder = Mockito.inOrder(cacheProvider);
-        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
-        inOrder.verify(cacheProvider).setUserSession(sessionCaptor.capture());
+        verify(cacheProvider).setUserSession(sessionCaptor.capture());
         
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
+        
+        verify(accountSecretDao).createSecret(REAUTH, USER_ID, REAUTH_TOKEN);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -984,19 +993,20 @@ public class AuthenticationServiceMockTest {
         // Create inputs.
         Study study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setReauthenticationEnabled(true);
 
         CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
-        account.setReauthToken(REAUTH_TOKEN);
 
         // Mock pre-reqs.
         when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
         when(config.getEnvironment()).thenReturn(Environment.LOCAL);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
-
+        when(service.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        
         // Execute and validate.
         UserSession session = service.getSessionFromAccount(study, context, account);
         assertSame(PARTICIPANT, session.getParticipant());
@@ -1008,5 +1018,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
 }

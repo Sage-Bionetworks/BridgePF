@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableMap;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
@@ -87,11 +86,6 @@ public class HibernateAccountDao implements AccountDao {
         return BridgeUtils.generateGuid();
     }
     
-    // Provided to override in tests
-    protected String generateReauthToken() {
-        return SecureTokenGenerator.INSTANCE.nextToken();
-    }
-
     /**
      * Mark the email address as verified and enable the account if it is in the unverified state. 
      * This method assumes some logic has executed that proves the user has control of the email 
@@ -175,7 +169,8 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account authenticate(Study study, SignIn signIn) {
         Account hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(study, hibernateAccount, signIn, false);
+        verifyPassword(hibernateAccount, signIn.getPassword());
+        return authenticateInternal(study, hibernateAccount, signIn);
     }
 
     /** {@inheritDoc} */
@@ -202,40 +197,33 @@ public class HibernateAccountDao implements AccountDao {
             hibernateHelper.update(account, null);
             account = fetchHibernateAccount(signIn);
         }
-        return authenticateInternal(study, account, signIn, true);
+        verifyReauthToken(account, signIn.getReauthToken());
+        return authenticateInternal(study, account, signIn);
     }
     
-    private Account authenticateInternal(Study study, Account hibernateAccount, SignIn signIn, boolean isReauth) {
-        // First check and throw an entity not found exception if the secret is wrong.
-        if (isReauth) {
-            verifyReauthToken(hibernateAccount, signIn.getReauthToken());
-        } else {
-            verifyPassword(hibernateAccount, signIn.getPassword());
-        }
-        
-        // Password successful, you can now leak further information about the account through other exceptions.
+    private Account authenticateInternal(Study study, Account account, SignIn signIn) {
+        // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older studies that didn't have full external ID support).
-        if (hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+        if (account.getStatus() == AccountStatus.UNVERIFIED) {
             throw new UnauthorizedException("Email or phone number have not been verified");
-        } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
+        } else if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         } else if (study.isVerifyChannelOnSignInEnabled()) {
-            if (signIn.getPhone() != null && !Boolean.TRUE.equals(hibernateAccount.getPhoneVerified())) {
+            if (signIn.getPhone() != null && !Boolean.TRUE.equals(account.getPhoneVerified())) {
                 throw new UnauthorizedException("Phone number has not been verified");
             } else if (study.isEmailVerificationEnabled() && 
-                    signIn.getEmail() != null && !Boolean.TRUE.equals(hibernateAccount.getEmailVerified())) {
+                    signIn.getEmail() != null && !Boolean.TRUE.equals(account.getEmailVerified())) {
                 throw new UnauthorizedException("Email has not been verified");
             }
         }
         
         // Unmarshall account
-        if ( validateHealthCode(hibernateAccount) ) {
-            Account updated = hibernateHelper.update(hibernateAccount, null);
-            hibernateAccount.setVersion(updated.getVersion());
+        if ( validateHealthCode(account) ) {
+            Account updated = hibernateHelper.update(account, null);
+            account.setVersion(updated.getVersion());
         }
-        updateReauthToken(study, hibernateAccount);
-        return hibernateAccount;
+        return account;
     }
 
     @Override
@@ -247,7 +235,6 @@ public class HibernateAccountDao implements AccountDao {
                 Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
-            updateReauthToken(null, hibernateAccount);
             return hibernateAccount;
         } else {
             // In keeping with the email implementation, just return null
@@ -269,16 +256,6 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private void updateReauthToken(Study study, Account hibernateAccount) {
-        if (study != null && !study.isReauthenticationEnabled()) {
-            hibernateAccount.setReauthToken(null);
-            return;
-        }
-        String reauthToken = generateReauthToken();
-        accountSecretDao.createSecret(REAUTH, hibernateAccount.getId(), reauthToken);
-        hibernateAccount.setReauthToken(reauthToken);
-    }
-
     /** {@inheritDoc} */
     @Override
     public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {

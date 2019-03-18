@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -47,13 +46,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
-    
-    static final TypeReference<Tuple<String>> TUPLE_TYPE = new TypeReference<Tuple<String>>() {};
     
     public enum ChannelType {
         EMAIL,
@@ -213,13 +208,11 @@ public class AuthenticationService {
 
         Account account = accountDao.reauthenticate(study, signIn);
         
+        UserSession session = getSessionFromAccount(study, context, account);
         // If session exists, preserve the session token. Reauthenticating before the session times out will not
         // refresh the token or change the timeout, but it is harmless. At the time the session is set to
-        // time out, it will still time out and the client will need to reauthenticate again. Retrieving the
-        // session must happen before getSessionFromAccount because that method has, as a side effect, that
-        // it deletes the current session.
+        // time out, it will still time out and the client will need to reauthenticate again.
         UserSession existing = cacheProvider.getUserSessionByUserId(account.getId());
-        UserSession session = getSessionFromAccount(study, context, account);
         if (existing != null) {
             session.setSessionToken(existing.getSessionToken());
             session.setInternalSessionToken(existing.getInternalSessionToken());
