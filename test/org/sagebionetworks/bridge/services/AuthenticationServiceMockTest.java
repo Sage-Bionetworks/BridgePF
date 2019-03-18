@@ -121,7 +121,7 @@ public class AuthenticationServiceMockTest {
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
-    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
+    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
@@ -397,7 +397,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void emailSignInThrowsConsentRequired() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withStatus(AccountStatus.DISABLED)
+                .build();
 
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
@@ -416,7 +417,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void emailSignInAdminOK() {
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
@@ -434,7 +436,7 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
 
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
@@ -460,7 +462,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void reauthThrowsUnconsentedException() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withStatus(AccountStatus.ENABLED).build();
         
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
@@ -593,7 +596,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void phoneSignInThrowsConsentRequired() {
         // Put some stuff in participant to verify session is initialized
-        StudyParticipant participant = new StudyParticipant.Builder()
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
