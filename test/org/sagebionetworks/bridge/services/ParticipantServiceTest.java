@@ -792,9 +792,7 @@ public class ParticipantServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantAccountIdDoesNotExist() {
-        AccountId wrongAccountId = AccountId.forExternalId(STUDY.getIdentifier(), "some-junk");
-        
-        participantService.getParticipant(STUDY, wrongAccountId, false);
+        participantService.getParticipant(STUDY, "externalId:some-junk", false);
     }
     
     @Test
@@ -1252,21 +1250,49 @@ public class ParticipantServiceTest {
     }
 
     @Test
-    public void getParticipantByAccountId() {
-        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
+    public void getParticipantWithHealthCode() {
+        String id = "healthCode:" + ID;
+        AccountId accountId = AccountId.forHealthCode(STUDY.getIdentifier(), ID);
         when(accountDao.getAccount(accountId)).thenReturn(account);
         
-        StudyParticipant participant = participantService.getParticipant(STUDY, accountId, true);
-        
+        StudyParticipant participant = participantService.getParticipant(STUDY, id, true);
         assertNotNull(participant);
-        verify(accountDao).getAccount(accountId);
+        
+        verify(accountDao).getAccount(accountIdCaptor.capture());
+        assertEquals(STUDY.getIdentifier(), accountIdCaptor.getValue().getStudyId());
+        assertEquals(ID, accountIdCaptor.getValue().getHealthCode());
+    }
+    
+    @Test
+    public void getParticipantWithExternalId() {
+        String id = "externalId:" + ID;
+        AccountId accountId = AccountId.forExternalId(STUDY.getIdentifier(), ID);
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant participant = participantService.getParticipant(STUDY, id, true);
+        assertNotNull(participant);
+        
+        verify(accountDao).getAccount(accountIdCaptor.capture());
+        assertEquals(STUDY.getIdentifier(), accountIdCaptor.getValue().getStudyId());
+        assertEquals(ID, accountIdCaptor.getValue().getExternalId());
+    }
+    
+    @Test
+    public void getParticipantWithStringId() {
+        AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
+        assertNotNull(participant);
+        
+        verify(accountDao).getAccount(accountIdCaptor.capture());
+        assertEquals(STUDY.getIdentifier(), accountIdCaptor.getValue().getStudyId());
+        assertEquals(ID, accountIdCaptor.getValue().getId());
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantByAccountIdThrowsException() {
-        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
-        
-        participantService.getParticipant(STUDY, accountId, true);
+        participantService.getParticipant(STUDY, ID, true);
     }
     
     @Test
@@ -2496,7 +2522,7 @@ public class ParticipantServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         
-        participantService.getParticipant(STUDY, ACCOUNT_ID, false);
+        participantService.getParticipant(STUDY, ID, false);
     }
     
     @Test(expected = EntityNotFoundException.class)
