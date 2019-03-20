@@ -26,7 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -327,7 +329,7 @@ public class ConsentControllerMockedTest {
         String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf',"+
                 "'imageMimeType':'image/png','scope':'no_sharing'}");
         
-        TestUtils.mockPlay().withHeader("User-Agent", "none").withJsonBody(json).mock();
+        TestUtils.mockPlay().withMockResponse().withJsonBody(json).mock();
         
         controller.giveV3("bad-guid");
     }
@@ -377,8 +379,11 @@ public class ConsentControllerMockedTest {
         Result result = controller.giveV3("newGuid");
         TestUtils.assertResult(result, 201);
         
-        verify(consentService).consentToResearch(eq(study), eq(newGuid), eq(session.getParticipant()), any(),
+        InOrder inOrder = Mockito.inOrder(consentService);
+        inOrder.verify(consentService).getConsentStatuses(any()); // this should be called first
+        inOrder.verify(consentService).consentToResearch(eq(study), eq(newGuid), eq(session.getParticipant()), any(),
                 eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
+        inOrder.verify(consentService).getConsentStatuses(any()); // then called again after consent
     }
     
     @Test

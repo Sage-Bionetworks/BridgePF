@@ -512,8 +512,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void getSelfParticipant() throws Exception {
-        // This just prevents some code from executing that we have not mocked.
-        TestUtils.mockPlay().withHeader("User-Agent", "Doesn't matter").mock();
+        TestUtils.mockPlay().withMockResponse().mock();
         
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
                 .withId(ID)
