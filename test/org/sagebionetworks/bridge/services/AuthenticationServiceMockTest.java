@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -26,11 +27,15 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -86,6 +91,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthenticationServiceMockTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
@@ -230,8 +236,10 @@ public class AuthenticationServiceMockTest {
         
         UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
         
-        verify(cacheProvider).setUserSession(session);
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(cacheProvider).setUserSession(session);
         
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
         assertTrue(session.isAuthenticated());
@@ -369,10 +377,13 @@ public class AuthenticationServiceMockTest {
         
         assertNotNull(retSession);
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
-        verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
-        verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
-        verify(cacheProvider).setUserSession(retSession);
+        
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        inOrder.verify(cacheProvider).setUserSession(retSession);
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -462,6 +473,25 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
         
         verify(accountSecretDao).createSecret(REAUTH, USER_ID, REAUTH_TOKEN);
+    }
+    
+    @Test
+    public void reauthenticationPersistsExistingSessionTokens() {
+        study.setReauthenticationEnabled(true);
+        
+        UserSession existing = new UserSession();
+        existing.setSessionToken("existingToken");
+        existing.setInternalSessionToken("existingInternalToken");
+        doReturn(existing).when(cacheProvider).getUserSessionByUserId(USER_ID);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        
+        UserSession session = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        assertEquals("existingToken", session.getSessionToken());
+        assertEquals("existingInternalToken", session.getInternalSessionToken());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -589,9 +619,11 @@ public class AuthenticationServiceMockTest {
         assertEquals("Tester", session.getParticipant().getLastName());
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
-        verify(cacheProvider).setUserSession(session);
-        verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        inOrder.verify(cacheProvider).setUserSession(session);
     }
 
     @Test(expected = AuthenticationFailedException.class)
@@ -1020,5 +1052,29 @@ public class AuthenticationServiceMockTest {
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
+    }
+    
+    @Test
+    public void getSessionFromAccountWithoutReauthentication() {
+        // Create inputs.
+        Study study = Study.create();
+        study.setReauthenticationEnabled(false);
+
+        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+
+        Account account = Account.create();
+
+        // Mock pre-reqs.
+        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
+        when(config.getEnvironment()).thenReturn(Environment.LOCAL);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+        
+        // Execute and validate.
+        UserSession session = service.getSessionFromAccount(study, context, account);
+        assertNull(REAUTH_TOKEN, session.getReauthToken());
+        
+        verify(service, never()).generateReauthToken();
+        verify(accountSecretDao, never()).createSecret(any(), any(), any());
     }
 }

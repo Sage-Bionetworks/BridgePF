@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @SuppressWarnings("serial")
-//@NoStackTraceException
+@NoStackTraceException
 public class EntityNotFoundException extends BridgeServiceException {
     
     private Class<? extends BridgeEntity> entity; 
