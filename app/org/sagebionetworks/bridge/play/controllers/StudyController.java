@@ -179,7 +179,7 @@ public class StudyController extends BaseController {
     }
 
     public Result getEmailStatus() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
@@ -230,7 +230,7 @@ public class StudyController extends BaseController {
     }
 
     public Result getUploads(String startTimeString, String endTimeString, Integer pageSize, String offsetKey) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
