@@ -211,7 +211,8 @@ public class UserAdminService {
             for (String externalId : BridgeUtils.collectExternalIds(account)) {
                 externalIdService.unassignExternalId(account, externalId);
             }
-            accountSecretDao.removeSecrets(AccountSecretType.REAUTH, account.getId());
+            // AccountSecret records and AccountsSubstudies records are are deleted on a 
+            // cascading delete from Account
             accountDao.deleteAccount(accountId);
         }
     }
