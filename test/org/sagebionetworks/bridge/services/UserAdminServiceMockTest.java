@@ -267,7 +267,6 @@ public class UserAdminServiceMockTest {
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("externalId"));
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subAextId"));
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subBextId"));
-        verify(accountSecretDao).removeSecrets(AccountSecretType.REAUTH, "userId");
         verify(accountDao).deleteAccount(accountId);
         
         assertEquals("healthCode", accountCaptor.getValue().getHealthCode());
