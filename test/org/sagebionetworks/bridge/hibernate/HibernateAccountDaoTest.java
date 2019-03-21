@@ -616,7 +616,7 @@ public class HibernateAccountDaoTest {
         assertEquals(ACCOUNT_ID, savedSecret.getAccountId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, savedSecret.getAlgorithm());
         assertEquals(REAUTH_TOKEN_HASH, savedSecret.getHash());
-        assertEquals(MOCK_DATETIME.toString(), savedSecret.getCreatedOn().toString());
+        assertEquals(MOCK_DATETIME.getMillis(), savedSecret.getCreatedOn().getMillis());
         assertEquals(AccountSecretType.REAUTH, savedSecret.getType());
         
         // verify token verification
