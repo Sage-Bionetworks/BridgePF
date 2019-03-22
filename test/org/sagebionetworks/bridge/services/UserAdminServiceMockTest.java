@@ -28,10 +28,12 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -84,6 +86,9 @@ public class UserAdminServiceMockTest {
     @Mock
     private ExternalIdService externalIdService;
     
+    @Mock
+    private AccountSecretDao accountSecretDao;
+    
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
@@ -111,6 +116,7 @@ public class UserAdminServiceMockTest {
         service.setScheduledActivityService(scheduledActivityService);
         service.setActivityEventService(activityEventService);
         service.setExternalIdService(externalIdService);
+        service.setAccountSecretDao(accountSecretDao);
 
         // Make a user with multiple consent statuses, and just verify that we call the 
         // consent service that many times.

@@ -117,6 +117,21 @@ public class HibernateHelper {
             return query.executeUpdate();
         });
     }
+    
+    /**
+     * Execute SQL query with no return value, like a batch delete. 
+     */
+    public void query(String queryString, Map<String,Object> parameters) {
+        executeWithExceptionHandling(null, session -> { 
+            Query<?> query = session.createQuery(queryString);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.executeUpdate();
+        });
+    }
 
     /** Updates a single object. */
     public <T> T update(T obj, Consumer<T> afterPersistConsumer) {

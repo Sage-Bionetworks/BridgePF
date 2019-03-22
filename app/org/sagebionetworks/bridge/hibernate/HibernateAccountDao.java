@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
@@ -23,14 +24,11 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.SecureTokenGenerator;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -41,6 +39,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecret;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -65,8 +65,10 @@ public class HibernateAccountDao implements AccountDao {
     
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
     
+    static final int ROTATIONS = 3;
+    
     private HibernateHelper hibernateHelper;
-    private CacheProvider cacheProvider;
+    private AccountSecretDao accountSecretDao;
 
     /** This makes interfacing with Hibernate easier. */
     @Resource(name = "accountHibernateHelper")
@@ -75,10 +77,15 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     @Autowired
-    public final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
+    public final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
+        this.accountSecretDao = accountSecretDao;
     }
-
+    
+    // Provided to override in tests
+    protected String generateGUID() {
+        return BridgeUtils.generateGuid();
+    }
+    
     /**
      * Mark the email address as verified and enable the account if it is in the unverified state. 
      * This method assumes some logic has executed that proves the user has control of the email 
@@ -162,8 +169,8 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account authenticate(Study study, SignIn signIn) {
         Account hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(study, hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
-                hibernateAccount.getPasswordHash(), signIn.getPassword(), "password", signIn);
+        verifyPassword(hibernateAccount, signIn.getPassword());
+        return authenticateInternal(study, hibernateAccount, signIn);
     }
 
     /** {@inheritDoc} */
@@ -172,41 +179,51 @@ public class HibernateAccountDao implements AccountDao {
         if (!study.isReauthenticationEnabled()) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
-        Account hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(study, hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
-                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token", signIn);
+        Account account = fetchHibernateAccount(signIn);
+        if (account.getReauthTokenHash() != null) {
+            // Rotate the token to the secrets table before verifying. This migrates the tables if
+            // a reauthentication call occurs before we run a migration on this record.
+            AccountSecret secret = AccountSecret.create();
+            secret.setAccountId(account.getId());
+            secret.setAlgorithm(account.getReauthTokenAlgorithm());
+            secret.setHash(account.getReauthTokenHash());
+            secret.setType(AccountSecretType.REAUTH);
+            secret.setCreatedOn(account.getReauthTokenModifiedOn());
+            hibernateHelper.create(secret, null);
+            
+            account.setReauthTokenHash(null);
+            account.setReauthTokenAlgorithm(null);
+            account.setReauthTokenModifiedOn(null);
+            hibernateHelper.update(account, null);
+            account = fetchHibernateAccount(signIn);
+        }
+        verifyReauthToken(account, signIn.getReauthToken());
+        return authenticateInternal(study, account, signIn);
     }
     
-    private Account authenticateInternal(Study study, Account hibernateAccount, PasswordAlgorithm algorithm,
-            String hash, String credentialValue, String credentialName, SignIn signIn) {
-
-        // First check and throw an entity not found exception if the password is wrong.
-        verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
-        
-        // Password successful, you can now leak further information about the account through other exceptions.
+    private Account authenticateInternal(Study study, Account account, SignIn signIn) {
+        // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older studies that didn't have full external ID support).
-        if (hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+        if (account.getStatus() == AccountStatus.UNVERIFIED) {
             throw new UnauthorizedException("Email or phone number have not been verified");
-        } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
+        } else if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         } else if (study.isVerifyChannelOnSignInEnabled()) {
-            if (signIn.getPhone() != null && !Boolean.TRUE.equals(hibernateAccount.getPhoneVerified())) {
+            if (signIn.getPhone() != null && !Boolean.TRUE.equals(account.getPhoneVerified())) {
                 throw new UnauthorizedException("Phone number has not been verified");
             } else if (study.isEmailVerificationEnabled() && 
-                    signIn.getEmail() != null && !Boolean.TRUE.equals(hibernateAccount.getEmailVerified())) {
+                    signIn.getEmail() != null && !Boolean.TRUE.equals(account.getEmailVerified())) {
                 throw new UnauthorizedException("Email has not been verified");
             }
         }
         
         // Unmarshall account
-        boolean accountUpdated = validateHealthCode(hibernateAccount);
-        accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
-        if (accountUpdated) {
-            Account updated = hibernateHelper.update(hibernateAccount, null);
-            hibernateAccount.setVersion(updated.getVersion());
+        if ( validateHealthCode(account) ) {
+            Account updated = hibernateHelper.update(account, null);
+            account.setVersion(updated.getVersion());
         }
-        return hibernateAccount;
+        return account;
     }
 
     @Override
@@ -214,9 +231,7 @@ public class HibernateAccountDao implements AccountDao {
         Account hibernateAccount = getHibernateAccount(accountId);
 
         if (hibernateAccount != null) {
-            boolean accountUpdated = validateHealthCode(hibernateAccount);
-            accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
-            if (accountUpdated) {
+            if ( validateHealthCode(hibernateAccount) ) {
                 Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }
@@ -230,50 +245,17 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void deleteReauthToken(AccountId accountId) {
         Account hibernateAccount = getHibernateAccount(accountId);
-        if (hibernateAccount != null && hibernateAccount.getReauthTokenHash() != null) {
-            hibernateAccount.setReauthTokenHash(null);
-            hibernateAccount.setReauthTokenAlgorithm(null);
-            hibernateAccount.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(hibernateAccount, null);
+        if (hibernateAccount != null) {
+            if (hibernateAccount.getReauthTokenHash() != null) {
+                hibernateAccount.setReauthTokenHash(null);
+                hibernateAccount.setReauthTokenAlgorithm(null);
+                hibernateAccount.setReauthTokenModifiedOn(null);
+                hibernateHelper.update(hibernateAccount, null);
+            }
+            accountSecretDao.removeSecrets(AccountSecretType.REAUTH, hibernateAccount.getId());
         }
     }
     
-    private boolean updateReauthToken(Study study, Account hibernateAccount) {
-        if (study != null && !study.isReauthenticationEnabled()) {
-            hibernateAccount.setReauthToken(null);
-            return false;
-        }
-        CacheKey reauthTokenKey = CacheKey.reauthTokenLookupKey(hibernateAccount.getId(),
-                new StudyIdentifierImpl(hibernateAccount.getStudyId()));
-        
-        // We cache the reauthentication token for 15 seconds so that concurrent sign in 
-        // requests don't throw 409 concurrent modification exceptions as an optimistic lock
-        // prevents (correctly) updating the reauth token that is issued over and over.
-        String cachedReauthToken = cacheProvider.getObject(reauthTokenKey, String.class);
-        if (cachedReauthToken != null) {
-            hibernateAccount.setReauthToken(cachedReauthToken);
-            return false;
-        }
-        String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
-        cacheProvider.setObject(reauthTokenKey, reauthToken, BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS);
-
-        // Re-create and persist the authentication token.
-        PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String reauthTokenHash = hashCredential(passwordAlgorithm, "reauth token", reauthToken);
-        hibernateAccount.setReauthTokenHash(reauthTokenHash);
-        hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
-        hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentDateTime());
-        // We must get the current version to return from the DAO, or subsequent updates to the 
-        // account, even in the same call, will fail (e.g. to update languages captured from a request).
-        hibernateAccount.setReauthToken(reauthToken);
-        return true;
-    }
-    
-    // Provided to override in tests
-    protected String generateGUID() {
-        return BridgeUtils.generateGuid();
-    }
-
     /** {@inheritDoc} */
     @Override
     public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
@@ -352,31 +334,33 @@ public class HibernateAccountDao implements AccountDao {
         return hibernateAccount;
     }
     
-    private void verifyCredential(String accountId, String type, PasswordAlgorithm algorithm, String hash,
-            String credentialValue) {
-        // Verify credential (password or reauth token)
-        if (algorithm == null || StringUtils.isBlank(hash)) {
-            LOG.warn("Account " + accountId + " is enabled but has no "+type+".");
+    private void verifyPassword(Account account, String plaintext) {
+        // Verify password
+        if (account.getPasswordAlgorithm() == null || StringUtils.isBlank(account.getPasswordHash())) {
+            LOG.warn("Account " + account.getId() + " is enabled but has no password.");
             throw new EntityNotFoundException(Account.class);
         }
         try {
-            if (!algorithm.checkHash(hash, credentialValue)) {
+            if (!account.getPasswordAlgorithm().checkHash(account.getPasswordHash(), plaintext)) {
                 // To prevent enumeration attacks, if the credential doesn't match, throw 404 account not found.
                 throw new EntityNotFoundException(Account.class);
             }
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
-            throw new BridgeServiceException("Error validating "+type+": " + ex.getMessage(), ex);
+            throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
         }        
     }
+
+    private void verifyReauthToken(Account account, String plaintext) {
+        accountSecretDao.verifySecret(REAUTH, account.getId(), plaintext, ROTATIONS)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
+    }    
     
     private String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
-        String hash = null;
         try {
-            hash = algorithm.generateHash(value);
+            return algorithm.generateHash(value);
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
             throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
         }
-        return hash;
     }
 
     // Helper method to get a single account for a given study and id, email address, or phone number.

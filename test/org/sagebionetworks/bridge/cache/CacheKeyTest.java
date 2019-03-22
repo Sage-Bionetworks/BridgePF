@@ -125,13 +125,18 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void reauthCacheKey() {
-        assertEquals("reauthToken:studyId:reauthCacheKey", CacheKey.reauthCacheKey("reauthToken", "studyId").toString());
+    public void userIdToSession() {
+        assertEquals("userId:session2:user", CacheKey.userIdToSession("userId").toString());
+    }
+    
+    @Test
+    public void tokenToUserId() { 
+        assertEquals("aSessionToken:session2", CacheKey.tokenToUserId("aSessionToken").toString());
     }
     
     @Test
     public void isPublic() {
-        CacheKey privateKey = CacheKey.reauthCacheKey("reauthToken", "studyId");
+        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TestConstants.TEST_STUDY);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
         CacheKey publicKey = CacheKey.study("studyId");

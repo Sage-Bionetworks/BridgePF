@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
@@ -50,7 +51,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllSurveysMostRecentVersion(String includeDeletedString) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId,
