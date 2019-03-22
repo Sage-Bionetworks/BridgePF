@@ -101,6 +101,7 @@ public class UploadHandlersEndToEndTest {
     private HealthDataService mockHealthDataService;
     private UploadDao mockUploadDao;
     private S3Helper mockS3UploadHelper;
+    private ArgumentCaptor<ObjectMetadata> metadataCaptor;
     private HealthDataRecord savedRecord;
     private Map<String, byte[]> uploadedFileContentMap;
     private byte[] zippedFile;
@@ -119,6 +120,7 @@ public class UploadHandlersEndToEndTest {
         mockS3UploadHelper = mock(S3Helper.class);
         savedRecord = null;
         uploadedFileContentMap = new HashMap<>();
+        metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
 
         // Mock HealthDataService.createOrUpdateRecord()
         when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(
@@ -146,7 +148,7 @@ public class UploadHandlersEndToEndTest {
 
             // Required return
             return null;
-        }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any());
+        }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any(), any());
     }
 
     @AfterClass
@@ -598,7 +600,6 @@ public class UploadHandlersEndToEndTest {
         String hhhAttachmentId = dataNode.get("record.json.HHH").textValue();
         
         ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
-        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
         verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(hhhAttachmentId),
                 attachmentContentCaptor.capture(), metadataCaptor.capture());
         JsonNode hhhNode = BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());        
@@ -676,8 +677,9 @@ public class UploadHandlersEndToEndTest {
     private void validateRawDataAttachment() {
         String expectedRawDataAttachmentId = UPLOAD_ID + "-raw.zip";
         verify(mockS3UploadHelper).writeFileToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
-                any());
+                any(), metadataCaptor.capture());
         byte[] rawDataBytes = uploadedFileContentMap.get(expectedRawDataAttachmentId);
         assertArrayEquals(zippedFile, rawDataBytes);
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 }
