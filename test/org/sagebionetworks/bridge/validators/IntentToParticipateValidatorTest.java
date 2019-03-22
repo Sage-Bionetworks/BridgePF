@@ -15,7 +15,6 @@ public class IntentToParticipateValidatorTest {
     private static final String STUDY = "studyId";
     private static final String SUBPOP_GUID = "subpopGuid";
     private static final String OS_NAME = "Android";
-    private static final String EMAIL = "email@email.com";
     private static final SharingScope SCOPE = SharingScope.SPONSORS_AND_PARTNERS;
     private static final ConsentSignature SIGNATURE = new ConsentSignature.Builder()
             .withName("Test Name")
@@ -40,7 +39,7 @@ public class IntentToParticipateValidatorTest {
     
     @Test
     public void validWithEmail() {
-        IntentToParticipate intent = builder().withPhone(null).withEmail(EMAIL).build();
+        IntentToParticipate intent = builder().withPhone(null).withEmail(TestConstants.EMAIL).build();
         Validate.entityThrowingException(INSTANCE, intent);
     }
     
@@ -76,7 +75,7 @@ public class IntentToParticipateValidatorTest {
     
     @Test
     public void phoneAndEmailInvalid() {
-        IntentToParticipate intent = builder().withEmail(EMAIL).build();
+        IntentToParticipate intent = builder().withEmail(TestConstants.EMAIL).build();
         assertValidatorMessage(INSTANCE, intent, "IntentToParticipate", "one of phone or email should be provided (not both)");
     }
 

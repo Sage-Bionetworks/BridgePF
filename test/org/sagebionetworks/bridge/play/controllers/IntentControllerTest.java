@@ -63,5 +63,4 @@ public class IntentControllerTest {
         assertEquals("Gladlight Stonewell", captured.getConsentSignature().getName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getScope());
     }
-
 }

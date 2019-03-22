@@ -2,10 +2,11 @@ package org.sagebionetworks.bridge.models.itp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -17,8 +18,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class IntentToParticipateTest {
     
     private static final long TIMESTAMP = DateTime.now().getMillis();
-    private static final Phone PHONE = TestConstants.PHONE;
-    private static final String EMAIL = "email@email.com";
     
     @Test
     public void canSerialize() throws Exception {
