@@ -8,19 +8,16 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +39,6 @@ public class ExternalIdService {
     private ExternalIdDao externalIdDao;
     
     private SubstudyService substudyService;
-    
-    private AccountDao accountDao;
 
     @Autowired
     public final void setExternalIdDao(ExternalIdDao externalIdDao) {
@@ -53,47 +48,6 @@ public class ExternalIdService {
     @Autowired
     public final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
-    }
-    
-    @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-    
-    public void migrateExternalIdentifier(Study study, String externalId, String substudyId) {
-        checkNotNull(study);
-        checkNotNull(externalId);
-        checkNotNull(substudyId);
-        
-        // Both getters throw exceptions if the entities do not exist. 
-        substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, true);
-        ExternalIdentifier externalIdentifier = getExternalId(study.getStudyIdentifier(), externalId)
-                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
-        
-        externalIdentifier.setSubstudyId(substudyId);
-        // This just calls DDB's save method, and can be used to persist an update for this temporary migration method.
-        externalIdDao.createExternalId(externalIdentifier);
-        
-        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
-        Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            Optional<AccountSubstudy> selected = account.getAccountSubstudies().stream()
-                    //.filter(acctSubstudy -> externalId.equals(acctSubstudy.getExternalId()))
-                    .filter(acctSubstudy -> substudyId.equals(acctSubstudy.getSubstudyId()))
-                    .findAny();
-            if (selected.isPresent()) {
-                account.getAccountSubstudies().remove(selected.get());
-            }
-            AccountSubstudy newOne = AccountSubstudy.create(study.getIdentifier(), substudyId, account.getId());
-            newOne.setExternalId(externalId);
-            account.getAccountSubstudies().add(newOne);
-            // we still need to set this to support the exporter, we will not be able to add a second 
-            // external ID until we export the substudy/external ID mappings. But I'd like to migrate 
-            // first so that once we start exporting, we're exporting the relationship for all accounts
-            // at the same time (seems cleaner).
-            account.setExternalId(externalId);  
-            accountDao.updateAccount(account, null);
-        }
     }
     
     public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
