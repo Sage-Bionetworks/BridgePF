@@ -10,13 +10,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -45,7 +43,6 @@ public class UserAdminService {
     private CacheProvider cacheProvider;
     private ExternalIdService externalIdService;
     private UploadService uploadService;
-    private AccountSecretDao accountSecretDao;
 
     @Autowired
     final void setAuthenticationService(AuthenticationService authenticationService) {
@@ -93,10 +90,6 @@ public class UserAdminService {
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
-    }
-    @Autowired
-    final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
-        this.accountSecretDao = accountSecretDao;
     }
     
     /**
