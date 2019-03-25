@@ -233,6 +233,7 @@ public class EmailVerificationService {
                 } catch (AmazonServiceException ex) {
                     LOG.warn("Attempt " + i + " of " + maxSesTries + " to verify sender email failed: " +
                             ex.getMessage(), ex);
+                    lastException = ex;
 
                     // If it's a 5XX error, retry.
                     int statusCode = ex.getStatusCode();
