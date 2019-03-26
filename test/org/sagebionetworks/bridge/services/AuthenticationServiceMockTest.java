@@ -67,7 +67,9 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -261,6 +263,58 @@ public class AuthenticationServiceMockTest {
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
     
+    @Test(expected = ConsentRequiredException.class)
+    public void signInThrowsConsentRequiredException() {
+        study.setReauthenticationEnabled(true);
+        
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
+        
+        account.setReauthToken("REAUTH_TOKEN");
+        account.setHealthCode(HEALTH_CODE);
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        account.setId(USER_ID);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withLanguages(LANGUAGES)
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
+            .withIpAddress("127.1.1.11").build();
+        
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(contextCaptor.capture(), any());
+        doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
+        doReturn("SESSION_TOKEN").when(service).getGuid();
+        doReturn(Environment.PROD).when(config).getEnvironment();
+        
+        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+        
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(cacheProvider).setUserSession(session);
+        
+        assertEquals(UNCONSENTED_STATUS_MAP, session.getConsentStatuses());
+        assertTrue(session.isAuthenticated());
+        assertEquals("127.1.1.11", session.getIpAddress());
+        assertEquals("SESSION_TOKEN", session.getSessionToken());
+        assertEquals("SESSION_TOKEN", session.getInternalSessionToken());
+        assertEquals(REAUTH_TOKEN, session.getReauthToken());
+        assertEquals(Environment.PROD, session.getEnvironment());
+        assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
+
+        // updated context
+        CriteriaContext updatedContext = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedContext.getHealthCode());
+        assertEquals(LANGUAGES, updatedContext.getLanguages());
+        assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, updatedContext.getUserSubstudyIds());
+        assertEquals(USER_ID, updatedContext.getUserId());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
+    }
+    
     @Test
     public void signInWithEmail() {
         account.setId(USER_ID);
@@ -386,6 +440,12 @@ public class AuthenticationServiceMockTest {
         inOrder.verify(cacheProvider).setUserSession(retSession);
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void emailSignInNoAccount() {
+        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(null);
+        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+    }
+    
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInAuthenticationFailed() {
         doThrow(new AuthenticationFailedException()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
@@ -473,6 +533,31 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
         
         verify(accountSecretDao).createSecret(REAUTH, USER_ID, REAUTH_TOKEN);
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void reauthenticateThrowsConsentRequiredException() {
+        study.setReauthenticationEnabled(true);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+    }
+    
+    @Test
+    public void reauthenticateIgnoresConsentForAdmins() {
+        study.setReauthenticationEnabled(true);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).withEmail(RECIPIENT_EMAIL).build();
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
     @Test
@@ -598,6 +683,23 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
+    public void signUpExistingUnknownEntity() {
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setExternalIdValidationEnabled(true);
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        
+        doThrow(new EntityAlreadyExistsException(AppConfig.class, "identifier", EXTERNAL_ID)).when(participantService)
+                .createParticipant(study, participant, true);
+        
+        service.signUp(study, participant);
+        
+        verify(participantService).createParticipant(eq(study), any(), eq(true));
+        
+        // We don't send a message. That's the logic... it's debatable.
+        verify(accountWorkflowService, never()).notifyAccountExists(any(), any());
+    }
+    
+    @Test
     public void phoneSignIn() {
         account.setId(USER_ID);
 
@@ -626,6 +728,12 @@ public class AuthenticationServiceMockTest {
         inOrder.verify(cacheProvider).setUserSession(session);
     }
 
+    @Test(expected = EntityNotFoundException.class)
+    public void phoneSignInNoAccount() {
+        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(null);
+        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+    }
+    
     @Test(expected = AuthenticationFailedException.class)
     public void phoneSignInFails() {
         doThrow(new AuthenticationFailedException()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
@@ -719,6 +827,17 @@ public class AuthenticationServiceMockTest {
         assertEquals(RECIPIENT_EMAIL, accountIdCaptor.getValue().getEmail());
     }
 
+    @Test
+    public void resendEmailVerificationNoAccount() {
+        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.EMAIL);
+        
+        // Does not throw an EntityNotFoundException to hide this information from API uses
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(accountWorkflowService).resendVerificationToken(ChannelType.EMAIL, accountId);
+        
+        service.resendVerification(ChannelType.EMAIL, accountId);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void resendEmailVerificationInvalid() throws Exception {
         AccountId accountId = BridgeObjectMapper.get().readValue("{}", AccountId.class);
@@ -1076,5 +1195,47 @@ public class AuthenticationServiceMockTest {
         
         verify(service, never()).generateReauthToken();
         verify(accountSecretDao, never()).createSecret(any(), any(), any());
+    }
+    
+    @Test
+    public void getSession() {
+        service.getSession(TOKEN);
+        verify(cacheProvider).getUserSession(TOKEN);
+    }
+    
+    @Test
+    public void getSessionNoToken() {
+        assertNull( service.getSession(null) );
+        verify(cacheProvider, never()).getUserSession(TOKEN);
+    }
+    
+    @Test
+    public void requestResetPasswordNoAccount() {
+        // should not throw this EntityNotFoundException
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(accountWorkflowService).requestResetPassword(any(), anyBoolean(), any());
+        
+        service.requestResetPassword(study, true, EMAIL_PASSWORD_SIGN_IN);
+    }
+    
+    @Test
+    public void resetPassword() {
+        PasswordResetValidator validator = new PasswordResetValidator();
+        validator.setStudyService(studyService);
+        service.setPasswordResetValidator(validator);
+        
+        PasswordReset reset = new PasswordReset(PASSWORD, TOKEN, TestConstants.TEST_STUDY_IDENTIFIER);
+        service.resetPassword(reset);
+        verify(accountWorkflowService).resetPassword(reset);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void resetPasswordInvalid() {
+        PasswordResetValidator validator = new PasswordResetValidator();
+        validator.setStudyService(studyService);
+        service.setPasswordResetValidator(validator);
+        
+        PasswordReset reset = new PasswordReset(PASSWORD, null, TestConstants.TEST_STUDY_IDENTIFIER);
+        service.resetPassword(reset);
     }
 }
