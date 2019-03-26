@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -664,16 +665,6 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.getStudy("foo");
         assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutAppInstallLinkTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAppInstallLinkTemplate(null);
-        when(studyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getAppInstallLinkTemplate());
     }
     
     @Test

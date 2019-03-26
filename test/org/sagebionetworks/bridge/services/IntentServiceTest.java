@@ -438,6 +438,29 @@ public class IntentServiceTest {
     }
     
     @Test
+    public void submitIntentToParticipateWithoutInstallLinks() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
+        
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+                TestConstants.PHONE);
+        
+        service.submitIntentToParticipate(intent);
+        
+        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
+        
+        // We do store the intent
+        verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
+        assertEquals(cacheKey, keyCaptor.getValue());
+
+        // But we don't send a message because installLinks map is empty
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
+    }    
+    
+    @Test
     public void installLinkCorrectlySelected() {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("iPhone OS", "iphone-os-link");

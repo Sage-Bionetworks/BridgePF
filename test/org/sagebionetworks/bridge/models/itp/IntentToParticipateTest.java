@@ -58,6 +58,7 @@ public class IntentToParticipateTest {
         IntentToParticipate deser = BridgeObjectMapper.get().readValue(node.toString(), IntentToParticipate.class);
         assertEquals("studyId", deser.getStudyId());
         assertEquals(PHONE.getNationalFormat(), deser.getPhone().getNationalFormat());
+        assertEquals(EMAIL, deser.getEmail());
         assertEquals("subpopGuid", deser.getSubpopGuid());
         assertEquals("iPhone OS", deser.getOsName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, deser.getScope());
