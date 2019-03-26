@@ -71,7 +71,7 @@ import org.springframework.core.io.ByteArrayResource;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("ConstantConditions")
-public class ConsentServiceTest {
+public class ConsentServiceMockTest {
     private static final String SHORT_URL = "https://ws.sagebridge.org/r/XXXXX";
     private static final String LONG_URL = "http://sagebionetworks.org/platforms/";
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
@@ -149,7 +149,7 @@ public class ConsentServiceTest {
         consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         
-        study = TestUtils.getValidStudy(ConsentServiceTest.class);
+        study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
 
         account = Account.create();
         account.setId(ID);
