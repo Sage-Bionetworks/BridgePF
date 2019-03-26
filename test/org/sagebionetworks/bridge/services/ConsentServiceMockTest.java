@@ -348,9 +348,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmailProvider provider = emailCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
         
-        assertEquals("\"Test Study [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
+        assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceTest]", email.getSubject());
+        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
         assertEquals("<p>User   &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
                 email.getMessageParts().get(0).getContent());
     }
@@ -381,9 +381,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmailProvider provider = emailCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
-        assertEquals("\"Test Study [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
+        assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>", email.getSenderAddress());
         assertEquals("bridge-testing+consent@sagebase.org", email.getRecipientAddresses().get(0));
-        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceTest]", email.getSubject());
+        assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
         assertEquals("<p>User Allen Wrench &lt;" + EMAIL + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>",
                 email.getMessageParts().get(0).getContent());
 
@@ -739,7 +739,7 @@ public class ConsentServiceMockTest {
         // Validate common elements.
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("signedConsent subject", email.getSubject());
-        assertEquals("\"Test Study [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>",
+        assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>",
                 email.getSenderAddress());
         assertEquals(Sets.newHashSet("email@email.com","bridge-testing+consent@sagebase.org"),
                 Sets.newHashSet(email.getRecipientAddresses()));
