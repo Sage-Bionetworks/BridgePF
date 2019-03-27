@@ -8,11 +8,16 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.upload.UploadFieldSize;
+import org.sagebionetworks.bridge.upload.UploadUtil;
 
 /** Validator for {@link org.sagebionetworks.bridge.models.upload.UploadSchema} */
 public class UploadSchemaValidator implements Validator {
     /** Singleton instance of this validator. */
     public static final UploadSchemaValidator INSTANCE = new UploadSchemaValidator();
+
+    private static final int MAX_BYTES = 50000;
+    private static final int MAX_COLUMNS = 100;
 
     /** {@inheritDoc} */
     @Override
@@ -88,6 +93,17 @@ public class UploadSchemaValidator implements Validator {
                 errors.rejectValue("fieldDefinitions", "requires at least one definition");
             } else {
                 UploadFieldDefinitionListValidator.INSTANCE.validate(fieldDefList, errors, "fieldDefinitions");
+            }
+
+            // fieldDef max size
+            UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(fieldDefList);
+            if (fieldSize.getNumBytes() > MAX_BYTES) {
+                errors.rejectValue("fieldDefinitions",
+                        "cannot be greater than 50000 bytes combined");
+            }
+            if (fieldSize.getNumColumns() > MAX_COLUMNS) {
+                errors.rejectValue("fieldDefinitions",
+                        "cannot be greater than 100 columns combined");
             }
         }
     }

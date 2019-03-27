@@ -8,8 +8,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BigIntegerNode;
@@ -32,6 +34,151 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 @SuppressWarnings({ "ConstantConditions", "unchecked" })
 public class UploadUtilTest {
+    @Test
+    public void calculateFieldSizeSimpleField() {
+        // { fieldType, expectedBytes }
+        Object[][] testCaseArray = {
+                { UploadFieldType.ATTACHMENT_BLOB, 20 },
+                { UploadFieldType.ATTACHMENT_CSV, 20 },
+                { UploadFieldType.ATTACHMENT_JSON_BLOB, 20 },
+                { UploadFieldType.ATTACHMENT_JSON_TABLE, 20 },
+                { UploadFieldType.ATTACHMENT_V2, 20 },
+                { UploadFieldType.BOOLEAN, 5 },
+                { UploadFieldType.CALENDAR_DATE, 30 },
+                { UploadFieldType.DURATION_V2, 72 },
+                { UploadFieldType.FLOAT, 23 },
+                { UploadFieldType.INT, 20 },
+                { UploadFieldType.LARGE_TEXT_ATTACHMENT, 3000 },
+                { UploadFieldType.TIME_V2, 36 },
+        };
+
+        for (Object[] testCase : testCaseArray) {
+            UploadFieldType fieldType = (UploadFieldType) testCase[0];
+            int expectedBytes = (int) testCase[1];
+            UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field").withType(fieldType)
+                    .build();
+            UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+            assertEquals("bytes for " + fieldType, expectedBytes, fieldSize.getNumBytes());
+            assertEquals("columns for " + fieldType, 1, fieldSize.getNumColumns());
+        }
+    }
+
+    @Test
+    public void calculateFieldSizeStringField() {
+        Set<UploadFieldType> stringFieldTypeSet = EnumSet.of(UploadFieldType.INLINE_JSON_BLOB,
+                UploadFieldType.SINGLE_CHOICE, UploadFieldType.STRING);
+
+        for (UploadFieldType fieldType : stringFieldTypeSet) {
+            UploadFieldDefinition smallStringField = new UploadFieldDefinition.Builder().withName("small-field")
+                    .withType(fieldType).withMaxLength(1).build();
+            UploadFieldSize smallFieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(smallStringField));
+            assertEquals("small string field bytes for " + fieldType, 3,
+                    smallFieldSize.getNumBytes());
+            assertEquals("small string field columns for " + fieldType, 1,
+                    smallFieldSize.getNumColumns());
+
+            UploadFieldDefinition mediumStringField = new UploadFieldDefinition.Builder().withName("medium-field")
+                    .withType(fieldType).withMaxLength(128).build();
+            UploadFieldSize mediumFieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(mediumStringField));
+            assertEquals("medium string field bytes for " + fieldType, 384,
+                    mediumFieldSize.getNumBytes());
+            assertEquals("medium string field columns for " + fieldType, 1,
+                    mediumFieldSize.getNumColumns());
+
+            UploadFieldDefinition bigStringField = new UploadFieldDefinition.Builder().withName("big-field")
+                    .withType(fieldType).withMaxLength(500).build();
+            UploadFieldSize bigFieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(bigStringField));
+            assertEquals("big string field bytes for " + fieldType, 1500,
+                    bigFieldSize.getNumBytes());
+            assertEquals("big string field columns for " + fieldType, 1,
+                    bigFieldSize.getNumColumns());
+
+            UploadFieldDefinition defaultStringField = new UploadFieldDefinition.Builder().withName("default-field")
+                    .withType(fieldType).withMaxLength(null).build();
+            UploadFieldSize defaultFieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(defaultStringField));
+            assertEquals("default string field bytes for " + fieldType, 300,
+                    defaultFieldSize.getNumBytes());
+            assertEquals("default string field columns for " + fieldType, 1,
+                    defaultFieldSize.getNumColumns());
+
+            UploadFieldDefinition unboundedStringField = new UploadFieldDefinition.Builder()
+                    .withName("unbounded-field").withType(fieldType).withUnboundedText(true).build();
+            UploadFieldSize unboundedFieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(unboundedStringField));
+            assertEquals("unbounded string field bytes for " + fieldType, 3000,
+                    unboundedFieldSize.getNumBytes());
+            assertEquals("unbounded string field columns for " + fieldType, 1,
+                    unboundedFieldSize.getNumColumns());
+        }
+    }
+
+    @Test
+    public void calculateFieldSizeMultiChoiceWithEmptyList() {
+        // Edge case, but we should make sure we handle this.
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList().build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(0, fieldSize.getNumBytes());
+        assertEquals(0, fieldSize.getNumColumns());
+    }
+
+    @Test
+    public void calculateFieldSizeMultiChoiceWithOneChoice() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo").build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(5, fieldSize.getNumBytes());
+        assertEquals(1, fieldSize.getNumColumns());
+    }
+
+    @Test
+    public void calculateFieldSizeMultiChoiceWithManyChoice() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.MULTI_CHOICE)
+                .withMultiChoiceAnswerList("foo", "bar", "baz", "qwerty", "asdf").build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(25, fieldSize.getNumBytes());
+        assertEquals(5, fieldSize.getNumColumns());
+    }
+
+    @Test
+    public void calculateFieldSizeMultiChoiceWithOtherChoice() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar")
+                .withAllowOtherChoices(true).build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(3010, fieldSize.getNumBytes());
+        assertEquals(3, fieldSize.getNumColumns());
+    }
+
+    @Test
+    public void calculateFieldSizeTimestamps() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.TIMESTAMP).build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(35, fieldSize.getNumBytes());
+        assertEquals(2, fieldSize.getNumColumns());
+    }
+
+    @Test
+    public void calculateFieldSizeMultipleFields() {
+        // Make fields
+        UploadFieldDefinition stringField = new UploadFieldDefinition.Builder().withName("string-field")
+                .withType(UploadFieldType.STRING).withMaxLength(50).build();
+        UploadFieldDefinition multiChoiceField = new UploadFieldDefinition.Builder().withName("multi-choice-field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("foo", "bar")
+                .withAllowOtherChoices(true).build();
+        UploadFieldDefinition timestampField = new UploadFieldDefinition.Builder().withName("timestamp-field")
+                .withType(UploadFieldType.TIMESTAMP).build();
+        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(stringField, multiChoiceField, timestampField);
+
+        // Execute and validate.
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(fieldDefList);
+        assertEquals(3195, fieldSize.getNumBytes());
+        assertEquals(6, fieldSize.getNumColumns());
+    }
+
+    // todo sum of multiple fields
+
     @Test
     public void canonicalize() throws Exception {
         // { inputNode, fieldType, expectedNode, expectedErrorMessage, expectedIsValid }

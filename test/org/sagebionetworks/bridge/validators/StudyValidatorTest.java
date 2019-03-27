@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -234,6 +235,28 @@ public class StudyValidatorTest {
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder().withName(null)
                 .withType(UploadFieldType.INT).build()));
         assertValidatorMessage(INSTANCE, study, "uploadMetadataFieldDefinitions[0].name", "is required");
+    }
+
+    @Test
+    public void metadataFieldsTooManyBytes() {
+        // A single LargeTextAttachment is enough to exceed the bytes limit.
+        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.LARGE_TEXT_ATTACHMENT).build()));
+        assertValidatorMessage(INSTANCE, study, "uploadMetadataFieldDefinitions",
+                "cannot be greater than 2500 bytes combined");
+    }
+
+    @Test
+    public void metadataFieldsTooManyColumns() {
+        // A Multi-Choice field with 21 options should be enough to exceed the field limit.
+        List<String> answerList = new ArrayList<>();
+        for (int i = 0; i < 21; i++) {
+            answerList.add("answer-" + i);
+        }
+        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder().withName("field")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(answerList).build()));
+        assertValidatorMessage(INSTANCE, study, "uploadMetadataFieldDefinitions",
+                "cannot be greater than 20 columns combined");
     }
 
     @Test
