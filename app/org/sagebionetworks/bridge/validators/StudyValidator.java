@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.upload.UploadFieldSize;
+import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import com.google.common.collect.Sets;
 
@@ -40,6 +42,8 @@ public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     
     private static final int MAX_SYNAPSE_LENGTH = 250;
+    private static final int METADATA_MAX_BYTES = 2500;
+    private static final int METADATA_MAX_COLUMNS = 20;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
     protected static final String EMAIL_ERROR = "is not a comma-separated list of email addresses";
     
@@ -126,6 +130,17 @@ public class StudyValidator implements Validator {
         if (!uploadMetadataFieldDefList.isEmpty()) {
             UploadFieldDefinitionListValidator.INSTANCE.validate(study.getUploadMetadataFieldDefinitions(), errors,
                     "uploadMetadataFieldDefinitions");
+
+            // Check max size for metadata fields.
+            UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(uploadMetadataFieldDefList);
+            if (fieldSize.getNumBytes() > METADATA_MAX_BYTES) {
+                errors.rejectValue("uploadMetadataFieldDefinitions",
+                        "cannot be greater than 2500 bytes combined");
+            }
+            if (fieldSize.getNumColumns() > METADATA_MAX_COLUMNS) {
+                errors.rejectValue("uploadMetadataFieldDefinitions",
+                        "cannot be greater than 20 columns combined");
+            }
         }
         // These *should* be set if they are null, with defaults
         if (study.getPasswordPolicy() == null) {
