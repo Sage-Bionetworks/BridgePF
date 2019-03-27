@@ -369,7 +369,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -379,7 +379,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
-        inOrder.verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
@@ -408,7 +408,7 @@ public class AuthenticationServiceMockTest {
         
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
     }
@@ -420,7 +420,7 @@ public class AuthenticationServiceMockTest {
 
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
@@ -441,7 +441,7 @@ public class AuthenticationServiceMockTest {
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         // Does not throw a consent required exception because the participant is an admin. 
@@ -608,7 +608,7 @@ public class AuthenticationServiceMockTest {
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate.
@@ -643,7 +643,7 @@ public class AuthenticationServiceMockTest {
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
          
         try {
             service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
@@ -940,15 +940,15 @@ public class AuthenticationServiceMockTest {
     @Test
     public void emailSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
+        consentedAccount.setId(USER_ID);
 
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
                 SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account, consentedAccount);
         when(participantService.getParticipant(study, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
         when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
@@ -962,15 +962,15 @@ public class AuthenticationServiceMockTest {
     @Test
     public void phoneSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
-
+        consentedAccount.setId(USER_ID);
+        
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
                 SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account, consentedAccount);
         when(participantService.getParticipant(study, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
         when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
@@ -996,7 +996,7 @@ public class AuthenticationServiceMockTest {
     public void consentedEmailSignInDoesNotExecuteIntentToParticipate() {
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
                 SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
         when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
         
@@ -1009,7 +1009,7 @@ public class AuthenticationServiceMockTest {
     public void consentedPhoneSignInDoesNotExecuteIntentToParticipate() {
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
                 SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
         when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
         
