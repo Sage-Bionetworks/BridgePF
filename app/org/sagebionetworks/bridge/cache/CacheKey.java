@@ -54,6 +54,9 @@ public final class CacheKey {
     public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, Phone phone) {
         return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId.getIdentifier(), "itp");
     }
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, String email) {
+        return new CacheKey(subpopGuid.getGuid(), email, studyId.getIdentifier(), "itp");
+    }
     public static final CacheKey lock(String value, Class<?> clazz) {
         return new CacheKey(value, clazz.getCanonicalName(), "lock");
     }
