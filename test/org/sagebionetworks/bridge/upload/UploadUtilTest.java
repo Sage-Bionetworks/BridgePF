@@ -177,8 +177,6 @@ public class UploadUtilTest {
         assertEquals(6, fieldSize.getNumColumns());
     }
 
-    // todo sum of multiple fields
-
     @Test
     public void canonicalize() throws Exception {
         // { inputNode, fieldType, expectedNode, expectedErrorMessage, expectedIsValid }
