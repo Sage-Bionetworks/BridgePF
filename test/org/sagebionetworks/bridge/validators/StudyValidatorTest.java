@@ -88,7 +88,13 @@ public class StudyValidatorTest {
         study.setPasswordPolicy(new PasswordPolicy(1000, false, false, false, false));
         assertValidatorMessage(INSTANCE, study, "passwordPolicy.minLength", "must be 2-999 characters");
     }
-    
+
+    @Test
+    public void appInstallLinkTemplateMustHaveAppInstallUrlkVariable() {
+        study.setAppInstallLinkTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
+        assertValidatorMessage(INSTANCE, study, "appInstallLinkTemplate.body", "must contain one of these template variables: ${url}, ${appInstallUrl}");
+    }
+
     @Test
     public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));

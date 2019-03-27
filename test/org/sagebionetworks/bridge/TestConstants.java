@@ -42,7 +42,7 @@ public class TestConstants {
     public static final String STUDIES_URL = API_URL + "/studies/";
 
     public static final String APPLICATION_JSON = "application/json";
-    public static final String EMAIL = "email";
+    public static final String EMAIL = "email@email.com";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
     

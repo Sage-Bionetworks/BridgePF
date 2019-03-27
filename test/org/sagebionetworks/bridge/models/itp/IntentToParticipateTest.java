@@ -2,10 +2,11 @@ package org.sagebionetworks.bridge.models.itp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -17,7 +18,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class IntentToParticipateTest {
     
     private static final long TIMESTAMP = DateTime.now().getMillis();
-    private static final Phone PHONE = TestConstants.PHONE;
     
     @Test
     public void canSerialize() throws Exception {
@@ -26,16 +26,17 @@ public class IntentToParticipateTest {
                 .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
         
         IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
-                .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")
-                .withConsentSignature(consentSignature).build();
+                .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withOsName("iOS").withConsentSignature(consentSignature).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(itp);
         assertEquals("studyId", node.get("studyId").textValue());
+        assertEquals(EMAIL, node.get("email").textValue());
         assertEquals("subpopGuid", node.get("subpopGuid").textValue());
         assertEquals("all_qualified_researchers", node.get("scope").textValue());
         assertEquals("iPhone OS", node.get("osName").textValue());
         assertEquals("IntentToParticipate", node.get("type").textValue());
-        assertEquals(7, node.size());
+        assertEquals(8, node.size());
         
         JsonNode phoneNode = node.get("phone");
         assertEquals(PHONE.getNumber(), phoneNode.get("number").textValue());
@@ -57,6 +58,7 @@ public class IntentToParticipateTest {
         IntentToParticipate deser = BridgeObjectMapper.get().readValue(node.toString(), IntentToParticipate.class);
         assertEquals("studyId", deser.getStudyId());
         assertEquals(PHONE.getNationalFormat(), deser.getPhone().getNationalFormat());
+        assertEquals(EMAIL, deser.getEmail());
         assertEquals("subpopGuid", deser.getSubpopGuid());
         assertEquals("iPhone OS", deser.getOsName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, deser.getScope());
@@ -82,12 +84,13 @@ public class IntentToParticipateTest {
                 .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
         
         IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
-                .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")
-                .withConsentSignature(consentSignature).build();
+                .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withOsName("iOS").withConsentSignature(consentSignature).build();
 
         IntentToParticipate copy = new IntentToParticipate.Builder().copyOf(itp).build();
         assertEquals(itp.getStudyId(), copy.getStudyId());
         assertEquals(itp.getPhone().getNumber(), copy.getPhone().getNumber());
+        assertEquals(itp.getEmail(), copy.getEmail());
         assertEquals(itp.getSubpopGuid(), copy.getSubpopGuid());
         assertEquals(itp.getScope(), copy.getScope());
         assertEquals(itp.getOsName(), copy.getOsName());

@@ -298,7 +298,6 @@ GET    /v3/studies/:identifier/appconfig     @org.sagebionetworks.bridge.play.co
 # keeping the capitalization of v3 API for backwards compatibility
 POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.generatePassword(externalId: String, createAccount: Boolean ?= true)
 POST   /v3/externalids/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.generatePassword(externalId: String, createAccount: Boolean ?= true)
-POST   /v4/externalids/migrate              @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.migrateExternalIdentifier
 GET    /v4/externalids                      @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.getExternalIdentifiers(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v4/externalids                      @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.createExternalIdentifier
 DELETE /v4/externalids/:externalId          @org.sagebionetworks.bridge.play.controllers.ExternalIdControllerV4.deleteExternalIdentifier(externalId: String)

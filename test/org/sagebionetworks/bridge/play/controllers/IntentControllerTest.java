@@ -45,7 +45,7 @@ public class IntentControllerTest {
     public void canSubmitAnIntent() throws Exception {
         // See comment in controller. Client APIs send scope as part of signature for legacy
         // reasons, but it is not part of the consent signature. Controller transfers it to the ITP.
-        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         JsonNode node = BridgeObjectMapper.get().valueToTree(intent);
         ((ObjectNode)node).remove("scope");
         ((ObjectNode)node.get("consentSignature")).put("scope", "all_qualified_researchers");
@@ -63,5 +63,4 @@ public class IntentControllerTest {
         assertEquals("Gladlight Stonewell", captured.getConsentSignature().getName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getScope());
     }
-
 }

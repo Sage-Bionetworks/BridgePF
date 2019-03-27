@@ -21,28 +21,22 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExternalIdServiceTest {
 
-    private static final String USER_ID = "userId";
     private static final String ID = "AAA";
     private static final String SUBSTUDY_ID = "substudyId";
     private static final Set<String> SUBSTUDIES = ImmutableSet.of(SUBSTUDY_ID);
@@ -57,9 +51,6 @@ public class ExternalIdServiceTest {
     @Mock
     private SubstudyService substudyService;
     
-    @Mock
-    private AccountDao accountDao;
-    
     private ExternalIdService externalIdService;
 
     @Before
@@ -73,144 +64,11 @@ public class ExternalIdServiceTest {
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
         externalIdService.setSubstudyService(substudyService);
-        externalIdService.setAccountDao(accountDao);
     }
     
     @After
     public void after() {
         BridgeUtils.setRequestContext(null);
-    }
-    
-    @Test
-    public void migrateExternalIdentifier() throws Exception {
-        // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY,  SUBSTUDY_ID, true))
-            .thenReturn(Substudy.create());
-        
-        ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(Optional.ofNullable(extId));
-        
-        Account account = Account.create();
-        account.setId(USER_ID);
-        
-        AccountId accountId = AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
-        
-        // execute
-        externalIdService.migrateExternalIdentifier(study, ID,  SUBSTUDY_ID);
-        
-        // verify
-        assertEquals(SUBSTUDY_ID, extId.getSubstudyId());
-        assertEquals(1, account.getAccountSubstudies().size());
-        assertEquals(ID, account.getExternalId());
-        
-        AccountSubstudy acctSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, acctSubstudy.getStudyId());
-        assertEquals(ID, acctSubstudy.getExternalId());
-        assertEquals(SUBSTUDY_ID, acctSubstudy.getSubstudyId());
-        
-        verify(externalIdDao).createExternalId(extId);
-        verify(accountDao).updateAccount(account, null);
-    }
-    
-    @Test
-    public void migrateExternalIdentifierWithExistingSubstudyAssociation() throws Exception {
-        // setup
-        ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(Optional.of(extId));
-        
-        Account account = Account.create();
-        account.setId(USER_ID);
-        // This exists, but has no external ID
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
-        account.getAccountSubstudies().add(acctSubstudy);
-        
-        AccountId accountId = AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
-        
-        // execute
-        externalIdService.migrateExternalIdentifier(study, ID, SUBSTUDY_ID);
-        
-        // verify
-        assertEquals(SUBSTUDY_ID, extId.getSubstudyId());
-        assertEquals(1, account.getAccountSubstudies().size());
-        assertEquals(ID, account.getExternalId());
-        
-        acctSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, acctSubstudy.getStudyId());
-        assertEquals(ID, acctSubstudy.getExternalId()); // now it does
-        assertEquals(SUBSTUDY_ID, acctSubstudy.getSubstudyId());
-        
-        verify(externalIdDao).createExternalId(extId);
-        verify(accountDao).updateAccount(account, null);
-    }
-    
-    @Test
-    public void migrateExternalIdentifierFromSingularToSubstudyAssociation() throws Exception {
-        // setup
-        ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(Optional.of(extId));
-        
-        Account account = Account.create();
-        account.setId(USER_ID);
-        // This starts as a different value and is changed to ID in the test. This would only 
-        // happen in the real world if we migrate an account associated to multiple external 
-        // IDs. We intend to finish this migration (and export) before allowing multiple 
-        // external IDs in production.
-        account.setExternalId("differentExternalId");
-        
-        AccountId accountId = AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
-        
-        // execute
-        externalIdService.migrateExternalIdentifier(study, ID, SUBSTUDY_ID);
-        
-        // verify
-        assertEquals(SUBSTUDY_ID, extId.getSubstudyId());
-        assertEquals(1, account.getAccountSubstudies().size());
-        assertEquals(ID, account.getExternalId());
-        
-        AccountSubstudy acctSubstudy = Iterables.getFirst(account.getAccountSubstudies(), null);
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, acctSubstudy.getStudyId());
-        assertEquals(ID, acctSubstudy.getExternalId());
-        assertEquals(SUBSTUDY_ID, acctSubstudy.getSubstudyId());
-        
-        verify(externalIdDao).createExternalId(extId);
-        verify(accountDao).updateAccount(account, null);
-    }
-    
-    @Test
-    public void migrateExternalIdentifierWithNoAccount() throws Exception {
-        // setup
-        ExternalIdentifier extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(Optional.of(extId));
-        
-        // execute
-        externalIdService.migrateExternalIdentifier(study, ID, SUBSTUDY_ID);
-        
-        // verify
-        assertEquals(SUBSTUDY_ID, extId.getSubstudyId());
-        
-        verify(externalIdDao).createExternalId(extId);
-        verify(accountDao, never()).updateAccount(any(), any());
-    }
-    
-    @Test
-    public void migrateExternalIdentifierWithNoExternalId() throws Exception {
-        // setup
-        when(substudyService.getSubstudy(TestConstants.TEST_STUDY,  SUBSTUDY_ID, true))
-            .thenReturn(Substudy.create());
-        
-        when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, ID))
-            .thenReturn(Optional.empty());
-        
-        // execute
-        TestUtils.assertException(EntityNotFoundException.class, "ExternalIdentifier not found.", 
-            () -> externalIdService.migrateExternalIdentifier(study, ID,  SUBSTUDY_ID));
     }
     
     @Test
