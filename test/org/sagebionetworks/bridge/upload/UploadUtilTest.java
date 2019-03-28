@@ -64,6 +64,14 @@ public class UploadUtilTest {
     }
 
     @Test
+    public void calculateFieldSizeNullType() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field").withType(null).build();
+        UploadFieldSize fieldSize = UploadUtil.calculateFieldSize(ImmutableList.of(fieldDef));
+        assertEquals(0, fieldSize.getNumBytes());
+        assertEquals(0, fieldSize.getNumColumns());
+    }
+
+    @Test
     public void calculateFieldSizeStringField() {
         Set<UploadFieldType> stringFieldTypeSet = EnumSet.of(UploadFieldType.INLINE_JSON_BLOB,
                 UploadFieldType.SINGLE_CHOICE, UploadFieldType.STRING);
