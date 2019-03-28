@@ -934,11 +934,11 @@ public class StudyServiceMockTest {
         UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
         UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
-                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+                .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxLength(10).build();
         UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+                .withType(UploadFieldType.STRING).withMaxLength(10).build();
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+                .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
         Study oldStudy = getTestStudy();
@@ -965,11 +965,11 @@ public class StudyServiceMockTest {
         UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
         UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
-                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+                .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxLength(10).build();
         UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+                .withType(UploadFieldType.STRING).withMaxLength(10).build();
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+                .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
         Study oldStudy = getTestStudy();

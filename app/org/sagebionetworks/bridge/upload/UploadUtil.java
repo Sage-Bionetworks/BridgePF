@@ -187,6 +187,12 @@ public class UploadUtil {
         int numColumns = 0;
         for (UploadFieldDefinition fieldDef : fieldDefList) {
             UploadFieldType fieldType = fieldDef.getType();
+            if (fieldType == null) {
+                // Since field size calculation happens as part of schema validation, it's possible that we might have
+                // have invalid fields here. We can't calculate field size without an invalid field, so just skip this
+                // field. The validator will throw anyway.
+                continue;
+            }
 
             // Calculate number of bytes.
             if (VARIABLE_LENGTH_STRING_TYPE_SET.contains(fieldType)) {
