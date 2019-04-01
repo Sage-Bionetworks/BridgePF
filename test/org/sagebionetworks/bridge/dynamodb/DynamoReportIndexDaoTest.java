@@ -1,23 +1,28 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import javax.annotation.Resource;
+import java.util.List;
+import java.util.Map;
 
-import org.junit.After;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
@@ -25,172 +30,167 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableList;
 
-@ContextConfiguration("classpath:test-context.xml")
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoReportIndexDaoTest {
 
-    @Autowired
     DynamoReportIndexDao dao;
     
-    private ReportDataKey studyReportKey1;
-    
-    private ReportDataKey studyReportKey2;
-    
-    private ReportDataKey participantReportKey1;
-    
-    private ReportDataKey participantReportKey2;
-
-    @Resource(name = "reportIndexMapper")
+    @Mock
     private DynamoDBMapper mapper;
+    
+    @Mock
+    private PaginatedQueryList<DynamoReportIndex> results;
+    
+    @Captor
+    private ArgumentCaptor<DynamoReportIndex> indexCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DynamoDBSaveExpression> saveExpressionCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DynamoDBQueryExpression<DynamoReportIndex>> queryCaptor;
+    
+    private ReportDataKey KEY = new ReportDataKey.Builder()
+            .withIdentifier("report-name").withStudyIdentifier(TEST_STUDY)
+            .withReportType(ReportType.STUDY).build();
 
     @Before
     public void before() {
-        String reportName1 = TestUtils.randomName(DynamoReportIndexDaoTest.class);
-        String reportName2 = TestUtils.randomName(DynamoReportIndexDaoTest.class);
-        
-        ReportDataKey.Builder builder = new ReportDataKey.Builder().withStudyIdentifier(TEST_STUDY);
-        builder.withReportType(ReportType.STUDY);
-        studyReportKey1 = builder.withIdentifier(reportName1).build();
-        studyReportKey2 = builder.withIdentifier(reportName2).build();
-        
-        builder.withReportType(ReportType.PARTICIPANT);
-        participantReportKey1 = builder.withIdentifier(reportName1)
-                .withHealthCode(BridgeUtils.generateGuid()).build();
-        participantReportKey2 = builder.withIdentifier(reportName2)
-                .withHealthCode(BridgeUtils.generateGuid()).build();
-    }
-    
-    @After
-    public void after() {
-        dao.removeIndex(studyReportKey1);
-        dao.removeIndex(studyReportKey2);
-        dao.removeIndex(participantReportKey1);
-        dao.removeIndex(participantReportKey2);
+        dao = new DynamoReportIndexDao();
+        dao.setReportIndexMapper(mapper);
     }
     
     @Test
-    public void getIndexNoIndex() {
-        ReportDataKey key = new ReportDataKey.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withIdentifier("invalid-identifier")
-                .withReportType(ReportType.STUDY).build();
+    public void getIndex() {
+        dao.getIndex(KEY);
         
-        ReportIndex index = dao.getIndex(key);
-        assertNull(index);
-    }
-    
-    @Test
-    public void getIndexThatExists() {
-        dao.addIndex(studyReportKey1);
+        verify(mapper).load(indexCaptor.capture());
         
-        ReportIndex index = dao.getIndex(studyReportKey1);
-        assertEquals(studyReportKey1.getIdentifier(), index.getIdentifier());
-        assertEquals(studyReportKey1.getIndexKeyString(), index.getKey());
+        DynamoReportIndex index = indexCaptor.getValue();
+        assertEquals(KEY.getIndexKeyString(), index.getKey());
+        assertEquals(KEY.getIdentifier(), index.getIdentifier());
     }
-    
-    @Test
-    public void canCRUDReportIndex() {
-        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
-        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
-        // adding twice is fine
-        dao.addIndex(studyReportKey1);
-        dao.addIndex(studyReportKey1);
-        dao.addIndex(studyReportKey2);
 
-        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(studyIndexCount+2, indices.getItems().size());
+    @Test
+    public void addIndex() {
+        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
         
-        // Update studyReportKey2
-        ReportIndex index = dao.getIndex(studyReportKey2);
-        index.setPublic(true);
-        dao.updateIndex(index);
+        verify(mapper).load(indexCaptor.capture());
+        verify(mapper).save(indexCaptor.capture(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
+        
+        DynamoReportIndex lookupKey = indexCaptor.getValue();
+        assertEquals(KEY.getIndexKeyString(), lookupKey.getKey());
+        assertEquals(KEY.getIdentifier(), lookupKey.getIdentifier());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, lookupKey.getSubstudyIds());
+        
+        DynamoReportIndex savedIndex = indexCaptor.getValue();
+        assertEquals(KEY.getIndexKeyString(), savedIndex.getKey());
+        assertEquals(KEY.getIdentifier(), savedIndex.getIdentifier());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, savedIndex.getSubstudyIds());
+    }
+    
+    @Test
+    public void addIndexDoesNothingIfIndexExists() {
+        when(mapper.load(any())).thenReturn(ReportIndex.create());
+        
+        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
+        
+        verify(mapper, never()).save(any(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
+    }
+    
+    @Test
+    public void addIndexConditionalCheckFailedDoesNotThrow() {
+        doThrow(new ConditionalCheckFailedException("message"))
+            .when(mapper).save(any(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
+        
+        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
+    }
 
-        index = dao.getIndex(studyReportKey2);
+    @Test
+    public void removeIndex() {
+        ReportIndex index = ReportIndex.create();
+        when(mapper.load(any())).thenReturn(index);
+        
+        dao.removeIndex(KEY);
+        
+        verify(mapper).load(indexCaptor.capture());
+        verify(mapper).delete(index);
+        
+        DynamoReportIndex lookupKey = indexCaptor.getValue();
+        assertEquals(KEY.getIndexKeyString(), lookupKey.getKey());
+        assertEquals(KEY.getIdentifier(), lookupKey.getIdentifier());
+    }
+    
+    @Test
+    public void removeIndexMissingDoesNothing() {
+        dao.removeIndex(KEY);
+        
+        verify(mapper, never()).delete(any());
+    }
+
+    @Test
+    public void updateIndex() {
+        ReportIndex updatedIndex = ReportIndex.create();
+        updatedIndex.setIdentifier("asdf");
+        updatedIndex.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        updatedIndex.setPublic(true);
+        updatedIndex.setKey(KEY.getIndexKeyString());
+        
+        // This enforces that the update is being done on an existing key/identifier pair.
+        // It does not enforce substudy permissions... these are handled in the service.
+        // Adding substudies here would always be allowed if it hadn't been blocked by the 
+        // service.
+        dao.updateIndex(updatedIndex);
+        
+        verify(mapper).save(indexCaptor.capture(), saveExpressionCaptor.capture());
+        
+        DynamoReportIndex index = indexCaptor.getValue();
+        assertEquals("api:STUDY", index.getKey());
+        assertEquals(updatedIndex.getIdentifier(), index.getIdentifier());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, index.getSubstudyIds());
         assertTrue(index.isPublic());
-
-        index.setPublic(false);
-        dao.updateIndex(index);
-
-        index = dao.getIndex(studyReportKey2);
-        assertFalse(index.isPublic());
-
-        // Wrong type returns same count as before
-        indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(participantIndexCount, indices.getItems().size());
         
-        dao.removeIndex(studyReportKey1);
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(studyIndexCount+1, indices.getItems().size());
-        
-        dao.removeIndex(studyReportKey2);
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(studyIndexCount, indices.getItems().size());
-    }
-    
-    @Test
-    public void addingExistingIndexDoesNotDeleteMetadata() {
-        dao.addIndex(studyReportKey1);
-
-        ReportIndex index = dao.getIndex(studyReportKey1);
-        index.setPublic(true);
-        dao.updateIndex(index);
-        
-        // Now, adding this again should not delete the public = true status of index.
-        dao.addIndex(studyReportKey1);
-
-        index = dao.getIndex(studyReportKey1);
-        assertTrue(index.isPublic());
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test
-    public void canCreateAndReadParticipantIndex() {
-        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
-        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
-        
-        // adding twice is fine
-        dao.addIndex(participantReportKey1);
-        dao.addIndex(participantReportKey1);
-        dao.addIndex(participantReportKey2);
-        
-        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(participantIndexCount+2, indices.getItems().size());
-        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
-        assertEquals(ReportType.PARTICIPANT, indices.getRequestParams().get("reportType"));
-        
-        boolean containsKey1 = false;
-        boolean containsKey2 = false;
-        for (ReportIndex oneIndex : indices.getItems()) {
-            if (oneIndex.getIdentifier().equals(participantReportKey1.getIdentifier())) {
-                containsKey1 = true;
-            } else if (oneIndex.getIdentifier().equals(participantReportKey2.getIdentifier())) {
-                containsKey2 = true;
-            }
-        }
-        assertTrue(containsKey1);
-        assertTrue(containsKey2);
-
-        // Wrong type returns same count as before
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(studyIndexCount, indices.getItems().size());
-        assertEquals(ReportType.STUDY, indices.getReportType());
-        assertEquals(ReportType.STUDY, indices.getRequestParams().get("reportType"));
-        
-        dao.removeIndex(participantReportKey1);
-        dao.removeIndex(participantReportKey2);
-        
-        indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(participantIndexCount, indices.getItems().size());
+        DynamoDBSaveExpression expr = saveExpressionCaptor.getValue();
+        Map<String,ExpectedAttributeValue> map = expr.getExpected();
+        assertEquals(index.getKey(), map.get("key").getValue().getS());
+        assertEquals(index.getIdentifier(), map.get("identifier").getValue().getS());
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void updateNonExistentIndex() {
-        ReportIndex index = ReportIndex.create();
-        index.setKey(studyReportKey1.getIndexKeyString());
-        index.setIdentifier(studyReportKey1.getIdentifier());
-        index.setPublic(true);
+    public void updateIndexConditionalCheckFailedThrows() {
+        doThrow(new ConditionalCheckFailedException("message"))
+            .when(mapper).save(any(), any(DynamoDBSaveExpression.class));
         
-        dao.updateIndex(index);
+        ReportIndex updatedIndex = ReportIndex.create();
+        
+        dao.updateIndex(updatedIndex);
     }
+    
+    @Test
+    public void getIndices() {
+        List<DynamoReportIndex> indexList = ImmutableList.of(new DynamoReportIndex());
+        when(results.size()).thenReturn(indexList.size());
+        
+        when(mapper.query(eq(DynamoReportIndex.class), any())).thenReturn(results);
+        
+        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(
+                TestConstants.TEST_STUDY, ReportType.PARTICIPANT);
+        
+        assertEquals(1, indices.getItems().size());
+        assertEquals(ReportType.PARTICIPANT, indices.getRequestParams().get("reportType"));
+        
+        verify(mapper).query(eq(DynamoReportIndex.class), queryCaptor.capture());
+        
+        DynamoDBQueryExpression<DynamoReportIndex> query = queryCaptor.getValue();
+        DynamoReportIndex hashKey = query.getHashKeyValues();
+        
+        assertEquals("api:PARTICIPANT", hashKey.getKey());
+    }    
 }

@@ -8,6 +8,8 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -28,6 +30,12 @@ public interface ReportData extends BridgeEntity {
     
     String getKey();
     void setKey(String key);
+    
+    /** Only used when a first instance of a report is saved, to convey substudy memberships for
+     * the report's index. This is not persisted as part of an individual report record.
+     */
+    Set<String> getSubstudyIds();
+    void setSubstudyIds(Set<String> substudyIds);
     
     /** Will be either a local date or date time string value. */
     String getDate();

@@ -39,18 +39,21 @@ public class DynamoReportDataTest {
         reportData.setKey(key.getKeyString());
         reportData.setDateTime(DATETIME);
         reportData.setData(objNode);
+        reportData.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
         
         String json = MAPPER.writeValueAsString(reportData);
         
         JsonNode node = MAPPER.readTree(json);
         assertNull(node.get("key"));
-        assertEquals(DATETIME.toString(), node.get("date").asText());
-        assertEquals(DATETIME.toString(), node.get("dateTime").asText());
-        assertTrue(node.get("data").get("a").asBoolean());
-        assertEquals("string", node.get("data").get("b").asText());
-        assertEquals(10, node.get("data").get("c").asInt());
-        assertEquals("ReportData", node.get("type").asText());
-        assertEquals(4, node.size());
+        assertEquals(DATETIME.toString(), node.get("date").textValue());
+        assertEquals(DATETIME.toString(), node.get("dateTime").textValue());
+        assertTrue(node.get("data").get("a").booleanValue());
+        assertEquals("string", node.get("data").get("b").textValue());
+        assertEquals(10, node.get("data").get("c").intValue());
+        assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
+        assertEquals("substudyB", node.get("substudyIds").get(1).textValue());
+        assertEquals("ReportData", node.get("type").textValue());
+        assertEquals(5, node.size());
         
         ReportData deser = MAPPER.readValue(json, ReportData.class);
         assertNull(deser.getKey());
@@ -58,6 +61,7 @@ public class DynamoReportDataTest {
         assertEquals(DATETIME.toString(), deser.getDate());
         assertTrue(deser.getData().get("a").asBoolean());
         assertEquals("string", deser.getData().get("b").asText());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, deser.getSubstudyIds());
         assertEquals(10, deser.getData().get("c").asInt());
     }
     

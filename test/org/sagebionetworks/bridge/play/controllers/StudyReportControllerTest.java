@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -162,8 +163,8 @@ public class StudyReportControllerTest {
         getStudyReportIndex();
     }
     
-    @Test(expected = UnauthorizedException.class) 
-    public void cannotAccessAsUser() throws Exception {
+    @Test 
+    public void userCanAccess() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
         session.setParticipant(participant);
         
@@ -239,6 +240,8 @@ public class StudyReportControllerTest {
     
     @Test
     public void deleteStudyReportDataRecord() throws Exception {
+        TestUtils.mockPlay().mock();
+        
         Result result = controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
@@ -261,7 +264,7 @@ public class StudyReportControllerTest {
         Result result = controller.updateStudyReportIndex(REPORT_ID);
         TestUtils.assertResult(result, 200, "Report index updated.");
         
-        verify(mockReportService).updateReportIndex(eq(ReportType.STUDY), reportDataIndex.capture());
+        verify(mockReportService).updateReportIndex(eq(TestConstants.TEST_STUDY), eq(ReportType.STUDY), reportDataIndex.capture());
         ReportIndex index = reportDataIndex.getValue();
         assertTrue(index.isPublic());
         assertEquals(REPORT_ID, index.getIdentifier());

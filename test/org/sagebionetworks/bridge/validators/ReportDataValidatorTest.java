@@ -2,20 +2,30 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.junit.Before;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class ReportDataValidatorTest {
     
-    private ReportDataValidator validator = ReportDataValidator.INSTANCE;
+    private ReportDataValidator validator;
+    
+    @Before
+    public void before() { 
+        validator = new ReportDataValidator(null);
+    }
 
     @Test
     public void validWorks() {
@@ -95,5 +105,47 @@ public class ReportDataValidatorTest {
         data.setLocalDate(LocalDate.parse("2017-09-06"));
         
         TestUtils.assertValidatorMessage(validator, data, "identifier", "cannot be missing or blank");
+    }
+    
+    @Test
+    public void existingIndexNoSubstudyChangeOK() {
+        ReportIndex index = ReportIndex.create();
+        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier("foo")
+                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+        
+        ReportData data = ReportData.create();
+        data.setReportDataKey(key);
+        data.setData(TestUtils.getClientData());
+        data.setLocalDate(LocalDate.parse("2017-09-06"));
+        data.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        
+        validator = new ReportDataValidator(index);
+        
+        Validate.entityThrowingException(validator, data);
+    }
+    
+    @Test
+    public void existingIndexChangedSubstudiesInvalid() {
+        ReportIndex index = ReportIndex.create();
+        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withReportType(ReportType.STUDY)
+                .withIdentifier("foo")
+                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+        
+        ReportData data = ReportData.create();
+        data.setReportDataKey(key);
+        data.setData(TestUtils.getClientData());
+        data.setLocalDate(LocalDate.parse("2017-09-06"));
+        data.setSubstudyIds(ImmutableSet.of("substudyA", "substudyC"));
+        
+        validator = new ReportDataValidator(index);
+        
+        TestUtils.assertValidatorMessage(validator, data, "substudyIds", "cannot be changed once created for a report");
     }
 }
