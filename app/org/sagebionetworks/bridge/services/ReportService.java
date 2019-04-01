@@ -189,9 +189,9 @@ public class ReportService {
 
     /**
      * Save a study report record. If this is the first record for this report, the data can contain one or more
-     * substudies defining who can see this report. The substudies can be any substudy if the caller has no 
-     * substudy memberships, or it must be a subset of the substudies assigned to the caller. If it is a subsequent 
-     * record, then substudy memberships will be enforced based on the existing report index.
+     * substudies defining who can see this report. The user can submit any substudies regardless of membership (if 
+     * the user locks themselves out of the study we do not prevent it). On subsequent saves, the substudy 
+     * memberships will be enforced based on the existing report index.
      */
     public void saveStudyReport(StudyIdentifier studyId, String identifier, ReportData reportData) {
         checkNotNull(reportData);
@@ -365,9 +365,8 @@ public class ReportService {
     }
 
     /**
-     * Update a report index. Substudy memberships are enforced. If the substudies are being changed, the 
-     * substudies can be any substudy if the caller has no substudy memberships, or it must be a subset of 
-     * the substudies assigned to the caller. 
+     * Update a report index. Substudy memberships are enforced. Only a user who is not associated to any substudies 
+     * may change the substudy associations of the report index.
      */
     public void updateReportIndex(StudyIdentifier studyId, ReportType reportType, ReportIndex index) {
         if (reportType == ReportType.PARTICIPANT) {

@@ -188,6 +188,19 @@ public class ReportServiceTest {
     }
     
     @Test
+    public void canAccessIfPublic() {
+        // Create a situation where the user shares no substudies in common with the index, but 
+        // the index is public. In that case, access is allowed.
+        ReportIndex index = ReportIndex.create();
+        index.setSubstudyIds(ImmutableSet.of("substudyC"));
+        index.setPublic(true);
+        
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+        assertTrue(service.canAccess(index));        
+    }
+    
+    @Test
     public void getReportIndex() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(IDENTIFIER).withReportType(ReportType.STUDY)
