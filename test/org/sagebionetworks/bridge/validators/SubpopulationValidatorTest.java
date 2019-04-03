@@ -53,6 +53,9 @@ public class SubpopulationValidatorTest {
         criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyC"));
         criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
         subpop.setCriteria(criteria);
+        
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("group1", "dataGroup3"));
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("substudyA", "substudyC"));
         try {
             Validate.entityThrowingException(validator, subpop);
             fail("Should have thrown an exception");
@@ -65,6 +68,8 @@ public class SubpopulationValidatorTest {
             assertMessage(e, "noneOfGroups", " 'wrongGroup' is not in enumeration");
             assertMessage(e, "allOfSubstudyIds", " 'substudyC' is not in enumeration");
             assertMessage(e, "noneOfSubstudyIds", " 'substudyD' is not in enumeration");
+            assertMessage(e, "dataGroupsAssignedWhileConsented", " 'dataGroup3' is not in enumeration: group1, group2");
+            assertMessage(e, "substudyIdsAssignedOnConsent", " 'substudyC' is not in enumeration: substudyA, substudyB");
         }
     }
     

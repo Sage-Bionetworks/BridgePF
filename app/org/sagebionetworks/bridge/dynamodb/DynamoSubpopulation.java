@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -15,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -43,9 +46,13 @@ public final class DynamoSubpopulation implements Subpopulation {
     private Long version;
     private long publishedConsentCreatedOn;
     private Criteria criteria;
+    private Set<String> dataGroupsAssignedWhileConsented;
+    private Set<String> substudyIdsAssignedOnConsent;
 
     public DynamoSubpopulation() {
         criteria = Criteria.create();
+        dataGroupsAssignedWhileConsented = new HashSet<>();
+        substudyIdsAssignedOnConsent = new HashSet<>();
     }
     
     @Override
@@ -173,10 +180,35 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.autoSendConsentSuppressed = autoSendConsentSuppressed;
     }
     
+    /** {@inheritDoc */
+    public void setDataGroupsAssignedWhileConsented(Set<String> dataGroups) {
+        if (dataGroups != null) {
+            this.dataGroupsAssignedWhileConsented = new HashSet<>(dataGroups);    
+        }
+    }
+    
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getDataGroupsAssignedWhileConsented(){
+        return dataGroupsAssignedWhileConsented;
+    }
+
+    /** {@inheritDoc */
+    public void setSubstudyIdsAssignedOnConsent(Set<String> substudyIds) {
+        if (substudyIds != null) {
+            this.substudyIdsAssignedOnConsent = new HashSet<>(substudyIds);    
+        }
+    }
+    
+    @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    public Set<String> getSubstudyIdsAssignedOnConsent() {
+        return substudyIdsAssignedOnConsent;
+    }
+    
     @Override
     public int hashCode() {
         return Objects.hash(name, description, required, deleted, defaultGroup, guid, studyIdentifier,
-                publishedConsentCreatedOn, version, criteria, autoSendConsentSuppressed);
+                publishedConsentCreatedOn, version, criteria, autoSendConsentSuppressed, dataGroupsAssignedWhileConsented,
+                substudyIdsAssignedOnConsent);
     }
     @Override
     public boolean equals(Object obj) {
@@ -191,14 +223,17 @@ public final class DynamoSubpopulation implements Subpopulation {
                 && Objects.equals(publishedConsentCreatedOn, other.publishedConsentCreatedOn)
                 && Objects.equals(version, other.version) && Objects.equals(defaultGroup, other.defaultGroup)
                 && Objects.equals(criteria, other.criteria)
-                && Objects.equals(autoSendConsentSuppressed,  other.autoSendConsentSuppressed);
+                && Objects.equals(autoSendConsentSuppressed, other.autoSendConsentSuppressed)
+                && Objects.equals(dataGroupsAssignedWhileConsented, other.dataGroupsAssignedWhileConsented)
+                && Objects.equals(substudyIdsAssignedOnConsent, other.substudyIdsAssignedOnConsent);
     }
     @Override
     public String toString() {
         return "DynamoSubpopulation [studyIdentifier=" + studyIdentifier + ", guid=" + guid + ", name=" + name
                 + ", description=" + description + ", required=" + required + ", deleted=" + deleted + ", criteria="
-                + criteria + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version 
-                + ", autoSendConsentSuppressed=" + autoSendConsentSuppressed + "]";
+                + criteria + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version
+                + ", autoSendConsentSuppressed=" + autoSendConsentSuppressed + ", dataGroupsAssignedWhileConsented="
+                + dataGroupsAssignedWhileConsented + ", substudyIdsAssignedOnConsent=" + substudyIdsAssignedOnConsent + "]";
     }
 
 }

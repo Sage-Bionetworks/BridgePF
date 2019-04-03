@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -190,6 +191,14 @@ public class ConsentService {
         consentListCopy.add(withConsentCreatedOnSignature);
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
+        
+        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
+        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(
+                    study.getIdentifier(), substudyId, account.getId());
+            account.getAccountSubstudies().add(acctSubstudy);
+        }
+        
         accountDao.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
@@ -281,6 +290,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
         Account account = accountDao.getAccount(context.getAccountId());
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
@@ -291,6 +301,8 @@ public class ConsentService {
             notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
+        account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
+
         accountDao.updateAccount(account, null);
         
         sendWithdrawEmail(study, account, withdrawal, withdrewOn);
@@ -312,8 +324,12 @@ public class ConsentService {
 
         AccountId accountId = AccountId.forId(study.getIdentifier(), participant.getId());
         Account account = accountDao.getAccount(accountId);
+        
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
-            withdrawSignatures(account, subpopGuid, withdrewOn);
+            if (withdrawSignatures(account, subpopGuid, withdrewOn)) {
+                Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+                account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
+            }
         }
         sendWithdrawEmail(study, account, withdrawal, withdrewOn);
         

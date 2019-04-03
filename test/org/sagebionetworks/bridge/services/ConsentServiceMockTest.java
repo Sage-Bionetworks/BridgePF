@@ -17,8 +17,10 @@ import static org.mockito.Mockito.when;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -320,6 +322,21 @@ public class ConsentServiceMockTest {
     }
     
     @Test
+    public void withdrawConsentRemovesDataGroups() throws Exception {
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        
+        assertTrue(account.getDataGroups().isEmpty());
+        verify(subpopulation).getDataGroupsAssignedWhileConsented();
+        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
+    }
+    
+    @Test
     public void withdrawConsentWithAccount() throws Exception {
         setupWithdrawTest();
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
@@ -393,6 +410,23 @@ public class ConsentServiceMockTest {
         }
 
         verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
+    }
+    
+    @Test
+    public void withdrawFromStudyRemovesDataGroups() {
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+
+        account.setDataGroups(new HashSet<>(TestConstants.USER_DATA_GROUPS));
+
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        
+        assertTrue(account.getDataGroups().isEmpty());
+        verify(subpopulation).getDataGroupsAssignedWhileConsented();
+        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
     }
     
     @Test
@@ -574,6 +608,8 @@ public class ConsentServiceMockTest {
     public void withdrawAllConsentsNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
         study.setConsentNotificationEmail(null);
+        
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
         
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
         
@@ -793,6 +829,21 @@ public class ConsentServiceMockTest {
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, false);
         
         verify(smsService, never()).sendSmsMessage(any(), any());
+    }
+    
+    @Test
+    public void consentToResearchAssignsDataGroupsAndSubstudies() throws Exception {
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, false);
+        
+        assertEquals(TestConstants.USER_DATA_GROUPS, account.getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId).collect(Collectors.toSet()));
     }
 
     @Test
