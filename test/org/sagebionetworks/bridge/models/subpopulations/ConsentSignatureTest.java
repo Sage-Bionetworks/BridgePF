@@ -43,6 +43,7 @@ public class ConsentSignatureTest {
         
         String json = ConsentSignature.SIGNATURE_WRITER.writeValueAsString(signature);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
         assertNull(node.get("consentCreatedOn"));
         assertEquals(WITHDREW_ON_TIMESTAMP.toString(),
                 node.get("withdrewOn").textValue());
@@ -142,8 +143,8 @@ public class ConsentSignatureTest {
         assertEquals("1970-01-01", updated.getBirthdate());
         assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), updated.getSignedOn());
         
-        String timestamp = new DateTime(SIGNED_ON_TIMESTAMP, DateTimeZone.UTC).toString();
-        json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":\""+timestamp+"\"}";
+        json = "{\"name\":\"test name\",\"birthdate\":\"1970-01-01\",\"signedOn\":\"" + 
+                SIGNED_ON_TIMESTAMP.toString() + "\"}";
         sig = BridgeObjectMapper.get().readValue(json, ConsentSignature.class);
         assertEquals(SIGNED_ON_TIMESTAMP.getMillis(), sig.getSignedOn());
     }
