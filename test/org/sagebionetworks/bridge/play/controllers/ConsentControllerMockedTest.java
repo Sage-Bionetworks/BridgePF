@@ -12,6 +12,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
@@ -26,7 +27,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -330,7 +333,7 @@ public class ConsentControllerMockedTest {
         String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf',"+
                 "'imageMimeType':'image/png','scope':'no_sharing'}");
         
-        TestUtils.mockPlay().withJsonBody(json).mock();
+        TestUtils.mockPlay().withMockResponse().withJsonBody(json).mock();
         
         controller.giveV3("bad-guid");
     }
@@ -354,6 +357,37 @@ public class ConsentControllerMockedTest {
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
         verify(cacheProvider).setUserSession(any());
+    }
+    
+    @Test
+    public void consentBeforeServerHasUpdatedSessionWorks() throws Exception {
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf'"+
+                ",'imageMimeType':'image/png','scope':'sponsors_and_partners'}");
+        TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
+        
+        Map<SubpopulationGuid,ConsentStatus> beforeStatuses = new HashMap<>();
+        beforeStatuses.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(true).withGuid(SUBPOP_GUID)
+                .withName("Another Consent").withRequired(true).build());
+        session.setConsentStatuses(beforeStatuses);
+
+        SubpopulationGuid newGuid = SubpopulationGuid.create("newGuid");
+        
+        Map<SubpopulationGuid,ConsentStatus> afterStatuses = new HashMap<>();
+        afterStatuses.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(true).withGuid(SUBPOP_GUID)
+                .withName("Another Consent").withRequired(true).build());
+        afterStatuses.put(newGuid, new ConsentStatus.Builder().withConsented(false).withGuid(newGuid)
+                .withName("New Required Consent").withRequired(true).build());
+        
+        when(consentService.getConsentStatuses(any())).thenReturn(afterStatuses);
+        
+        Result result = controller.giveV3("newGuid");
+        TestUtils.assertResult(result, 201);
+        
+        InOrder inOrder = Mockito.inOrder(consentService);
+        inOrder.verify(consentService).getConsentStatuses(any()); // this should be called first
+        inOrder.verify(consentService).consentToResearch(eq(study), eq(newGuid), eq(session.getParticipant()), any(),
+                eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
+        inOrder.verify(consentService).getConsentStatuses(any()); // then called again after consent
     }
     
     @Test
