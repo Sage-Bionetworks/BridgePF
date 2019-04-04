@@ -54,14 +54,14 @@ public final class CacheKey {
     public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, Phone phone) {
         return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId.getIdentifier(), "itp");
     }
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, String email) {
+        return new CacheKey(subpopGuid.getGuid(), email, studyId.getIdentifier(), "itp");
+    }
     public static final CacheKey lock(String value, Class<?> clazz) {
         return new CacheKey(value, clazz.getCanonicalName(), "lock");
     }
     public static final CacheKey passwordResetForEmail(String sptoken, String studyId) {
         return new CacheKey(sptoken, studyId); // no type, not great
-    }
-    public static final CacheKey reauthCacheKey(String reauthToken, String studyId) {
-        return new CacheKey(reauthToken, studyId, "reauthCacheKey");
     }
     public static final CacheKey passwordResetForPhone(String sptoken, String studyId) { 
         return new CacheKey(sptoken, "phone", studyId); // no type, not great

@@ -11,6 +11,9 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 
 @Component
 public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AccountPersistenceExceptionConverter.class);
 
     static final String NON_UNIQUE_MSG = "This account has already been associated to the substudy (possibly through another external ID).";
     
@@ -91,6 +95,8 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
     private EntityAlreadyExistsException createEntityAlreadyExistsException(String credentialName, AccountId accountId) {
         Account existingAccount = accountDao.getAccount(accountId);
         if (existingAccount != null) {
+            // Log to make conflicts easier to diagnose.
+            LOG.info(credentialName + " has already been used by account " + existingAccount.getId());
             return new EntityAlreadyExistsException(Account.class,
                     credentialName + " has already been used by another account.",
                     ImmutableMap.of("userId", existingAccount.getId()));

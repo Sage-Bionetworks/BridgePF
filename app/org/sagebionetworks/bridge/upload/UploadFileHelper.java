@@ -105,7 +105,10 @@ public class UploadFileHelper {
                     // Case 1a: The whole file is an attachment. Upload the file. Field JSON is attachment filename.
                     String attachmentFilename = uploadId + '-' + fieldName;
                     fieldNode = TextNode.valueOf(attachmentFilename);
-                    s3Helper.writeFileToS3(ATTACHMENT_BUCKET, attachmentFilename, fieldFile);
+                    
+                    ObjectMetadata metadata = new ObjectMetadata();
+                    metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                    s3Helper.writeFileToS3(ATTACHMENT_BUCKET, attachmentFilename, fieldFile, metadata);
                 } else {
                     // Case 1b: The file is an empty attachment. Skip and return null.
                     fieldNode = null;

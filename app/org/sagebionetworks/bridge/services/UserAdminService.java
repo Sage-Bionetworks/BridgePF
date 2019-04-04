@@ -92,7 +92,6 @@ public class UserAdminService {
         this.uploadService = uploadService;
     }
     
-    
     /**
      * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
      * is not specified (and currently the API for this method does not allow it), than the method iterates 
@@ -205,6 +204,8 @@ public class UserAdminService {
             for (String externalId : BridgeUtils.collectExternalIds(account)) {
                 externalIdService.unassignExternalId(account, externalId);
             }
+            // AccountSecret records and AccountsSubstudies records are are deleted on a 
+            // cascading delete from Account
             accountDao.deleteAccount(accountId);
         }
     }

@@ -305,6 +305,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setSignedConsentTemplate(EmailTemplate template);
     
     /**
+     * The template for an email that is sent to a user when they submit an intent to participate
+     * and there is an app install link to send them so they can proceed with onboarding.
+     */
+    EmailTemplate getAppInstallLinkTemplate();
+    void setAppInstallLinkTemplate(EmailTemplate template);
+    
+    /**
      * The template for an SMS message sent to a user that triggers the reset password workflow, 
      * on an account that only has a phone number.
      */

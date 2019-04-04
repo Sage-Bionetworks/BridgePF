@@ -10,4 +10,5 @@ public enum EmailType {
     VERIFY_CONSENT_EMAIL,
     VERIFY_EMAIL,
     WITHDRAW_CONSENT,
+    APP_INSTALL,
 }
