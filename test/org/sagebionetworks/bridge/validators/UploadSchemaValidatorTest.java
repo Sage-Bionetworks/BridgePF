@@ -232,6 +232,41 @@ public class UploadSchemaValidatorTest {
         assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions[0].name", "is required");
     }
 
+    @Test
+    public void fieldDefTooManyBytes() {
+        // 17 LargeTextAttachment fields to exceed the bytes limit.
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        for (int i = 0; i < 17; i++) {
+            UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field-" + i)
+                    .withType(UploadFieldType.LARGE_TEXT_ATTACHMENT).build();
+            fieldDefList.add(fieldDef);
+        }
+
+        UploadSchema schema = makeSchemaWithFieldList(fieldDefList);
+        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
+                "cannot be greater than 50000 bytes combined");
+    }
+
+    @Test
+    public void fieldDefTooManyColumns() {
+        // 11 multi-choice columns with 11 answers each to exceed the column limit.
+        List<String> answerList = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            answerList.add("answer-" + i);
+        }
+
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field-" + i)
+                    .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList(answerList).build();
+            fieldDefList.add(fieldDef);
+        }
+
+        UploadSchema schema = makeSchemaWithFieldList(fieldDefList);
+        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
+                "cannot be greater than 100 columns combined");
+    }
+
     // Helper to make a valid schema
     private static UploadSchema makeValidSchema() {
         UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
@@ -241,8 +276,12 @@ public class UploadSchemaValidatorTest {
 
     // Make a schema with the given field that's otherwise valid.
     private static UploadSchema makeSchemaWithField(UploadFieldDefinition fieldDef) {
+        return makeSchemaWithFieldList(ImmutableList.of(fieldDef));
+    }
+
+    private static UploadSchema makeSchemaWithFieldList(List<UploadFieldDefinition> fieldDefList) {
         UploadSchema schema = UploadSchema.create();
-        schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+        schema.setFieldDefinitions(fieldDefList);
         schema.setName("valid schema");
         schema.setRevision(1);
         schema.setSchemaId("valid-schema");

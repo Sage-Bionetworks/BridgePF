@@ -1,12 +1,16 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -21,6 +25,8 @@ public class UploadRawZipHandlerTest {
         S3Helper mockS3Helper = mock(S3Helper.class);
         UploadRawZipHandler handler = new UploadRawZipHandler();
         handler.setS3Helper(mockS3Helper);
+        
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);;
 
         // Set up context. We only read the upload ID, decrypted data file (mock), and the record.
         UploadValidationContext context = new UploadValidationContext();
@@ -39,9 +45,10 @@ public class UploadRawZipHandlerTest {
         handler.handle(context);
 
         String expectedRawDataAttachmentId = UPLOAD_ID + UploadRawZipHandler.RAW_ATTACHMENT_SUFFIX;
-        verify(mockS3Helper).writeFileToS3(UploadRawZipHandler.ATTACHMENT_BUCKET, expectedRawDataAttachmentId,
-                mockDecryptedFile);
+        verify(mockS3Helper).writeFileToS3(eq(UploadRawZipHandler.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
+                eq(mockDecryptedFile), metadataCaptor.capture());
 
         assertEquals(expectedRawDataAttachmentId, record.getRawDataAttachmentId());
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 }

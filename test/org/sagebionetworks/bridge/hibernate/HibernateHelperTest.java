@@ -272,6 +272,19 @@ public class HibernateHelperTest {
         verify(mockQuery).setParameter("studyId", "study-test");
         verify(mockQuery).setParameter("id", 10L);
     }
+    
+    @Test
+    public void query() {
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockSession.createQuery(QUERY)).thenReturn(mockQuery);
+        
+        helper.query(QUERY, PARAMETERS);
+        
+        verify(mockSession).createQuery(QUERY);
+        verify(mockQuery).setParameter("id", 10L);
+        verify(mockQuery).setParameter("studyId", "study-test");
+        verify(mockQuery).executeUpdate();
+    }
 
     @Test
     public void update() {

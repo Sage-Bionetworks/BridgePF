@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,9 +27,12 @@ public class UploadRawZipHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(UploadValidationContext context) {
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
         // Upload raw data as an attachment. Attachment ID is "[uploadId]-raw.zip".
         String rawDataAttachmentId = context.getUploadId() + RAW_ATTACHMENT_SUFFIX;
-        s3Helper.writeFileToS3(ATTACHMENT_BUCKET, rawDataAttachmentId, context.getDecryptedDataFile());
+        s3Helper.writeFileToS3(ATTACHMENT_BUCKET, rawDataAttachmentId, context.getDecryptedDataFile(), metadata);
 
         HealthDataRecord record = context.getHealthDataRecord();
         record.setRawDataAttachmentId(rawDataAttachmentId);
