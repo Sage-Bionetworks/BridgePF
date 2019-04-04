@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -17,13 +18,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class IntentToParticipateTest {
     
-    private static final long TIMESTAMP = DateTime.now().getMillis();
+    private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     
     @Test
     public void canSerialize() throws Exception {
         ConsentSignature consentSignature = new ConsentSignature.Builder().withName("Consent Name")
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
-                .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
+                .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
         IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
                 .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -50,8 +51,8 @@ public class IntentToParticipateTest {
         assertEquals("1980-10-10", consentNode.get("birthdate").textValue());
         assertEquals("image-data", consentNode.get("imageData").textValue());
         assertEquals("image/png", consentNode.get("imageMimeType").textValue());
-        assertEquals(TIMESTAMP, consentNode.get("consentCreatedOn").longValue());
-        assertEquals(TIMESTAMP, consentNode.get("signedOn").longValue());
+        assertEquals(TIMESTAMP.toString(), consentNode.get("consentCreatedOn").textValue());
+        assertEquals(TIMESTAMP.toString(), consentNode.get("signedOn").textValue());
         assertEquals("ConsentSignature", consentNode.get("type").textValue());
         assertEquals(7, consentNode.size());
         
@@ -68,8 +69,8 @@ public class IntentToParticipateTest {
         assertEquals("1980-10-10", consentDeser.getBirthdate());
         assertEquals("image-data", consentDeser.getImageData());
         assertEquals("image/png", consentDeser.getImageMimeType());
-        assertEquals(TIMESTAMP, consentDeser.getConsentCreatedOn());
-        assertEquals(TIMESTAMP, consentDeser.getSignedOn());
+        assertEquals(TIMESTAMP.getMillis(), consentDeser.getConsentCreatedOn());
+        assertEquals(TIMESTAMP.getMillis(), consentDeser.getSignedOn());
         
         Phone deserPhone = deser.getPhone();
         assertEquals(PHONE.getNumber(), deserPhone.getNumber());
@@ -81,7 +82,7 @@ public class IntentToParticipateTest {
     public void canCopy() throws Exception {
         ConsentSignature consentSignature = new ConsentSignature.Builder().withName("Consent Name")
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
-                .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
+                .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
         IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
                 .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -101,7 +102,7 @@ public class IntentToParticipateTest {
     public void osSynonyms() throws Exception {
         ConsentSignature consentSignature = new ConsentSignature.Builder().withName("Consent Name")
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
-                .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
+                .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
         IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
                 .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")

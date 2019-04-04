@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
@@ -23,6 +25,8 @@ public class UserSessionInfoTest {
 
     @Test
     public void userSessionInfoSerializesCorrectly() throws Exception {
+        DateTime timestamp = DateTime.now(DateTimeZone.UTC);
+                
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail("test@test.com")
                 .withFirstName("first name")
@@ -37,7 +41,7 @@ public class UserSessionInfoTest {
                 .withDataGroups(Sets.newHashSet("foo")).build();
         
         Map<SubpopulationGuid, ConsentStatus> map = TestUtils
-                .toMap(new ConsentStatus("Consent", "AAA", true, true, false));
+                .toMap(new ConsentStatus("Consent", "AAA", true, true, false, timestamp.getMillis()));
         
         UserSession session = new UserSession(participant);
         session.setConsentStatuses(map);
@@ -79,8 +83,9 @@ public class UserSessionInfoTest {
         assertTrue(consentStatus.get("required").booleanValue());
         assertTrue(consentStatus.get("consented").booleanValue());
         assertFalse(consentStatus.get("signedMostRecentConsent").booleanValue());
+        assertEquals(timestamp.toString(), consentStatus.get("signedOn").textValue());
         assertEquals("ConsentStatus", consentStatus.get("type").textValue());
-        assertEquals(6, consentStatus.size());
+        assertEquals(7, consentStatus.size());
         
         // ... and no things that shouldn't be there
         assertEquals(22, node.size());

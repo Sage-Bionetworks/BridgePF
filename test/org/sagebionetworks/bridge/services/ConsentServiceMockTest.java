@@ -18,6 +18,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.amazonaws.HttpMethod;
@@ -47,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -837,6 +839,43 @@ public class ConsentServiceMockTest {
         StudyParticipant noPhoneOrEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withPhone(TestConstants.PHONE).withEmailVerified(null).withPhoneVerified(null).build();
         consentService.resendConsentAgreement(study, SUBPOP_GUID, noPhoneOrEmail);
+    }
+    
+    @Test
+    public void getConsentStatuses() {
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        account.setConsentSignatureHistory(SECOND_SUBPOP, ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE));
+        
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setName(SUBPOP_GUID.getGuid());
+        subpop1.setGuid(SUBPOP_GUID);
+        subpop1.setRequired(true);
+        
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setName(SECOND_SUBPOP.getGuid());
+        subpop2.setGuid(SECOND_SUBPOP);
+        subpop2.setRequired(true);
+        
+        doReturn(ImmutableList.of(subpop1, subpop2)).when(subpopService).getSubpopulationsForUser(any());
+        
+        Map<SubpopulationGuid, ConsentStatus> map = consentService.getConsentStatuses(CONTEXT, account);
+
+        ConsentStatus status1 = map.get(SUBPOP_GUID);
+        assertEquals(SUBPOP_GUID.getGuid(), status1.getName());
+        assertEquals(SUBPOP_GUID.getGuid(), status1.getSubpopulationGuid());
+        assertTrue(status1.isRequired());
+        assertTrue(status1.isConsented());
+        assertTrue(status1.getSignedMostRecentConsent());
+        assertEquals(new Long(SIGNED_ON), status1.getSignedOn());
+        
+        ConsentStatus status2 = map.get(SECOND_SUBPOP);
+        assertNull(status2.getSignedOn());
+        assertEquals(SECOND_SUBPOP.getGuid(), status2.getName());
+        assertEquals(SECOND_SUBPOP.getGuid(), status2.getSubpopulationGuid());
+        assertTrue(status2.isRequired());
+        assertFalse(status2.isConsented());
+        assertFalse(status2.getSignedMostRecentConsent());
+        assertNull(status2.getSignedOn());
     }
     
     private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {

@@ -83,12 +83,12 @@ public class ParticipantController extends BaseController {
         return createdResult("SMS notification registration created");
     }
 
-    public Result getSelfParticipant() throws Exception {
+    public Result getSelfParticipant(boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         CriteriaContext context = getCriteriaContext(session);
-        StudyParticipant participant = participantService.getSelfParticipant(study, context, false);
+        StudyParticipant participant = participantService.getSelfParticipant(study, context, consents);
         
         String ser = StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
         
