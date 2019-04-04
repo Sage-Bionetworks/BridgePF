@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -88,7 +87,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
+        CriteriaContext context = getCriteriaContext(session);
+        StudyParticipant participant = participantService.getSelfParticipant(study, context, false);
         
         String ser = StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
         
@@ -131,9 +131,8 @@ public class ParticipantController extends BaseController {
     public Result deleteTestParticipant(String userId) {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
         
-        StudyParticipant participant = participantService.getParticipant(study, accountId, false);
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
         if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
         }
@@ -237,8 +236,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        AccountId accountId = BridgeUtils.parseAccountId(study.getIdentifier(), userId);
-        StudyParticipant participant = participantService.getParticipant(study, accountId, consents);
+        StudyParticipant participant = participantService.getParticipant(study, userId, consents);
 
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
@@ -252,8 +250,7 @@ public class ParticipantController extends BaseController {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
 
-        AccountId accountId = BridgeUtils.parseAccountId(studyId, userId);
-        StudyParticipant participant = participantService.getParticipant(study, accountId, consents);
+        StudyParticipant participant = participantService.getParticipant(study, userId, consents);
         
         ObjectWriter writer = StudyParticipant.API_WITH_HEALTH_CODE_WRITER;
         String ser = writer.writeValueAsString(participant);
