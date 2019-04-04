@@ -1109,36 +1109,6 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getParticipantByHealthCode() throws Exception {
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, "healthCode:hc", true)).thenReturn(studyParticipant);
-        
-        Result result = controller.getParticipant("healthCode:hc", true);
-        TestUtils.assertResult(result, 200);
-        
-        String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
-        
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode());
-    }
-    
-    @Test
-    public void getParticipantByExternalId() throws Exception { 
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, "externalId:extid", true)).thenReturn(studyParticipant);
-        
-        Result result = controller.getParticipant("externalId:extid", true);
-        TestUtils.assertResult(result, 200);
-        
-        String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
-        
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode());
-    }
-    
-    @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
         when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
@@ -1146,41 +1116,6 @@ public class ParticipantControllerTest {
         controller.getParticipant(ID, false);
         
         verify(mockParticipantService).getParticipant(study, ID, false);
-    }
-    
-    @Test
-    public void getParticipantForWorkerByHealthCode() throws Exception { 
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        
-        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).build();
-        
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, "healthCode:hc", true)).thenReturn(foundParticipant);
-        
-        Result result = controller.getParticipantForWorker(study.getIdentifier(), "healthCode:hc", true);
-        assertResult(result, 200);
-
-        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, participantNode.get("id").textValue());
-    }
-    
-    @Test
-    public void getParticipantForWorkerByExternalId() throws Exception { 
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        
-        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).build();
-        
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, "externalid:extid", true)).thenReturn(foundParticipant);
-        
-        // all lowercase works key prefix works
-        Result result = controller.getParticipantForWorker(study.getIdentifier(), "externalid:extid", true); 
-        assertResult(result, 200);
-
-        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, participantNode.get("id").textValue());
     }
     
     @Test

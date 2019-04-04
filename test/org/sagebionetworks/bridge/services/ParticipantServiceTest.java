@@ -22,7 +22,9 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -238,7 +241,6 @@ public class ParticipantServiceTest {
     
     private ExternalIdentifier extId;
 
-    
     @Before
     public void before() {
         extId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
@@ -793,6 +795,74 @@ public class ParticipantServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantAccountIdDoesNotExist() {
         participantService.getParticipant(STUDY, "externalId:some-junk", false);
+    }
+    
+    @Test
+    public void getSelfParticipantWithHistory() throws Exception {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+        
+        // Some data to verify
+        account.setId(ID);
+        account.setLastName("lastName");
+        Set<AccountSubstudy> accountSubstudies = new HashSet<>();
+        for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(STUDY.getIdentifier(), substudyId, ID);
+            accountSubstudies.add(acctSubstudy);
+        }
+        account.setAccountSubstudies(accountSubstudies);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
+        account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
+                .withConsentCreatedOn(START_DATE.getMillis()).build()));
+        when(accountDao.getAccount(any())).thenReturn(account);
+        when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid(SubpopulationGuid.create("foo1"));
+        List<Subpopulation> subpops = ImmutableList.of(subpop);
+        when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(subpops);
+        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), subpopGuid)).thenReturn(subpop);
+        
+        StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, true);
+        
+        assertEquals(CONTEXT.getUserId(), retrieved.getId());
+        assertEquals("lastName", retrieved.getLastName());
+        // These have been filtered
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, retrieved.getSubstudyIds());
+        // Consent was calculated
+        assertTrue(retrieved.isConsented());
+        // There is history
+        UserConsentHistory history = retrieved.getConsentHistories().get(subpopGuid.getGuid()).get(0);
+        assertEquals(START_DATE.getMillis(), history.getConsentCreatedOn());
+    }
+    
+    @Test
+    public void getSelfParticipantNoHistory() {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+        
+        // Some data to verify
+        account.setId(ID);
+        Set<AccountSubstudy> accountSubstudies = new HashSet<>();
+        for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(STUDY.getIdentifier(), substudyId, ID);
+            accountSubstudies.add(acctSubstudy);
+        }
+        account.setAccountSubstudies(accountSubstudies);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
+        account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
+                .withConsentCreatedOn(START_DATE.getMillis()).build()));
+        when(accountDao.getAccount(any())).thenReturn(account);
+        when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        
+        StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, false);
+        
+        assertEquals(CONTEXT.getUserId(), retrieved.getId());
+        // These have been filtered
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, retrieved.getSubstudyIds());
+        // Consent was calculated
+        assertTrue(retrieved.isConsented());
+        // There is no history
+        assertTrue(retrieved.getConsentHistories().isEmpty());
     }
     
     @Test

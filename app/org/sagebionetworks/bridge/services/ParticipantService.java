@@ -249,7 +249,7 @@ public class ParticipantService {
         addAccount(builder, assoc, account);
         addConsentStatus(builder, account, context);
         if (includeHistory) {
-            addHistory(builder, account, context);
+            addHistory(builder, account, context.getStudyIdentifier());
         }
         return builder.build();
     }
@@ -275,26 +275,22 @@ public class ParticipantService {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
         addAccount(builder, assoc, account);
-    
-        CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
-        contextBuilder.withStudyIdentifier(study.getStudyIdentifier());
-        contextBuilder.withUserId(account.getId());
-        contextBuilder.withHealthCode(account.getHealthCode());
-        contextBuilder.withUserDataGroups(account.getDataGroups());
-        contextBuilder.withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
 
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
-        if (requestInfo != null) {
-            contextBuilder.withClientInfo(requestInfo.getClientInfo());
-            contextBuilder.withLanguages(requestInfo.getLanguages());
-        }
-        CriteriaContext context = contextBuilder.build();
         if (includeHistory) {
-            addHistory(builder, account, context);
+            addHistory(builder, account, study.getStudyIdentifier());
         }
         // Without requestInfo, we cannot reliably determine if the user is consented
+        RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
         if (requestInfo != null) {
-            addConsentStatus(builder, account, context);    
+            CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier())
+                .withUserId(account.getId())
+                .withHealthCode(account.getHealthCode())
+                .withUserDataGroups(account.getDataGroups())
+                .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
+                .withClientInfo(requestInfo.getClientInfo())
+                .withLanguages(requestInfo.getLanguages()).build();
+            addConsentStatus(builder, account, context);
         }
         return builder.build();
     }
@@ -325,10 +321,10 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder addHistory(StudyParticipant.Builder builder, Account account, CriteriaContext context) {
+    private StudyParticipant.Builder addHistory(StudyParticipant.Builder builder, Account account, StudyIdentifier studyId) {
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         // The history includes all subpopulations whether they match the user or not.
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(context.getStudyIdentifier(), false);
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(studyId, false);
         for (Subpopulation subpop : subpopulations) {
             // always returns a list, even if empty
             List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
