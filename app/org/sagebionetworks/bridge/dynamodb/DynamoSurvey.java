@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
@@ -83,8 +84,8 @@ public class DynamoSurvey implements Survey {
     @Override
     @JsonIgnore
     @DynamoDBAttribute(attributeName = "studyKey")
-    @DynamoDBIndexHashKey(attributeName = "studyKey", globalSecondaryIndexName = "studyKey-index")
-    @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
+    @DynamoDBIndexHashKey(attributeName = "studyKey", globalSecondaryIndexName = "studyKey-identifier-index")
+    @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyKey-identifier-index")
     public String getStudyIdentifier() {
         return studyKey;
     }
@@ -188,6 +189,7 @@ public class DynamoSurvey implements Survey {
 
     @Override
     @DynamoDBAttribute
+    @DynamoDBIndexRangeKey(attributeName = "identifier", globalSecondaryIndexName = "studyKey-identifier-index")
     public String getIdentifier() {
         return identifier;
     }

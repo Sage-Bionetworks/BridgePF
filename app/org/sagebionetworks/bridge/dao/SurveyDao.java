@@ -61,7 +61,13 @@ public interface SurveyDao {
      * Get a specific version of a survey with or without its elements.
      */
     Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements);
-    
+
+    /**
+     * Helper method to get the survey guid for the given study and survey identifier. Returns null if no such survey
+     * exists. Primarily used to check identifier uniqueness.
+     */
+    String getSurveyGuidForIdentifier(StudyIdentifier studyId, String surveyId);
+
     /**
      * Get all versions of a specific survey, ordered by most recent version 
      * first in the list.

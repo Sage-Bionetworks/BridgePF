@@ -29,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -52,9 +54,8 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SurveyServiceTest {
+    private static final Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
 
-    private static Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
-    
     @Resource
     UploadSchemaService schemaService;
 
@@ -63,6 +64,7 @@ public class SurveyServiceTest {
 
     private SharedModuleMetadataService mockSharedModuleMetadataService;
 
+    private String surveyId;
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
 
@@ -71,8 +73,13 @@ public class SurveyServiceTest {
         mockSharedModuleMetadataService = mock(SharedModuleMetadataService.class);
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of());
+
+        surveyId = TestUtils.randomName(SurveyServiceTest.class);
         testSurvey = new TestSurvey(SurveyServiceTest.class, true);
+        testSurvey.setIdentifier(surveyId);
+
         surveysToDelete = new HashSet<>();
+
         surveyService.setSharedModuleMetadataService(mockSharedModuleMetadataService);
         schemaService.setSharedModuleMetadataService(mockSharedModuleMetadataService);
     }
@@ -119,7 +126,9 @@ public class SurveyServiceTest {
         for (SurveyElement element : survey.getElements()) {
             originalGuids.add(element.getGuid());
         }
-        
+
+        // Create another survey. Change the identifier so they don't conflict.
+        testSurvey.setIdentifier(TestUtils.randomName(SurveyServiceTest.class));
         Survey alteredSurvey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(alteredSurvey));
         
@@ -145,7 +154,7 @@ public class SurveyServiceTest {
         survey.setIdentifier("newIdentifier");
         surveyService.updateSurvey(TEST_STUDY, survey);
         survey = surveyService.getSurvey(TEST_STUDY, survey, true, true);
-        assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
+        assertEquals("Identifier has not been changed", surveyId, survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
         surveyService.deleteSurvey(TEST_STUDY, survey);
 
@@ -168,8 +177,12 @@ public class SurveyServiceTest {
         // Make a copy with all the same data:
         String json = BridgeObjectMapper.get().writeValueAsString(survey);
         Survey survey2 = BridgeObjectMapper.get().readValue(json, Survey.class);
+
         // This is JsonIgnored, so add it back.
         survey2.setStudyIdentifier(survey.getStudyIdentifier());
+
+        // Set a different survey ID so they don't conflict.
+        survey2.setIdentifier(TestUtils.randomName(SurveyServiceTest.class));
         
         survey2 = surveyService.createSurvey(survey2);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
@@ -208,12 +221,12 @@ public class SurveyServiceTest {
         surveyService.updateSurvey(TEST_STUDY, survey);
         survey = surveyService.getSurvey(TEST_STUDY, survey, true, true);
 
-        assertEquals("Identifier can be updated", "B", survey.getIdentifier());
+        assertEquals("Identifier cannot be updated", surveyId, survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
         Survey finalVersion = surveyService.getSurvey(TEST_STUDY, nextVersion, true, true);
-        assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
+        assertEquals("Next version has same identifier", surveyId, finalVersion.getIdentifier());
         assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
 
@@ -467,7 +480,7 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA1));
         
         // Version A2
-        Survey surveyA2 = surveyService.createSurvey(surveyA1);
+        Survey surveyA2 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA2));
         
         // Version B1 
@@ -475,7 +488,7 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB1));
         
         // Version B2
-        Survey surveyB2 = surveyService.createSurvey(surveyB1);
+        Survey surveyB2 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB2));
         
         // We return the most recent version whether deleted or not when the flag is true, so we should see this

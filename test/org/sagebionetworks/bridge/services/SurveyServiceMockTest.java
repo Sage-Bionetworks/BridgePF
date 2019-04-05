@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -33,12 +34,15 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -52,7 +56,9 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -62,6 +68,7 @@ public class SurveyServiceMockTest {
     private static final String SCHEDULE_PLAN_GUID = "schedulePlanGuid";
     private static final String SURVEY_GUID = "surveyGuid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-02-08T20:07:57.179Z");
+    private static final String SURVEY_ID = "My-Survey";
     private static final GuidCreatedOnVersionHolder SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
 
     @Mock
@@ -75,6 +82,9 @@ public class SurveyServiceMockTest {
 
     @Mock
     SharedModuleMetadataService mockSharedModuleMetadataService;
+
+    @Mock
+    StudyService mockStudyService;
     
     @Captor
     ArgumentCaptor<GuidCreatedOnVersionHolder> keysCaptor;
@@ -92,13 +102,74 @@ public class SurveyServiceMockTest {
     
     @Before
     public void before() {
+        // Mock dependencies.
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(TestUtils.getValidStudy(
+                SurveyServiceMockTest.class));
+
+        when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgumentAt(0,
+                Survey.class));
+
+        // Create service.
         service = new SurveyService();
+        service.setStudyService(mockStudyService);
         service.setSurveyDao(mockSurveyDao);
         service.setSchedulePlanService(mockSchedulePlanService);
         service.setSharedModuleMetadataService(mockSharedModuleMetadataService);
         service.setPublishValidator(mockSurveyPublishValidator);
     }
-    
+
+    @Test
+    public void createSurvey_NormalCase() {
+        // Set up survey to create.
+        Survey survey = makeSurveyWithElements();
+
+        // Execute and verify.
+        Survey returnedSurvey = service.createSurvey(survey);
+        assertSame(survey, returnedSurvey);
+        assertNotNull(survey.getGuid());
+        assertFalse(survey.getElements().isEmpty());
+
+        for (SurveyElement surveyElement : survey.getElements()) {
+            assertNotNull(surveyElement.getGuid());
+        }
+
+        // Verify DAO.
+        verify(mockSurveyDao).createSurvey(survey);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void createSurvey_InvalidSurvey() {
+        // Create invalid survey. A survey without an identifier is invalid.
+        Survey survey = makeSurveyWithElements();
+        survey.setIdentifier(null);
+
+        // Execute.
+        service.createSurvey(survey);
+    }
+
+    @Test
+    public void createSurvey_IdentifierAlreadyExists() {
+        // Mock DAO to return existing survey for identifier.
+        when(mockSurveyDao.getSurveyGuidForIdentifier(TestConstants.TEST_STUDY, SURVEY_ID)).thenReturn(SURVEY_GUID);
+
+        // Set up survey to create.
+        Survey survey = makeSurveyWithElements();
+
+        // Execute and verify error message.
+        try {
+            service.createSurvey(survey);
+            fail("expected exception");
+        } catch (EntityAlreadyExistsException ex) {
+            assertEquals("Survey", ex.getEntityClass());
+            assertEquals("Survey identifier " + SURVEY_ID + " is already used by survey " + SURVEY_GUID,
+                    ex.getMessage());
+            assertEquals(SURVEY_ID, ex.getEntityKeys().get(SurveyService.KEY_IDENTIFIER));
+        }
+
+        // Verify DAO.
+        verify(mockSurveyDao, never()).createSurvey(any());
+    }
+
     @Test
     public void getSurveyWithoutElements() {
         Survey survey = Survey.create();
@@ -676,6 +747,23 @@ public class SurveyServiceMockTest {
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         survey.setPublished(false);
+        return survey;
+    }
+
+    private Survey makeSurveyWithElements() {
+        // Set study ID and identifier. Clear guid and createdOn. (Guid is set by the service. CreatedOn is set by the
+        // dao.)
+        Survey survey = new TestSurvey(SurveyServiceMockTest.class, true);
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setIdentifier(SURVEY_ID);
+        survey.setGuid(null);
+        survey.setCreatedOn(0);
+
+        // Clear the guids from the survey elements. (This will be set by the service.)
+        for (SurveyElement surveyElement : survey.getElements()) {
+            surveyElement.setGuid(null);
+        }
+
         return survey;
     }
 

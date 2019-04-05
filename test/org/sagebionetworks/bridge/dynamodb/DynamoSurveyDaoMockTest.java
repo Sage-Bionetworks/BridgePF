@@ -17,7 +17,10 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -45,6 +48,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class DynamoSurveyDaoMockTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-08-24T15:23:57.123-0700");
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
@@ -72,7 +76,7 @@ public class DynamoSurveyDaoMockTest {
     private UploadSchemaService mockSchemaService;
     
     @Mock
-    private QueryResultPage<Survey> mockQueryResultPage;
+    private QueryResultPage<DynamoSurvey> mockQueryResultPage;
     
     @Mock
     private QueryResultPage<SurveyElement> mockElementQueryResultPage;
@@ -114,7 +118,45 @@ public class DynamoSurveyDaoMockTest {
         // getSurvey().
         doReturn(survey).when(surveyDao).getSurvey(eq(SURVEY_KEY), anyBoolean());
     }
-    
+
+    @Test
+    public void getSurveyGuidForIdentifier() {
+        // Mock query.
+        DynamoSurvey survey = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        when(mockQueryResultPage.getResults()).thenReturn(ImmutableList.of(survey));
+        when(mockSurveyMapper.queryPage(eq(DynamoSurvey.class), any())).thenReturn(mockQueryResultPage);
+
+        // Execute.
+        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(TestConstants.TEST_STUDY, SURVEY_ID);
+        assertEquals(SURVEY_GUID, surveyGuid);
+
+        // Verify query.
+        ArgumentCaptor<DynamoDBQueryExpression> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, query.getHashKeyValues().getStudyIdentifier());
+        assertFalse(query.isConsistentRead());
+        assertEquals(1, query.getLimit().intValue());
+
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
+        assertEquals(ComparisonOperator.EQ.toString(), rangeKeyCondition.getComparisonOperator());
+        assertEquals(SURVEY_ID, rangeKeyCondition.getAttributeValueList().get(0).getS());
+    }
+
+    @Test
+    public void getSurveyGuidForIdentifier_NoSurvey() {
+        // Mock query.
+        when(mockQueryResultPage.getResults()).thenReturn(ImmutableList.of());
+        when(mockSurveyMapper.queryPage(eq(DynamoSurvey.class), any())).thenReturn(mockQueryResultPage);
+
+        // Execute.
+        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(TestConstants.TEST_STUDY, SURVEY_ID);
+        assertNull(surveyGuid);
+
+        // Query is verified in previous test.
+    }
+
     @Test
     public void updateSurveySucceedsOnUndeletedSurvey() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
