@@ -276,8 +276,12 @@ public class HealthDataServiceSubmitHealthDataTest {
     @Test
     public void submitHealthDataBySurvey() throws Exception {
         // mock schema service
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
-                .withName("answer-me").withType(UploadFieldType.SINGLE_CHOICE).build());
+        // For backwards compatibility, the schema will have both the old per-question fields and the new answers
+        // field.
+        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
+                new UploadFieldDefinition.Builder().withName("answer-me").withType(UploadFieldType.SINGLE_CHOICE)
+                        .build(),
+                UploadUtil.ANSWERS_FIELD_DEF);
         schema.setFieldDefinitions(fieldDefList);
 
         // setup input
@@ -293,14 +297,24 @@ public class HealthDataServiceSubmitHealthDataTest {
         ArgumentCaptor<UploadValidationContext> contextCaptor = ArgumentCaptor.forClass(UploadValidationContext.class);
         verify(mockStrictValidationHandler).handle(contextCaptor.capture());
 
-        HealthDataRecord contextRecord = contextCaptor.getValue().getHealthDataRecord();
+        UploadValidationContext context = contextCaptor.getValue();
+        HealthDataRecord contextRecord = context.getHealthDataRecord();
         assertEquals(SCHEMA_ID, contextRecord.getSchemaId());
         assertEquals(SCHEMA_REV, contextRecord.getSchemaRevision());
 
         // validate that our record was parsed correctly
         JsonNode recordData = contextRecord.getData();
-        assertEquals(1, recordData.size());
+        assertEquals(2, recordData.size());
         assertEquals("C", recordData.get("answer-me").textValue());
+        assertEquals(ATTACHMENT_ID_NODE, recordData.get(UploadUtil.FIELD_ANSWERS));
+
+        // Verify "answers" survey answers attachment.
+        ArgumentCaptor<JsonNode> answersNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(answersNodeCaptor.capture(),
+                eq(context.getUploadId()), eq(UploadUtil.FIELD_ANSWERS));
+        JsonNode answersNode = answersNodeCaptor.getValue();
+        assertEquals(1, answersNode.size());
+        assertEquals("C", answersNode.get("answer-me").textValue());
 
         // validate we did in fact call SurveyService
         verify(mockSurveyService).getSurvey(TestConstants.TEST_STUDY,

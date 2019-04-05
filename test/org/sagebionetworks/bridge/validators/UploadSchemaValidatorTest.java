@@ -211,16 +211,14 @@ public class UploadSchemaValidatorTest {
     public void nullFieldDefList() {
         UploadSchema schema = makeValidSchema();
         schema.setFieldDefinitions(null);
-        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
-                "requires at least one definition");
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test
     public void emptyFieldDefList() {
         UploadSchema schema = makeValidSchema();
         schema.setFieldDefinitions(ImmutableList.of());
-        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
-                "requires at least one definition");
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test

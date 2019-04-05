@@ -112,7 +112,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         // Reset all member vars, because JUnit doesn't.
         inMemoryFileHelper = new InMemoryFileHelper();
         mockHealthDataService = mock(HealthDataService.class);
@@ -149,6 +149,15 @@ public class UploadHandlersEndToEndTest {
             // Required return
             return null;
         }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any(), any());
+
+        doAnswer(invocation -> {
+            String s3Key = invocation.getArgument(1);
+            byte[] uploadedFileContent = invocation.getArgument(2);
+            uploadedFileContentMap.put(s3Key, uploadedFileContent);
+
+            // Required return
+            return null;
+        }).when(mockS3UploadHelper).writeBytesToS3(any(), any(), any(), any());
     }
 
     @AfterClass
@@ -324,9 +333,12 @@ public class UploadHandlersEndToEndTest {
         assertEquals("my-meta-value", userMetadataNode.get("my-meta-key").textValue());
     }
 
-    private void testSurvey(Map<String, String> fileMap) {
+    private void testSurvey(Map<String, String> fileMap) throws Exception {
         // set up schema
+        // To test backwards compatibility, survey schema should include both the old style fields and the new
+        // "answers" field.
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
+                UploadUtil.ANSWERS_FIELD_DEF,
                 new UploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
                         .build(),
                 new UploadFieldDefinition.Builder().withName("BBB").withType(UploadFieldType.MULTI_CHOICE)
@@ -364,7 +376,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(SURVEY_SCHEMA_REV, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
-        assertEquals(3, dataNode.size());
+        assertEquals(4, dataNode.size());
         assertEquals("Yes", dataNode.get("AAA").textValue());
 
         JsonNode bbbChoiceAnswersNode = dataNode.get("BBB");
@@ -378,6 +390,29 @@ public class UploadHandlersEndToEndTest {
         assertEquals("Yes", deliciousNode.get(0).textValue());
         assertEquals("Maybe", deliciousNode.get(1).textValue());
 
+        // Answers node has all the same fields as dataNode, except without its own answers field. Note that the
+        // answers field doesn't go through canonicalization, since it's treated as an attachment instead of individual
+        // fields.
+        String answersAttachmentId = dataNode.get(UploadUtil.FIELD_ANSWERS).textValue();
+        byte[] answersUploadedContent = uploadedFileContentMap.get(answersAttachmentId);
+        JsonNode answersNode = BridgeObjectMapper.get().readTree(answersUploadedContent);
+        assertEquals(3, answersNode.size());
+
+        JsonNode aaaChoiceAnswersNode = answersNode.get("AAA");
+        assertEquals(1, aaaChoiceAnswersNode.size());
+        assertEquals("Yes", aaaChoiceAnswersNode.get(0).textValue());
+
+        bbbChoiceAnswersNode = answersNode.get("BBB");
+        assertEquals(3, bbbChoiceAnswersNode.size());
+        assertEquals("fencing", bbbChoiceAnswersNode.get(0).textValue());
+        assertEquals("running", bbbChoiceAnswersNode.get(1).textValue());
+        assertEquals(3, bbbChoiceAnswersNode.get(2).intValue());
+
+        deliciousNode = answersNode.get("delicious");
+        assertEquals(2, deliciousNode.size());
+        assertEquals("Yes", deliciousNode.get(0).textValue());
+        assertEquals("Maybe", deliciousNode.get(1).textValue());
+
         // We upload the unencrypted zipped file back to S3.
         validateRawDataAttachment();
 
@@ -386,7 +421,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     @Test
-    public void v1LegacySurvey() {
+    public void v1LegacySurvey() throws Exception {
         // set up upload files
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
@@ -441,7 +476,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     @Test
-    public void v2GenericSurvey() {
+    public void v2GenericSurvey() throws Exception {
         // set up upload files
         String infoJsonText = "{\n" +
                 "   \"createdOn\":\"" + CREATED_ON_STRING + "\",\n" +

@@ -6,12 +6,12 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,8 +85,7 @@ public class GenericUploadFormatHandlerTest {
         UploadFieldDefinition sanitizeAttachmentTxtField = new UploadFieldDefinition.Builder()
                 .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
                 .withFileExtension(".txt").withMimeType("text/plain").build();
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(sanitizeAttachmentTxtField);
-        mockSchemaServiceWithFields(fieldDefList);
+        mockSchemaServiceWithFields(sanitizeAttachmentTxtField);
 
         // Setup inputs.
         File sanitizeAttachmentTxtFile = makeFileWithContent("sanitize!@#$attachment.txt",
@@ -118,15 +117,14 @@ public class GenericUploadFormatHandlerTest {
         // Same test as above, excecpt with the data filename parameter.
 
         // mock schema service
+        UploadFieldDefinition fooField = new UploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxLength(24).build();
+        UploadFieldDefinition barField = new UploadFieldDefinition.Builder().withName("bar")
+                .withType(UploadFieldType.ATTACHMENT_V2).build();
         UploadFieldDefinition sanitizeAttachmentTxtField = new UploadFieldDefinition.Builder()
                 .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
                 .withFileExtension(".txt").withMimeType("text/plain").build();
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("foo").withType(UploadFieldType.STRING).withMaxLength(24)
-                        .build(),
-                new UploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.ATTACHMENT_V2).build(),
-                sanitizeAttachmentTxtField);
-        mockSchemaServiceWithFields(fieldDefList);
+        mockSchemaServiceWithFields(fooField, barField, sanitizeAttachmentTxtField);
 
         // Mock UploadFileHelper for the datafile-specific attachment.
         when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(TextNode.valueOf(
@@ -187,8 +185,7 @@ public class GenericUploadFormatHandlerTest {
                 .withType(UploadFieldType.STRING).withMaxLength(24).build();
         UploadFieldDefinition barFieldDef = new UploadFieldDefinition.Builder().withName("bar")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(fooFieldDef, barFieldDef);
-        mockSchemaServiceWithFields(fieldDefList);
+        mockSchemaServiceWithFields(fooFieldDef, barFieldDef);
 
         // Upload file helper should just return null for this test.
         when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(null);
@@ -223,12 +220,209 @@ public class GenericUploadFormatHandlerTest {
         verifyNoMoreInteractions(mockUploadFileHelper);
     }
 
-    private void mockSchemaServiceWithFields(List<UploadFieldDefinition> fieldDefList) {
+    @Test
+    public void answersFieldFromDataFile() throws Exception {
+        // Mock schema service.
+        mockSchemaServiceWithFields(UploadUtil.ANSWERS_FIELD_DEF);
+
+        // Mock dependencies.
+        when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(null);
+        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(TextNode.valueOf(
+                "answers-attachment-id"));
+
+        // Setup inputs.
+        String recordJsonText = "{\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar-value\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put("record.json", recordJsonFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode infoJsonNode = makeInfoJson();
+        infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(1, dataMap.size());
+        assertEquals("answers-attachment-id", dataMap.get(UploadUtil.FIELD_ANSWERS).textValue());
+
+        // Verify answers attachment.
+        ArgumentCaptor<JsonNode> answersNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(answersNodeCaptor.capture(), eq(UPLOAD_ID),
+                eq(UploadUtil.FIELD_ANSWERS));
+
+        JsonNode answersNode = answersNodeCaptor.getValue();
+        assertEquals(2, answersNode.size());
+        assertEquals("foo-value", answersNode.get("foo").textValue());
+        assertEquals("bar-value", answersNode.get("bar").textValue());
+    }
+
+    @Test
+    public void answersFieldAsString() throws Exception {
+        // Mock schema service.
+        UploadFieldDefinition answersStringFieldDef = new UploadFieldDefinition.Builder()
+                .withName(UploadUtil.FIELD_ANSWERS).withType(UploadFieldType.STRING).withUnboundedText(true).build();
+        mockSchemaServiceWithFields(answersStringFieldDef);
+
+        // Mock dependencies.
+        when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(null);
+
+        // Setup inputs.
+        String recordJsonText = "{\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar-value\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put("record.json", recordJsonFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode infoJsonNode = makeInfoJson();
+        infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(1, dataMap.size());
+
+        JsonNode answersNode = dataMap.get(UploadUtil.FIELD_ANSWERS);
+        assertEquals(2, answersNode.size());
+        assertEquals("foo-value", answersNode.get("foo").textValue());
+        assertEquals("bar-value", answersNode.get("bar").textValue());
+
+        // We don't upload anything.
+        verify(mockUploadFileHelper, never()).uploadJsonNodeAsAttachment(any(), any(), any());
+    }
+
+    @Test
+    public void answersFieldNullDataFile() throws Exception {
+        // Mock schema service.
+        mockSchemaServiceWithFields(UploadUtil.ANSWERS_FIELD_DEF);
+
+        // Mock dependencies.
+        when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(null);
+
+        // Setup inputs.
+        UploadValidationContext context = makeContextWithContent(ImmutableMap.of());
+        ObjectNode infoJsonNode = makeInfoJson();
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(0, dataMap.size());
+
+        // We don't upload anything.
+        verify(mockUploadFileHelper, never()).uploadJsonNodeAsAttachment(any(), any(), any());
+    }
+
+    @Test
+    public void answersOverriddenInDataFile() throws Exception {
+        // Mock schema service.
+        mockSchemaServiceWithFields(UploadUtil.ANSWERS_FIELD_DEF);
+
+        // Mock dependencies.
+        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(TextNode.valueOf(
+                "answers-attachment-id"));
+
+        // Setup inputs.
+        String recordJsonText = "{\n" +
+                "   \"" + UploadUtil.FIELD_ANSWERS + "\":{" +
+                "       \"foo\":\"overriden foo\",\n" +
+                "       \"bar\":\"overriden bar\"\n" +
+                "   },\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar-value\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put("record.json", recordJsonFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode infoJsonNode = makeInfoJson();
+        infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(1, dataMap.size());
+        assertEquals("answers-attachment-id", dataMap.get(UploadUtil.FIELD_ANSWERS).textValue());
+
+        // Verify answers attachment.
+        ArgumentCaptor<JsonNode> answersNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(answersNodeCaptor.capture(), eq(UPLOAD_ID),
+                eq(UploadUtil.FIELD_ANSWERS));
+
+        JsonNode answersNode = answersNodeCaptor.getValue();
+        assertEquals(2, answersNode.size());
+        assertEquals("overriden foo", answersNode.get("foo").textValue());
+        assertEquals("overriden bar", answersNode.get("bar").textValue());
+    }
+
+    @Test
+    public void answersOverriddenInOtherFile() throws Exception {
+        // Mock schema service.
+        mockSchemaServiceWithFields(UploadUtil.ANSWERS_FIELD_DEF);
+
+        // Setup inputs.
+        String answersJsonText = "{\n" +
+                "   \"foo\":\"overridden foo\",\n" +
+                "   \"bar\":\"overridden bar\"\n" +
+                "}";
+        File answersFile = makeFileWithContent(UploadUtil.FIELD_ANSWERS, answersJsonText);
+
+        String recordJsonText = "{\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar-value\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put(UploadUtil.FIELD_ANSWERS, answersFile)
+                .put("record.json", recordJsonFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode infoJsonNode = makeInfoJson();
+        infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(1, dataMap.size());
+        assertEquals(ATTACHMENT_ID, dataMap.get(UploadUtil.FIELD_ANSWERS).textValue());
+
+        // Verify call to findValueForField. This passes in both "answers" and "record.json".
+        ArgumentCaptor<Map> sanitizedFileMapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), sanitizedFileMapCaptor.capture(),
+                eq(UploadUtil.ANSWERS_FIELD_DEF), any());
+
+        Map<String, File> sanitizedFileMap = sanitizedFileMapCaptor.getValue();
+        assertEquals(2, sanitizedFileMap.size());
+        assertSame(answersFile, sanitizedFileMap.get(UploadUtil.FIELD_ANSWERS));
+        assertSame(recordJsonFile, sanitizedFileMap.get("record.json"));
+
+        // We don't upload anything.
+        verify(mockUploadFileHelper, never()).uploadJsonNodeAsAttachment(any(), any(), any());
+    }
+
+    private void mockSchemaServiceWithFields(UploadFieldDefinition... fieldDefVarargs) {
         UploadSchema schema = UploadSchema.create();
         schema.setSchemaId(SCHEMA_ID);
         schema.setName(SCHEMA_NAME);
         schema.setRevision(SCHEMA_REV);
-        schema.setFieldDefinitions(fieldDefList);
+        schema.setFieldDefinitions(ImmutableList.copyOf(fieldDefVarargs));
 
         when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schema);
