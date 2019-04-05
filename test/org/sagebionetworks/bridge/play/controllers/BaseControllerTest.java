@@ -12,7 +12,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.After;
@@ -60,7 +58,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /** Test class for basic utility functions in BaseController. */
@@ -70,7 +67,6 @@ public class BaseControllerTest {
     private static final String HEALTH_CODE = "health-code";
     private static final String IP_ADDRESS = "dummy IP address";
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
-    private static final Set<String> GROUPS = Sets.newHashSet("group1");
     private static final ClientInfo CLIENTINFO = ClientInfo.fromUserAgentCache("app/10");
     private static final DateTime UPLOADED_ON = DateTime.now().minusHours(1);
     private static final String USER_ID = "user-id";
@@ -95,14 +91,10 @@ public class BaseControllerTest {
     @Test
     public void addWarningMsgWorks() throws Exception {
         // mock context
-        Http.Context context = mock(Http.Context.class);
-        Http.Response mockResponse = mock(Http.Response.class);
-        when(context.response()).thenReturn(mockResponse);
-        Http.Context.current.set(context);
+        Http.Response response = TestUtils.mockPlay().withMockResponse().mock();
 
         BaseController.addWarningMessage(TEST_WARNING_MSG);
         // verify if it set warning header
-        Http.Response response = Http.Context.current().response();
         verify(response).setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, TEST_WARNING_MSG);
 
         // verify if it append new warning msg
@@ -165,7 +157,7 @@ public class BaseControllerTest {
     
     @Test
     public void canRetrieveClientInfoObject() throws Exception {
-        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        TestUtils.mockPlay().withHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4").mock();
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertEquals("Asthma", info.getAppName());
@@ -178,8 +170,8 @@ public class BaseControllerTest {
     
     @Test
     public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
-        mockHeader(USER_AGENT, 
-                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
+        TestUtils.mockPlay().withMockResponse().withHeader(USER_AGENT, 
+                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi").mock();
         
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
         assertNull(info.getAppName());
@@ -192,8 +184,8 @@ public class BaseControllerTest {
 
     @Test
     public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
-        mockPlayContext();
-        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        TestUtils.mockPlay().withMockResponse().withHeader(USER_AGENT, 
+                "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4").mock();
 
         Http.Response mockResponse = BaseController.response();
         verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
@@ -201,7 +193,7 @@ public class BaseControllerTest {
 
     @Test
     public void setWarningHeaderWhenNoUserAgent() throws Exception {
-        mockPlayContext();
+        TestUtils.mockPlay().withMockResponse().mock();
 
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
@@ -218,8 +210,7 @@ public class BaseControllerTest {
 
     @Test
     public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
-        mockPlayContext();
-        mockHeader(USER_AGENT, "");
+        TestUtils.mockPlay().withMockResponse().withHeader(USER_AGENT, "").mock();
 
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
@@ -236,8 +227,7 @@ public class BaseControllerTest {
 
     @Test
     public void setWarningHeaderWhenNullUserAgent() throws Exception {
-        mockPlayContext();
-        mockHeader(USER_AGENT, null);
+        TestUtils.mockPlay().withMockResponse().withHeader(USER_AGENT, null).mock();
 
         ClientInfo info = new SchedulePlanController().getClientInfoFromUserAgentHeader();
 
@@ -254,7 +244,8 @@ public class BaseControllerTest {
 
     @Test (expected = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
-        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        TestUtils.mockPlay().withHeader(USER_AGENT, 
+                "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4").mock();
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put(OperatingSystem.IOS, 28);
@@ -269,7 +260,8 @@ public class BaseControllerTest {
     
     @Test
     public void testValidSupportedVersionDoesNotThrowException() throws Exception {
-        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        TestUtils.mockPlay().withHeader(USER_AGENT, 
+                "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4").mock();
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put(OperatingSystem.IOS, 25);
@@ -283,7 +275,8 @@ public class BaseControllerTest {
     
     @Test
     public void testNullSupportedVersionDoesNotThrowException() throws Exception {
-        mockHeader(USER_AGENT, "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4");
+        TestUtils.mockPlay().withHeader(USER_AGENT, 
+                "Asthma/26 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4").mock();
         
         HashMap<String, Integer> map =new HashMap<>();
         
@@ -296,7 +289,7 @@ public class BaseControllerTest {
     
     @Test
     public void testUnknownOSDoesNotThrowException() throws Exception {
-        mockHeader(USER_AGENT, "Asthma/26 BridgeSDK/4");
+        TestUtils.mockPlay().withHeader(USER_AGENT, "Asthma/26 BridgeSDK/4").mock();
         
         HashMap<String, Integer> map =new HashMap<>();
         map.put(OperatingSystem.IOS, 25);
@@ -310,7 +303,7 @@ public class BaseControllerTest {
     
     @Test
     public void roleEnforcedWhenRetrievingSession() throws Exception {
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
 
         SchedulePlanController controller = spy(new SchedulePlanController());
 
@@ -358,38 +351,57 @@ public class BaseControllerTest {
     @Test
     public void canRetrieveLanguagesFromAcceptHeader() throws Exception {
         BaseController controller = new SchedulePlanController();
-        
-        mockPlayContext();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, 
+                "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6").mock();
         
         // with no accept language header at all, things don't break;
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-
-        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
-        
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
             
         assertEquals(ImmutableList.of("en", "de"), langs);
-
-        mockHeader(ACCEPT_LANGUAGE, null);
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-            
-        mockHeader(ACCEPT_LANGUAGE, "");
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-            
-        mockHeader(ACCEPT_LANGUAGE, "en-US");
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of("en"), langs);
-            
-        mockHeader(ACCEPT_LANGUAGE, "FR,en-US");
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of("fr","en"), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsNull() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, null).withMockResponse().mock();
         
-        // Real header from Chrome... works fine
-        mockHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.8");
-        langs = controller.getLanguagesFromAcceptLanguageHeader();
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
+    }        
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsEmpty() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "").withMockResponse().mock();
+        
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsSimple() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "en-US").mock();
+        
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of("en"), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsCompoundWithoutWeights() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "FR,en-US").mock();
+        
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of("fr", "en"), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsCompoundWithWeights() throws Exception {
+        BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.8").mock();
+        
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
         assertEquals(ImmutableList.of("en"), langs);
     }
     
@@ -398,9 +410,9 @@ public class BaseControllerTest {
     public void badAcceptLanguageHeaderSilentlyIgnored() throws Exception {
         BaseController controller = new SchedulePlanController();
         
-        mockPlayContext();
         // This is apparently a bad User-Agent header some browser is sending to us; any failure will do though.
-        mockHeader(ACCEPT_LANGUAGE, "chrome://global/locale/intl.properties");
+        TestUtils.mockPlay().withMockResponse()
+            .withHeader(USER_AGENT, "chrome://global/locale/intl.properties").mock();
         
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
         assertTrue(langs.isEmpty());
@@ -442,8 +454,8 @@ public class BaseControllerTest {
         BaseController controller = new SchedulePlanController();
         controller.setAccountDao(accountDao);
         controller.setSessionUpdateService(mockSessionUpdateService);
-        mockPlayContext();
-        mockHeader(ACCEPT_LANGUAGE, "en,fr");
+        
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "en,fr").withMockResponse().mock();
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -476,7 +488,7 @@ public class BaseControllerTest {
         BaseController controller = new SchedulePlanController();
         controller.setAccountDao(accountDao);
         controller.setSessionUpdateService(mockSessionUpdateService);
-        mockPlayContext();
+        TestUtils.mockPlay().withMockResponse().mock();
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -495,8 +507,8 @@ public class BaseControllerTest {
 
     @Test
     public void doesNotSetWarnHeaderWhenHasAcceptLanguage() throws Exception {
-        mockPlayContext();
-        mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+        TestUtils.mockPlay().withMockResponse().withHeader(ACCEPT_LANGUAGE, 
+                "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6").mock();
 
         // verify if it does not set warning header
         Http.Response mockResponse = BaseController.response();
@@ -506,7 +518,7 @@ public class BaseControllerTest {
     @Test
     public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
         BaseController controller = new SchedulePlanController();
-        mockPlayContext();
+        TestUtils.mockPlay().withMockResponse().mock();
 
         // with no accept language header at all, things don't break;
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -520,8 +532,7 @@ public class BaseControllerTest {
     @Test
     public void setWarnHeaderWhenEmptyAcceptLanguage() throws Exception {
         BaseController controller = new SchedulePlanController();
-        mockPlayContext();
-        mockHeader(ACCEPT_LANGUAGE, "");
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "").withMockResponse().mock();
 
         // with no accept language header at all, things don't break;
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -535,8 +546,7 @@ public class BaseControllerTest {
     @Test
     public void setWarnHeaderWhenNullAcceptLanguage() throws Exception {
         BaseController controller = new SchedulePlanController();
-        mockPlayContext();
-        mockHeader(ACCEPT_LANGUAGE, null);
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, null).withMockResponse().mock();
 
         // with no accept language header at all, things don't break;
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -550,8 +560,7 @@ public class BaseControllerTest {
     @Test
     public void setWarnHeaderWhenInvalidAcceptLanguage() throws Exception {
         BaseController controller = new SchedulePlanController();
-        mockPlayContext();
-        mockHeader(ACCEPT_LANGUAGE, "ThisIsAnVvalidAcceptLanguage");
+        TestUtils.mockPlay().withHeader(ACCEPT_LANGUAGE, "ThisIsAnVvalidAcceptLanguage").withMockResponse().mock();
 
         // with no accept language header at all, things don't break;
         List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
@@ -791,11 +800,8 @@ public class BaseControllerTest {
     
     @Test
     public void ifClientSendsHeaderRetrieveIt() throws Exception {
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("Bridge-Session", new String[] {"ABC"});
-        
-        TestUtils.mockPlayContextWithJson("{}", headers);
         BaseController controller = new SchedulePlanController();
+        TestUtils.mockPlay().withJsonBody("{}").withHeader("Bridge-Session", "ABC").withMockResponse().mock();
         
         String token = controller.getSessionToken();
         assertEquals("ABC", token);
@@ -876,7 +882,8 @@ public class BaseControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withId("userId")
                 .withLanguages(LANGUAGES)
-                .withDataGroups(GROUPS)
+                .withDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
                 .withTimeZone(MSK)
                 .build();
         session.setParticipant(participant);
@@ -886,15 +893,14 @@ public class BaseControllerTest {
         doReturn(CLIENTINFO).when(controller).getClientInfoFromUserAgentHeader();
         controller.setCacheProvider(cacheProvider);
         
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("User-Agent", new String[]{"app/10"});
-        TestUtils.mockPlayContextWithJson("{}", headers);
+        TestUtils.mockPlay().withJsonBody("{}").withHeader("User-Agent", "app/10").mock();
         
         RequestInfo info = controller.getRequestInfoBuilder(session).build();
         
         assertEquals("userId", info.getUserId());
         assertEquals(LANGUAGES, info.getLanguages());
-        assertEquals(GROUPS, info.getUserDataGroups());
+        assertEquals(TestConstants.USER_DATA_GROUPS, info.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, info.getUserSubstudyIds());
         assertEquals(MSK, info.getTimeZone());
         assertEquals("app/10", info.getUserAgent());
         assertEquals(CLIENTINFO, info.getClientInfo());
@@ -928,8 +934,8 @@ public class BaseControllerTest {
 
         // Set up participant and session.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
-                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES)
-                .build();
+                .withDataGroups(TestConstants.USER_DATA_GROUPS).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+                .withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES).build();
 
         UserSession session = new UserSession(participant);
         session.setIpAddress(IP_ADDRESS);
@@ -943,19 +949,20 @@ public class BaseControllerTest {
         assertEquals(IP_ADDRESS, context.getIpAddress());
         assertEquals(USER_ID, context.getUserId());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
         assertEquals(TEST_STUDY, context.getStudyIdentifier());
     }
 
     @Test
     public void testGetRequestId() throws Exception {
-        mockHeader(BridgeConstants.X_REQUEST_ID_HEADER, "dummy-request-id");
+        TestUtils.mockPlay().withHeader(BridgeConstants.X_REQUEST_ID_HEADER, "dummy-request-id").mock();
         BaseController controller = new SchedulePlanController();
         assertEquals("dummy-request-id", controller.getRequestId());
     }
 
     @Test
     public void getRemoteAddressFromHeader() throws Exception {
-        mockHeader(BridgeConstants.X_FORWARDED_FOR_HEADER, IP_ADDRESS);
+        TestUtils.mockPlay().withHeader(BridgeConstants.X_FORWARDED_FOR_HEADER, IP_ADDRESS).mock();
         BaseController controller = new SchedulePlanController();
         assertEquals(IP_ADDRESS, controller.getRemoteAddress());
     }
@@ -964,7 +971,7 @@ public class BaseControllerTest {
     public void getRemoteAddressFromFallback() throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.remoteAddress()).thenReturn(IP_ADDRESS);
-        mockPlayContext(mockRequest);
+        TestUtils.mockPlay().withRequest(mockRequest).mock();
 
         BaseController controller = new SchedulePlanController();
         assertEquals(IP_ADDRESS, controller.getRemoteAddress());
@@ -992,13 +999,6 @@ public class BaseControllerTest {
     private Map<SubpopulationGuid,ConsentStatus> getConsentStatusMap(boolean consented) {
         return TestUtils.toMap(new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("guid"))
                 .withConsented(consented).withSignedMostRecentConsent(consented).build());
-    }
-    
-    private void mockHeader(String header, String value) throws Exception {
-        Http.Request mockRequest = mock(Http.Request.class);
-        when(mockRequest.getHeader(header)).thenReturn(value);
-        when(mockRequest.headers()).thenReturn(ImmutableMap.of(header, new String[] { value }));
-        mockPlayContext(mockRequest);
     }
 
 }

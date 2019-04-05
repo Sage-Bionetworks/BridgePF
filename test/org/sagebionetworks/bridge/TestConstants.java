@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -18,7 +19,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 public class TestConstants {
     
@@ -42,10 +42,10 @@ public class TestConstants {
     public static final String STUDIES_URL = API_URL + "/studies/";
 
     public static final String APPLICATION_JSON = "application/json";
-    public static final String EMAIL = "email";
+    public static final String EMAIL = "email@email.com";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
-
+    
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
     
@@ -82,7 +82,10 @@ public class TestConstants {
     public static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid()), REQUIRED_UNSIGNED).build();
     
-    public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
+    // Although these are sets, for testing purposes it is useful to keep the keys in order
+    public static final Set<String> USER_DATA_GROUPS = new TreeSet<String>(ImmutableList.of("group1","group2"));
+    // Although these are sets, for testing purposes it is useful to keep the keys in order
+    public static final Set<String> USER_SUBSTUDY_IDS = new TreeSet<String>(ImmutableList.of("substudyA","substudyB"));
     
     public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     

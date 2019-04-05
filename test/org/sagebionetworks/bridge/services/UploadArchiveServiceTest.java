@@ -47,7 +47,7 @@ public class UploadArchiveServiceTest {
 
         // mock encryptor cache
         LoadingCache<String, CmsEncryptor> mockEncryptorCache = mock(LoadingCache.class);
-        when(mockEncryptorCache.get(notNull(String.class))).thenReturn(encryptor);
+        when(mockEncryptorCache.get(notNull())).thenReturn(encryptor);
 
         // archive service
         archiveService = new UploadArchiveService();

@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -68,8 +68,10 @@ public class AppConfigValidatorTest {
         appConfig = AppConfig.create();
         appConfig.setStudyId(TEST_STUDY_IDENTIFIER);
         
-        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), true);
-        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), false);
+        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, true);
+        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, false);
     }
     
     @Test
@@ -186,9 +188,6 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnCreate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
@@ -196,9 +195,6 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnUpdate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
@@ -230,10 +226,12 @@ public class AppConfigValidatorTest {
     public void criteriaAreValidated() { 
         Criteria criteria = Criteria.create();
         criteria.setNoneOfGroups(Sets.newHashSet("bad-group"));
+        criteria.setAllOfSubstudyIds(Sets.newHashSet("wrong-group"));
         
         appConfig.setCriteria(criteria);
         
-        assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
+        assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: group1, group2");
+        assertValidatorMessage(newValidator, appConfig, "allOfSubstudyIds", "'wrong-group' is not in enumeration: substudyA, substudyB");
     }
     
     @Test

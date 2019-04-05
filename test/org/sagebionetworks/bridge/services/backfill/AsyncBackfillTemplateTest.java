@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.longThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.longThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
-import org.hamcrest.Matcher;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -68,8 +67,7 @@ public class AsyncBackfillTemplateTest {
 
         // Verify callback
         verify(callback, times(1)).start(backfillTask);
-        verify(callback, times(1)).newRecords(any(BackfillRecord.class));
-        verify(callback, times(1)).newRecords(any(BackfillRecord.class), any(BackfillRecord.class));
+        verify(callback, times(2)).newRecords(any(BackfillRecord.class));
         verify(callback, times(1)).done();
 
         // Verify lock
@@ -82,7 +80,6 @@ public class AsyncBackfillTemplateTest {
         verify(backfillDao, times(1)).updateTaskStatus(taskId, BackfillStatus.COMPLETED);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testWithConcurrentModificationException() throws Exception {
 
@@ -144,10 +141,9 @@ public class AsyncBackfillTemplateTest {
         verify(lockDao, times(1)).acquireLock(lockClazz, lockObject, TestBackfillService.EXPIRE);
 
         // Verify backfill dao
-        Matcher<Long> sinceMatcher = new ArgumentMatcher<Long>() {
+        ArgumentMatcher<Long> sinceMatcher = new ArgumentMatcher<Long>() {
             @Override
-            public boolean matches(Object item) {
-                long since = ((Long)item).longValue();
+            public boolean matches(Long since) {
                 long expireInMillis = TestBackfillService.EXPIRE * 1000L;
                 // Make sure the time point after which we look for the list of backfill tasks
                 // goes back for the duration of lock expiration

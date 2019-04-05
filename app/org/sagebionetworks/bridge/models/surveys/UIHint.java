@@ -17,6 +17,8 @@ public enum UIHint {
     TOGGLE,
     WEIGHT,
     HEIGHT,
-    BLOODPRESSURE
+    BLOODPRESSURE,
+    YEARMONTH,
+    POSTALCODE
     
 }

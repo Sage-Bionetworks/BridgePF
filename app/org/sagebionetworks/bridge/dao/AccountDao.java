@@ -7,7 +7,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -55,33 +54,19 @@ public interface AccountDao {
     void deleteReauthToken(AccountId accountId);
     
     /**
-     * Retrieve an account where authentication is handled outside of the DAO (If we
-     * retrieve and return a session to the user through a path that does not call
-     * authenticate/reauthenticate, then you will need to call this method to get
-     * the final account). This retrieves the account, and rotates and returns a new
-     * reauthorization token, the same as the authenticate and reauthenticate calls.
-     * This method returns null if the Account does not exist.
+     * Create an account. If the optional consumer is passed to this method and it throws an 
+     * exception, the account will not be persisted (the consumer is executed after the persist 
+     * is executed in a transaction, however).
      */
-    Account getAccountAfterAuthentication(AccountId accountId);
-    
-    /**
-     * A factory method to construct a valid Account object that will work with our
-     * underlying persistence store. This does NOT save the account, you must call
-     * createAccount() after the account has been updated.
-     */
-    Account constructAccount(Study study, String email, Phone phone, String externalId, String password);
-    
-    /**
-     * Create an account. The account object should initially be retrieved from the 
-     * constructAccount() factory method.
-     */
-    void createAccount(Study study, Account account);
+    void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
-     * (constructAccount() is not sufficient).
+     * (constructAccount() is not sufficient). If the optional consumer is passed to this method and 
+     * it throws an exception, the account will not be persisted (the consumer is executed after 
+     * the persist is executed in a transaction, however).
      */
-    void updateAccount(Account account);
+    void updateAccount(Account account, Consumer<Account> afterPersistConsumer);
     
     /**
      * Load, and if it exists, edit and save an account. 

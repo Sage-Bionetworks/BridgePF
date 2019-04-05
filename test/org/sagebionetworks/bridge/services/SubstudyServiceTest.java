@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -19,7 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.SubstudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -58,6 +59,21 @@ public class SubstudyServiceTest {
         assertEquals(substudy, returnedValue);
         
         verify(substudyDao).getSubstudy(TestConstants.TEST_STUDY, "id");
+    }
+    
+    @Test
+    public void getSubstudyIds() {
+        Substudy substudyA = Substudy.create();
+        substudyA.setId("substudyA");
+        
+        Substudy substudyB = Substudy.create();
+        substudyB.setId("substudyB");
+        List<Substudy> substudies = ImmutableList.of(substudyA, substudyB); 
+        
+        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(substudies);
+        
+        Set<String> substudyIds = service.getSubstudyIds(TestConstants.TEST_STUDY);
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, substudyIds);
     }
     
     @Test(expected = EntityNotFoundException.class)

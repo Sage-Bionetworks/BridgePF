@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.upload;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -100,6 +101,7 @@ public class UploadHandlersEndToEndTest {
     private HealthDataService mockHealthDataService;
     private UploadDao mockUploadDao;
     private S3Helper mockS3UploadHelper;
+    private ArgumentCaptor<ObjectMetadata> metadataCaptor;
     private HealthDataRecord savedRecord;
     private Map<String, byte[]> uploadedFileContentMap;
     private byte[] zippedFile;
@@ -118,17 +120,18 @@ public class UploadHandlersEndToEndTest {
         mockS3UploadHelper = mock(S3Helper.class);
         savedRecord = null;
         uploadedFileContentMap = new HashMap<>();
+        metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
 
         // Mock HealthDataService.createOrUpdateRecord()
         when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(
                 invocation -> {
                     // save record
-                    savedRecord = invocation.getArgumentAt(0, HealthDataRecord.class);
+                    savedRecord = invocation.getArgument(0);
                     return savedRecord.getId();
                 });
 
         when(mockHealthDataService.getRecordById(any())).thenAnswer(invocation -> {
-            String recordId = invocation.getArgumentAt(0, String.class);
+            String recordId = invocation.getArgument(0);
             if (savedRecord == null || !savedRecord.getId().equals(recordId)) {
                 return null;
             } else {
@@ -138,14 +141,14 @@ public class UploadHandlersEndToEndTest {
 
         // Mock S3 upload helper. We need to save the file contents, since we delete all files at the end of execution.
         doAnswer(invocation -> {
-            String s3Key = invocation.getArgumentAt(1, String.class);
-            File uploadedFile = invocation.getArgumentAt(2, File.class);
+            String s3Key = invocation.getArgument(1);
+            File uploadedFile = invocation.getArgument(2);
             byte[] uploadedFileContent = inMemoryFileHelper.getBytes(uploadedFile);
             uploadedFileContentMap.put(s3Key, uploadedFileContent);
 
             // Required return
             return null;
-        }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any());
+        }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any(), any());
     }
 
     @AfterClass
@@ -180,7 +183,7 @@ public class UploadHandlersEndToEndTest {
         // "S3" returns file unencrypted for simplicity of testing
         S3Helper mockS3DownloadHelper = mock(S3Helper.class);
         doAnswer(invocation -> {
-            File destFile = invocation.getArgumentAt(2, File.class);
+            File destFile = invocation.getArgument(2);
             inMemoryFileHelper.writeBytes(destFile, zippedFile);
 
             // Required return
@@ -194,7 +197,7 @@ public class UploadHandlersEndToEndTest {
         // set up DecryptHandler - For ease of tests, this will just return the input verbatim.
         UploadArchiveService mockUploadArchiveService = mock(UploadArchiveService.class);
         when(mockUploadArchiveService.decrypt(eq(TestConstants.TEST_STUDY_IDENTIFIER), any(InputStream.class)))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1, InputStream.class));
+                .thenAnswer(invocation -> invocation.getArgument(1));
 
         DecryptHandler decryptHandler = new DecryptHandler();
         decryptHandler.setFileHelper(inMemoryFileHelper);
@@ -595,11 +598,17 @@ public class UploadHandlersEndToEndTest {
         assertEquals("Eggplant", fffJsonNode.get(1).get("name").textValue());
 
         String hhhAttachmentId = dataNode.get("record.json.HHH").textValue();
-        JsonNode hhhNode = getJsonFragmentAttachment(hhhAttachmentId);
+        
+        ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
+        verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(hhhAttachmentId),
+                attachmentContentCaptor.capture(), metadataCaptor.capture());
+        JsonNode hhhNode = BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());        
         assertEquals(3, hhhNode.size());
         assertEquals("attachment", hhhNode.get(0).textValue());
         assertEquals("inside", hhhNode.get(1).textValue());
         assertEquals("file", hhhNode.get(2).textValue());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
 
         // We upload the unencrypted zipped file back to S3.
         validateRawDataAttachment();
@@ -665,18 +674,12 @@ public class UploadHandlersEndToEndTest {
         assertEquals(expected, new String(uploadedFileContent, Charsets.UTF_8));
     }
 
-    private JsonNode getJsonFragmentAttachment(String attachmentId) throws Exception {
-        ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
-        verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
-                attachmentContentCaptor.capture());
-        return BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());
-    }
-
     private void validateRawDataAttachment() {
         String expectedRawDataAttachmentId = UPLOAD_ID + "-raw.zip";
         verify(mockS3UploadHelper).writeFileToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
-                any());
+                any(), metadataCaptor.capture());
         byte[] rawDataBytes = uploadedFileContentMap.get(expectedRawDataAttachmentId);
         assertArrayEquals(zippedFile, rawDataBytes);
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 }

@@ -9,6 +9,8 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -16,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
@@ -25,7 +28,7 @@ public final class ConsentSignature implements BridgeEntity {
 
     public static final ObjectWriter SIGNATURE_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("signedOn", "consentCreatedOn", "withdrewOn")));
+            SimpleBeanPropertyFilter.serializeAllExcept("consentCreatedOn")));
     
     // Can't create a custom ObjectReader, in these cases we create a static forJSON method.
     public static ConsentSignature fromJSON(JsonNode node) {
@@ -81,16 +84,19 @@ public final class ConsentSignature implements BridgeEntity {
      * The timestamp of the consent the user has signed. May not be the timestamp of the currently active version of the
      * consent.
      */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public @Nonnull long getConsentCreatedOn() {
         return consentCreatedOn;
     }
     
     /** The date and time recorded for this signature. */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public @Nonnull long getSignedOn() {
         return signedOn;
     }
     
     /** The date and time the user withdrew this consent (can be null if active). */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public @Nullable Long getWithdrewOn() {
         return withdrewOn;
     }
@@ -155,10 +161,12 @@ public final class ConsentSignature implements BridgeEntity {
             this.imageMimeType = imageMimeType;
             return this;
         }
+        @JsonDeserialize(using = DateTimeToLongDeserializer.class)
         public Builder withConsentCreatedOn(long consentCreatedOn) {
             this.consentCreatedOn = consentCreatedOn;
             return this;
         }
+        @JsonDeserialize(using = DateTimeToLongDeserializer.class)
         public Builder withSignedOn(long signedOn) {
             this.signedOn = signedOn;
             return this;

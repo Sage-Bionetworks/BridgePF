@@ -6,11 +6,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.getResponsePayload;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -25,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -44,7 +41,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
@@ -109,9 +105,6 @@ public class AppConfigControllerTest {
                 .withRoles(Sets.newHashSet(DEVELOPER))
                 .withHealthCode("healthCode")
                 .build());
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     }
     
     @Test
@@ -136,7 +129,8 @@ public class AppConfigControllerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void getAppConfigs() throws Exception {
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         List<AppConfig> list = Lists.newArrayList(AppConfig.create(), AppConfig.create());
         when(mockService.getAppConfigs(TEST_STUDY, false)).thenReturn(list);
         
@@ -151,7 +145,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void getAppConfig() throws Exception {
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockService.getAppConfig(TEST_STUDY, GUID)).thenReturn(appConfig);
         
         Result result = controller.getAppConfig(GUID);
@@ -165,7 +160,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void createAppConfig() throws Exception {
-        mockPlayContextWithJson(appConfig);
+        TestUtils.mockPlay().withBody(appConfig).mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockService.createAppConfig(eq(TEST_STUDY), any())).thenReturn(appConfig);
         
         Result result = controller.createAppConfig();
@@ -179,7 +175,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void updateAppConfig() throws Exception {
-        mockPlayContextWithJson(appConfig);
+        TestUtils.mockPlay().withBody(appConfig).mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockService.updateAppConfig(eq(TEST_STUDY), any())).thenReturn(appConfig);
         
         Result result = controller.updateAppConfig(GUID);
@@ -193,6 +190,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void deleteAppConfigDefault() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+
         Result result = controller.deleteAppConfig(GUID, null);
         assertResult(result, 200, "App config deleted.");
         
@@ -201,6 +200,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void deleteAppConfig() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
         Result result = controller.deleteAppConfig(GUID, "false");
         assertResult(result, 200, "App config deleted.");
         
@@ -209,6 +210,8 @@ public class AppConfigControllerTest {
     
     @Test
     public void developerCannotPermanentlyDelete() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
         Result result = controller.deleteAppConfig(GUID, "true");
         assertResult(result, 200, "App config deleted.");
         
@@ -221,6 +224,8 @@ public class AppConfigControllerTest {
                 .copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(DEVELOPER, ADMIN))
                 .build());
+        TestUtils.mockPlay().withBody(appConfig).mock();        
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         
         Result result = controller.deleteAppConfig(GUID, "true");
         assertResult(result, 200, "App config deleted.");
@@ -230,47 +235,56 @@ public class AppConfigControllerTest {
     
     @Test
     public void getStudyAppConfigAddsToCache() throws Exception {
-        mockContext(TEST_UA, TEST_LANG);
+        TestUtils.mockPlay()
+            .withHeader("User-Agent", TEST_UA)
+            .withHeader("Accept-Language", TEST_LANG)
+            .withBody(appConfig).mock();
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
-        controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
+        Result result = controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
+        TestUtils.assertResult(result, 200);
         
         verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:api:AppConfig:view");
     }
     
     @Test
     public void createAppConfigDeletesCache() throws Exception {
-        mockContext(TEST_UA, TEST_LANG);
+        TestUtils.mockPlay().withBody(appConfig).mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockService.createAppConfig(any(), any())).thenReturn(appConfig);
         
-        controller.createAppConfig();
+        Result result = controller.createAppConfig();
+        TestUtils.assertResult(result, 201);
         
         verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     @Test
     public void updateAppConfigDeletesCache() throws Exception {
-        mockContext(TEST_UA, TEST_LANG);
+        TestUtils.mockPlay().withBody(appConfig).mock();
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockService.updateAppConfig(any(), any())).thenReturn(appConfig);
         
-        controller.updateAppConfig("guid");
+        Result result = controller.updateAppConfig("guid");
+        TestUtils.assertResult(result, 200);
         
         verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     @Test
-    public void deleteAppConfigDeletesCache() {
-        controller.deleteAppConfig("guid", null);
+    public void deleteAppConfigDeletesCache() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        Result result = controller.deleteAppConfig("guid", null);
+        TestUtils.assertResult(result, 200);
         
         verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     private void mockContext(String userAgent, String langs) throws Exception {
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put("User-Agent", new String[] {userAgent});
-        headers.put("Accept-Language", new String[] {langs});
-        
-        String json = BridgeObjectMapper.get().writeValueAsString(appConfig);
-        TestUtils.mockPlayContextWithJson(json, headers);
+        TestUtils.mockPlay()
+            .withHeader("User-Agent", userAgent)
+            .withHeader("Accept-Language", langs)
+            .withBody(appConfig).mock();
     }
 }

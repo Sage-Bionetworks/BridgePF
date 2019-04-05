@@ -224,9 +224,9 @@ public abstract class BaseController extends Controller {
 
     /** Package-scoped to make available in unit tests. */
     String getSessionToken() {
-        String[] session = request().headers().get(SESSION_TOKEN_HEADER);
-        if (session != null && session.length > 0 && !session[0].isEmpty()) {
-            return session[0];
+        String session = request().getHeader(SESSION_TOKEN_HEADER);
+        if (StringUtils.isNotBlank(session)) {
+            return session;
         }
         if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
             Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
@@ -335,6 +335,7 @@ public abstract class BaseController extends Controller {
             .withIpAddress(session.getIpAddress())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
+            .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();
     }
@@ -371,24 +372,6 @@ public abstract class BaseController extends Controller {
         return status(202, Json.toJson(new StatusMessage(message)));
     }
     
-    // This is needed or tests fail. It appears to be a bug in Play Framework,
-    // that the asJson() method doesn't return a node in that context, possibly
-    // because the root object in the JSON is an array (which is legal). 
-    JsonNode requestToJSON(Request request) {
-        try {
-            JsonNode node = request.body().asJson();
-            if (node == null) {
-                node = MAPPER.readTree(request().body().asText());
-            }
-            return node;
-        } catch(Throwable e) {
-            if (Throwables.getRootCause(e) instanceof InvalidEntityException) {
-                throw (InvalidEntityException)Throwables.getRootCause(e);
-            }
-            throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
-        }
-    }
-
     /**
      * Static utility function that parses the JSON from the given request as the given class. This is a wrapper around
      * Jackson.
@@ -500,6 +483,7 @@ public abstract class BaseController extends Controller {
         builder.withUserAgent(request().getHeader(USER_AGENT));
         builder.withLanguages(session.getParticipant().getLanguages());
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
+        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
         builder.withStudyIdentifier(session.getStudyIdentifier());
         return builder;

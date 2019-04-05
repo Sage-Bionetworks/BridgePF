@@ -5,12 +5,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
@@ -29,8 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.TestConstants;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -95,7 +94,6 @@ public class SharedModuleMetadataServiceTest {
         svc.createMetadata(svcInputMetadata);
     }
 
-    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void createNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
@@ -103,8 +101,6 @@ public class SharedModuleMetadataServiceTest {
         svcInputMetadata.setSchemaRevision(null);
         svcInputMetadata.setSurveyCreatedOn(1L);
         svcInputMetadata.setSurveyGuid("test-survey-guid");
-        GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("test-survey-guid", 1L);
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), eq(holder), eq(false), eq(true))).thenThrow(EntityNotFoundException.class);
         svc.createMetadata(svcInputMetadata);
     }
 
@@ -220,7 +216,6 @@ public class SharedModuleMetadataServiceTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdAllVersionsPermanentlyNotFound() {
-        doReturn(ImmutableList.of()).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null, false);
         svc.deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
     }
     
@@ -675,7 +670,6 @@ public class SharedModuleMetadataServiceTest {
         svc.updateMetadata(MODULE_ID, MODULE_VERSION, makeValidMetadata());
     }
 
-    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSchema() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
@@ -688,7 +682,6 @@ public class SharedModuleMetadataServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(null);
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
         svcInputMetadata.setSchemaId(null);
         svcInputMetadata.setSchemaRevision(null);

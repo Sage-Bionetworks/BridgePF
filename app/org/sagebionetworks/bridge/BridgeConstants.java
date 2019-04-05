@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge;
 
+import java.util.List;
+
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+
+import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
@@ -81,8 +85,8 @@ public class BridgeConstants {
     // 15 seconds
     public static final int REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS = 15;
 
-    // 5 min
-    public static final int REAUTH_TOKEN_GRACE_PERIOD_SECONDS = 300;
+    // 3 days
+    public static final int REAUTH_TOKEN_GRACE_PERIOD_SECONDS = (3*24*60*60);
 
     public static final String SCHEDULE_STRATEGY_PACKAGE = "org.sagebionetworks.bridge.models.schedules.";
 
@@ -131,4 +135,13 @@ public class BridgeConstants {
             .addAttributes("a", "target", "href")
             .addAttributes("table", "align", "border", "cellpadding", "cellspacing", "summary");
     
+
+    /**
+     * This list of zip code prefixes with less than 20,000 people was taken from 
+     * https://www.johndcook.com/blog/2016/06/29/sparsely-populated-zip-codes/
+     */
+    public static final List<String> SPARSE_ZIP_CODE_PREFIXES = ImmutableList.of("036", "059", "063", 
+            "102", "203", "556", "692", "790", "821", "823", "830", "831", "878", "879", "884", 
+            "890", "893");
+
 }

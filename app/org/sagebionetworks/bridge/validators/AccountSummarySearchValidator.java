@@ -42,23 +42,21 @@ public class AccountSummarySearchValidator implements Validator {
             errors.reject(DATE_RANGE_ERROR);
         }
         if (!search.getAllOfGroups().isEmpty()) {
-            List<String> errorMessages = CriteriaUtils.validateDataGroups(studyDataGroups, search.getAllOfGroups());
+            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(studyDataGroups, search.getAllOfGroups());
             for (String errorMsg : errorMessages) {
                 errors.rejectValue("allOfGroups", errorMsg);    
             }
         }
         if (!search.getNoneOfGroups().isEmpty()) {
-            List<String> errorMessages = CriteriaUtils.validateDataGroups(studyDataGroups, search.getNoneOfGroups());
+            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(studyDataGroups, search.getNoneOfGroups());
             for (String errorMsg : errorMessages) {
                 errors.rejectValue("noneOfGroups", errorMsg);    
             }
         }
-        if (!search.getAllOfGroups().isEmpty() && !search.getNoneOfGroups().isEmpty()) {
-            String errorMessage = CriteriaUtils.validateDataGroupNotRequiredAndProhibited(search.getAllOfGroups(),
-                    search.getNoneOfGroups());
-            if (errorMessage != null) {
-                errors.rejectValue("allOfGroups", errorMessage);
-            }
+        String errorMessage = CriteriaUtils.validateSetItemsDoNotOverlap(
+                "data groups", search.getAllOfGroups(), search.getNoneOfGroups());
+        if (errorMessage != null) {
+            errors.rejectValue("allOfGroups", errorMessage);
         }
     }
 }

@@ -9,7 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 
 import play.mvc.Http.Response;
@@ -29,7 +29,7 @@ public class StaticHeadersInterceptorTest {
     
     @Test
     public void addsHeaders() throws Throwable {
-        Response response = TestUtils.mockPlayContext();
+        Response response = TestUtils.mockPlay().withRequest(null).withMockResponse().mock();
         
         interceptor.invoke(invocation);
         

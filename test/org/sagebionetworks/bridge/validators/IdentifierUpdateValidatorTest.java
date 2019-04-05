@@ -1,13 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+
+import java.util.Optional;
+
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -149,7 +152,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdValidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(EXT_ID);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
         study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
@@ -161,7 +164,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdInvalidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(null);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
         study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)

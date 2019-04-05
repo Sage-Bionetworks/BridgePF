@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.HeightConstraints;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.PostalCodeConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Unit;
 import org.sagebionetworks.bridge.models.surveys.WeightConstraints;
+import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -298,6 +300,20 @@ public class UploadSchemaServiceFromSurveyTest {
             q.setConstraints(new HeightConstraints());
             surveyElementList.add(q);
         }
+        // year month
+        {
+            SurveyQuestion q = SurveyQuestion.create();
+            q.setIdentifier("yearmonth");
+            q.setConstraints(new YearMonthConstraints());
+            surveyElementList.add(q);
+        }
+        // postal code
+        {
+            SurveyQuestion q = SurveyQuestion.create();
+            q.setIdentifier("postalcode");
+            q.setConstraints(new PostalCodeConstraints());
+            surveyElementList.add(q);
+        }
 
         Survey survey = makeSurveyWithElements(surveyElementList);
 
@@ -322,7 +338,7 @@ public class UploadSchemaServiceFromSurveyTest {
         assertEquals(SURVEY_CREATED_ON, daoInputSchema.getSurveyCreatedOn().longValue());
 
         List<UploadFieldDefinition> fieldDefList = daoInputSchema.getFieldDefinitions();
-        assertEquals(23, fieldDefList.size());
+        assertEquals(25, fieldDefList.size());
 
         // validate that none of the fields are required
         for (UploadFieldDefinition oneFieldDef : fieldDefList) {
@@ -413,6 +429,14 @@ public class UploadSchemaServiceFromSurveyTest {
         assertEquals("height" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(22).getName());
         assertEquals(UploadFieldType.STRING, fieldDefList.get(22).getType());
         assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(22).getMaxLength().intValue());
+        
+        assertEquals("yearmonth", fieldDefList.get(23).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(23).getType());
+        assertEquals(new Integer(7), fieldDefList.get(23).getMaxLength());
+        
+        assertEquals("postalcode", fieldDefList.get(24).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(24).getType());
+        assertEquals(new Integer(5), fieldDefList.get(24).getMaxLength());
     }
 
     @Test

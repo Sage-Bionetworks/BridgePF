@@ -18,7 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -79,7 +79,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getMostRecentElementsIncludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getMostRecentElements(TestConstants.TEST_STUDY, true)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getMostRecentElements("true");
@@ -94,7 +94,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getMostRecentElementsExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getMostRecentElements(TestConstants.TEST_STUDY, false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getMostRecentElements("false");
@@ -109,7 +109,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getMostRecentElementsDefaultToExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getMostRecentElements(TestConstants.TEST_STUDY, false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getMostRecentElements(null);
@@ -126,7 +126,7 @@ public class AppConfigElementsControllerTest {
     public void createElement() throws Exception {
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
-        TestUtils.mockPlayContextWithJson(element);
+        TestUtils.mockPlay().withBody(element).mock();
         
         when(service.createElement(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
         
@@ -144,7 +144,7 @@ public class AppConfigElementsControllerTest {
 
     @Test
     public void getElementRevisionsIncludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getElementRevisions(TestConstants.TEST_STUDY, "id", true)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getElementRevisions("id", "true");
@@ -159,7 +159,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getElementRevisionsExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getElementRevisions(TestConstants.TEST_STUDY, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getElementRevisions("id", "false");
@@ -174,7 +174,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getElementRevisionsDefaultsToExcludeDeleted() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         when(service.getElementRevisions(TestConstants.TEST_STUDY, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         Result result = controller.getElementRevisions("id", null);
@@ -189,7 +189,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getMostRecentElement() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
         when(service.getMostRecentElement(TestConstants.TEST_STUDY, "element-id")).thenReturn(element);
@@ -204,7 +204,7 @@ public class AppConfigElementsControllerTest {
 
     @Test
     public void getElementRevision() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
         when(service.getElementRevision(TestConstants.TEST_STUDY, "id", 3L)).thenReturn(element);
@@ -228,7 +228,7 @@ public class AppConfigElementsControllerTest {
         // These values should be overwritten by the values in the URL
         element.setId("element-id");
         element.setRevision(3L);
-        TestUtils.mockPlayContextWithJson(element);
+        TestUtils.mockPlay().withBody(element).mock();
         when(service.updateElementRevision(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
         
         Result result = controller.updateElementRevision("id", "1");
@@ -251,7 +251,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void deleteElementAllRevisions() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementAllRevisions("id", "false");
         TestUtils.assertResult(result, 200, "App config element deleted.");
@@ -265,7 +265,7 @@ public class AppConfigElementsControllerTest {
     @Test
     public void deleteElementAllRevisionsPermanently() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementAllRevisions("id", "true");
         TestUtils.assertResult(result, 200, "App config element deleted.");
@@ -278,7 +278,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void deleteElementAllRevisionsDefaultsToLogical() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementAllRevisions("id", "true");
         TestUtils.assertResult(result, 200, "App config element deleted.");
@@ -288,7 +288,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void deleteElementRevision() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementRevision("id", "3", "false");
         TestUtils.assertResult(result, 200, "App config element revision deleted.");
@@ -301,7 +301,7 @@ public class AppConfigElementsControllerTest {
     
     @Test(expected = BadRequestException.class)
     public void deleteElementRevisionBadRevisionNumber() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         controller.deleteElementRevision("id", "three", "false");
     }
@@ -309,7 +309,7 @@ public class AppConfigElementsControllerTest {
     @Test
     public void deleteElementRevisionPermanently() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementRevision("id", "3", "true");
         TestUtils.assertResult(result, 200, "App config element revision deleted.");
@@ -319,7 +319,7 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void deleteElementRevisionDefaultsToLogical() throws Exception {
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         Result result = controller.deleteElementRevision("id", "3", "true");
         TestUtils.assertResult(result, 200, "App config element revision deleted.");

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.SubstudyDao;
@@ -11,6 +12,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.SubstudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,16 @@ public class SubstudyService {
             throw new EntityNotFoundException(Substudy.class);
         }
         return substudy;
+    }
+    
+    /**
+     * Get the list of active substudy IDs for this study (used to validate criteria 
+     * objects throughout the system). Calling this method is preferred to getSubstudies() 
+     * so we can provide a cache for these infrequently changing identifiers.
+     */
+    public Set<String> getSubstudyIds(StudyIdentifier studyId) {
+        return getSubstudies(studyId, false).stream()
+                .map(Substudy::getId).collect(BridgeCollectors.toImmutableSet());
     }
     
     public List<Substudy> getSubstudies(StudyIdentifier studyId, boolean includeDeleted) {

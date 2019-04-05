@@ -13,9 +13,11 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 public class SubpopulationValidator implements Validator {
 
     private Set<String> dataGroups;
+    private Set<String> substudyIds;
     
-    public SubpopulationValidator(Set<String> dataGroups) {
+    public SubpopulationValidator(Set<String> dataGroups, Set<String> substudyIds) {
         this.dataGroups = dataGroups;
+        this.substudyIds = substudyIds;
     }
     
     @Override
@@ -36,6 +38,6 @@ public class SubpopulationValidator implements Validator {
         if (isBlank(subpop.getGuidString())) {
             errors.rejectValue("guid", "is required");
         }
-        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, errors);
+        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, substudyIds, errors);
     }
 }

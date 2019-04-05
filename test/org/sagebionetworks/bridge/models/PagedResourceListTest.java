@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -26,9 +27,9 @@ public class PagedResourceListTest {
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", TestConstants.PHONE,
-                "externalId1", "id", DateTime.now(), AccountStatus.DISABLED, TestConstants.TEST_STUDY, ImmutableSet.of()));
+                null, ImmutableMap.of("substudy1", "externalId1"), "id", DateTime.now(), AccountStatus.DISABLED, TestConstants.TEST_STUDY, ImmutableSet.of()));
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", TestConstants.PHONE,
-                "externalId2", "id2", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY, ImmutableSet.of()));
+                null, ImmutableMap.of("substudy2", "externalId2"), "id2", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY, ImmutableSet.of()));
 
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
         DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");

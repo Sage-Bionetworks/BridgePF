@@ -11,15 +11,14 @@ import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NULL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.util.concurrent.RateLimiter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,129 +26,134 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 @Component
 public class DynamoExternalIdDao implements ExternalIdDao {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
+        
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     static final int PAGE_SCAN_LIMIT = 200;
-
-    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
-
-    private static final String HEALTH_CODE = "healthCode";
+    static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
-    private static final String STUDY_ID = "studyId";
+    static final String SUBSTUDY_ID = "substudyId";
+    static final String STUDY_ID = "studyId";
 
-    private int addLimit;
     private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
 
     /** Gets the add limit and lock duration from Config. */
     @Autowired
-    public final void setConfig(Config config) {
-        addLimit = config.getInt(CONFIG_KEY_ADD_LIMIT);
+    final void setConfig(Config config) {
         setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
-
+    
     // allow unit test to mock this
-    void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
+    final void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
         this.getExternalIdRateLimiter = getExternalIdRateLimiter;
     }
 
     @Resource(name = "externalIdDdbMapper")
-    public final void setMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
-    }
-
-    @Override
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
-        checkNotNull(studyId);
-        checkNotNull(externalId);
-        
-        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId, externalId);
-        return mapper.load(key);
     }
     
     @Override
-    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
-            String offsetKey, final int pageSize, String idFilter, Boolean assignmentFilter) {
+    public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
         checkNotNull(studyId);
+        checkNotNull(externalId);
+        
+        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId.getIdentifier(), externalId);
+        return Optional.ofNullable(mapper.load(key));
+    }
 
-        // Just set a sane upper limit on this.
-        // pageSize is used here to determine limit the number of results to be returned, as well as amount of records
-        // to scan per call to dynamo
+    @Override
+    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
+            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
+
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
+            throw new BadRequestException("Invalid paging size: " + pageSize);
         }
-
-        LOG.debug("Page Size: " + pageSize);
-
+        
         // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
         // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
         // a paging offset, clear the offset (go back to the first page) if they don't match.
+        String nextPageOffsetKey = offsetKey; 
         if (offsetKey != null && idFilter != null && !offsetKey.startsWith(idFilter)) {
-            offsetKey = null;
+            nextPageOffsetKey = null;
         }
-        String nextPageOffsetKey = offsetKey;
         
-        QueryResultPage<DynamoExternalIdentifier> list;
-        List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
-
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        
+        List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
+        
         // initial estimate: read capacity consumed will equal 1
-        // see https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+        // see https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/        
         int capacityAcquired = 1;
         int capacityConsumed = 0;
-
         do {
             getExternalIdRateLimiter.acquire(capacityAcquired);
-
-            list = mapper.queryPage(DynamoExternalIdentifier.class,
-                    createGetQuery(studyId, nextPageOffsetKey, PAGE_SCAN_LIMIT, idFilter, assignmentFilter));
-            for (ExternalIdentifier id : list.getResults()) {
-                if (identifiers.size() == pageSize) {
+            
+            DynamoDBQueryExpression<DynamoExternalIdentifier> query = createGetQuery(studyId, nextPageOffsetKey,
+                    PAGE_SCAN_LIMIT, idFilter, assignmentFilter);
+            
+            QueryResultPage<DynamoExternalIdentifier> queryResultPage = mapper.queryPage(
+                    DynamoExternalIdentifier.class, query);
+            for (ExternalIdentifier id : queryResultPage.getResults()) {
+                if (externalIds.size() == pageSize) {
                     // return no more than pageSize externalIdentifiers
                     break;
                 }
-                identifiers.add(new ExternalIdentifierInfo(id.getIdentifier(), id.getHealthCode() != null));
+                
+                // Users see all external IDs, but they don't see the substudy membership of an external ID
+                // unless they meet the standard rules
+                boolean visible = callerSubstudies.isEmpty() || callerSubstudies.contains(id.getSubstudyId());
+                String substudyId = (visible) ? id.getSubstudyId() : null;
+                
+                ExternalIdentifierInfo info = new ExternalIdentifierInfo(
+                        id.getIdentifier(), substudyId, id.getHealthCode() != null);
+                externalIds.add(info);
             }
-
-            capacityConsumed = list.getConsumedCapacity().getCapacityUnits().intValue();
+            capacityConsumed = queryResultPage.getConsumedCapacity().getCapacityUnits().intValue();
             LOG.debug("Capacity acquired: " + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
-
+            
             // use capacity consumed by last request to as our estimate for the next request
             capacityAcquired = capacityConsumed;
-
-            if (list.getCount() > pageSize) {
+            
+            if (queryResultPage.getCount() > pageSize) {
                 // we retrieved more records from Dynamo than we are returning
-                nextPageOffsetKey = identifiers.get(pageSize - 1).getIdentifier();
+                nextPageOffsetKey = externalIds.get(pageSize - 1).getIdentifier();
             } else {
-                // This is the last key, not the next key of the next page of records. It only exists if there's a record
-                // beyond the records we've converted to a page. Then get the last key in the list.
-                Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
+                // This is the last key, not the next key of the next page of records. It only exists if there's 
+                // a record beyond the records we've converted to a page. Then get the last key in the list.
+                Map<String, AttributeValue> lastEvaluated = queryResultPage.getLastEvaluatedKey();
                 nextPageOffsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
             }
-        } while ((identifiers.size() < pageSize) && (nextPageOffsetKey != null));
+        } while ((externalIds.size() < pageSize) && (nextPageOffsetKey != null));
 
-        return new ForwardCursorPagedResourceList<>(
-                identifiers, nextPageOffsetKey)
+        return new ForwardCursorPagedResourceList<>(externalIds, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.ID_FILTER, idFilter)
@@ -157,90 +161,71 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     @Override
-    public void addExternalIds(StudyIdentifier studyId, List<String> externalIds) {
-        checkNotNull(studyId);
-        checkNotNull(externalIds);
-
-        // We validate a wider range of issues in the service, but check size again because this is 
-        // specifically a database capacity issue.
-        if (externalIds.size() > addLimit) {
-            throw new BadRequestException("List of externalIds is too large; size=" + externalIds.size() + ", limit=" + addLimit);
-        }
-        List<DynamoExternalIdentifier> idsToSave = externalIds.stream().map(id -> {
-            return new DynamoExternalIdentifier(studyId, id);
-        }).filter(externalId -> {
-            return mapper.load(externalId) == null;
-        }).collect(Collectors.toList());
+    public void createExternalId(ExternalIdentifier externalId) {
+        checkNotNull(externalId);
         
-        if (!idsToSave.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchSave(idsToSave);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
+        mapper.save(externalId);
+    }
+
+    @Override
+    public void deleteExternalId(ExternalIdentifier externalId) {
+        checkNotNull(externalId);
+        
+        mapper.delete(externalId);
     }
     
+    /**
+     * There is a substantial amount of set-up that must occur before this call can be 
+     * made, and the associated account record must be updated as well. See 
+     * ParticipantService.beginAssignExternalId() which performs this setup, and is 
+     * always called before the participant service calls this method. This method is 
+     * not simply a method to update an external ID record.
+     */
     @Override
-    public void assignExternalId(StudyIdentifier studyId, String externalId, String healthCode) {
-        checkNotNull(studyId);
-        checkArgument(isNotBlank(externalId));
-        checkArgument(isNotBlank(healthCode));
-        
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, externalId);
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-
-        // If the identifier doesn't exist, or the same code has already been set, do nothing
-        if (identifier != null && !healthCode.equals(identifier.getHealthCode())) {
+    public void commitAssignExternalId(ExternalIdentifier externalId) {
+        if (externalId != null) {
+            DynamoExternalIdentifier key = new DynamoExternalIdentifier(
+                    externalId.getStudyId(), externalId.getIdentifier());
+            if (externalId.getHealthCode() == null || mapper.load(key) == null) {
+                throw new ConcurrentModificationException("External ID was concurrently deleted or assigned");
+            }
             try {
-                identifier.setHealthCode(healthCode);
-                mapper.save(identifier, getAssignmentExpression());
+                mapper.save(externalId, getHealthCodeAssignedExpression(false));
             } catch(ConditionalCheckFailedException e) {
-                // If this happens, it's a consistency error because the account should have failed. We need to reconcile.
-                LOG.error("Failed attempt to assign externalId: " + externalId + " from " + identifier.getHealthCode()
-                        + " to " + healthCode);
-                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
-            }        
+                throw new EntityAlreadyExistsException(ExternalIdentifier.class, IDENTIFIER, externalId.getIdentifier());
+            }
         }
     }
 
     @Override
-    public void unassignExternalId(StudyIdentifier studyId, String externalId) {
-        checkNotNull(studyId);
+    public void unassignExternalId(Account account, String externalId) {
+        checkNotNull(account);
         checkArgument(isNotBlank(externalId));
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, externalId);
+        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        Optional<ExternalIdentifier> optionalId = getExternalId(studyId, externalId);
         
-        // Don't throw an exception if the identifier doesn't exist, we don't care.
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        if (identifier != null) {
+        if (!optionalId.isPresent()) {
+            return;
+        }
+        ExternalIdentifier identifier = optionalId.get();
+        if (account.getHealthCode().equals(identifier.getHealthCode())) {
             identifier.setHealthCode(null);
             mapper.save(identifier);
         }
-    }
-    
-    /**
-     * This is intended for testing. Deleting a large number of identifiers will cause DynamoDB capacity exceptions.
-     */
-    @Override
-    public void deleteExternalIds(StudyIdentifier studyId, List<String> externalIds) {
-        checkNotNull(studyId);
-        checkNotNull(externalIds);
-        
-        if (!externalIds.isEmpty()) {
-            List<DynamoExternalIdentifier> idsToDelete = externalIds.stream().map(id -> {
-                return new DynamoExternalIdentifier(studyId, id);
-            }).collect(Collectors.toList());
-            
-            List<FailedBatch> failures = mapper.batchDelete(idsToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
+        // For backwards compatibility while migrating to externalIds
+        account.setExternalId(null);
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            account.getAccountSubstudies().remove(acctSubstudy);
         }
     }
-
-    /**
-     * Get the count query (applies filters) and then sets an offset key and the limit to a page of records, 
-     * plus one, to determine if there are records beyond the current page. 
-     */
-    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId,
-            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
-
+    
+    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId, String offsetKey,
+            int pageSize, String idFilter, Boolean assignmentFilter) {
+        
         DynamoDBQueryExpression<DynamoExternalIdentifier> query =
                 new DynamoDBQueryExpression<DynamoExternalIdentifier>();
         if (idFilter != null) {
@@ -249,9 +234,10 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                     .withComparisonOperator(BEGINS_WITH));
         }
         if (assignmentFilter != null) {
-            addAssignmentFilter(query, assignmentFilter.booleanValue());
+            query.withQueryFilterEntry(HEALTH_CODE, new Condition()
+                .withComparisonOperator(assignmentFilter.booleanValue() ? NOT_NULL : NULL));
         }
-        query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
+        query.withHashKeyValues(new DynamoExternalIdentifier(studyId.getIdentifier(), null)); // no healthCode.
 
         if (offsetKey != null) {
             Map<String, AttributeValue> map = new HashMap<>();
@@ -265,24 +251,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         query.withLimit(pageSize);
         return query;
     }
-
-    private void addAssignmentFilter(DynamoDBQueryExpression<DynamoExternalIdentifier> query, boolean isAssigned) {
-        ComparisonOperator healthCodeOp = (isAssigned) ? NOT_NULL : NULL;
-        
-        Condition healthCodeCondition = new Condition().withComparisonOperator(healthCodeOp);
-        query.withQueryFilterEntry(HEALTH_CODE, healthCodeCondition);
-    }
     
-    /**
-     * Save the record with the user's healthCode.  
-     */
-    private DynamoDBSaveExpression getAssignmentExpression() {
-        Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put(HEALTH_CODE, new ExpectedAttributeValue().withExists(false));
+    private DynamoDBSaveExpression getHealthCodeAssignedExpression(boolean healthCodeAssigned) {
+        Map<String, ExpectedAttributeValue> map = ImmutableMap.of(
+                HEALTH_CODE, new ExpectedAttributeValue().withExists(healthCodeAssigned));
 
-        DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
-        saveExpression.setExpected(map);
-        return saveExpression;
+        return new DynamoDBSaveExpression().withExpected(map);
     }
     
 }

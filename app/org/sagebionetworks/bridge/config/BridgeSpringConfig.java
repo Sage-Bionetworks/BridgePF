@@ -80,7 +80,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.AccountSecretsExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
@@ -431,7 +433,7 @@ public class BridgeSpringConfig {
                                                                   DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
-
+    
     @Bean(name = "activitySchedulePlanGuidIndex")
     @Autowired
     public DynamoIndexHelper activitySchedulePlanGuidIndex(AmazonDynamoDBClient dynamoDBClient,
@@ -560,6 +562,7 @@ public class BridgeSpringConfig {
         metadataSources.addAnnotatedClass(HibernateSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateAccountSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
+        metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
 
         return metadataSources.buildMetadata().buildSessionFactory();
     }
@@ -575,6 +578,13 @@ public class BridgeSpringConfig {
     @Autowired
     public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "secretsHibernateHelper")
+    @Autowired
+    public HibernateHelper secretsHibernateHelper(SessionFactory sessionFactory, 
+            AccountSecretsExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

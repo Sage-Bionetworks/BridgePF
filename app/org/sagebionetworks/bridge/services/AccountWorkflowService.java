@@ -469,9 +469,10 @@ public class AccountWorkflowService {
     
     /**
      * Request a token to be sent via SMS to the user, that can be used to start a session on the Bridge server.
+     * Returns the userId, or null if the user doesn't exist.
      */
-    public void requestPhoneSignIn(SignIn signIn) {
-        requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis, 
+    public String requestPhoneSignIn(SignIn signIn) {
+        return requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
                 signIn, true, this::getNextPhoneToken, (study, account, token) -> {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
@@ -493,9 +494,11 @@ public class AccountWorkflowService {
      * The installed application should intercept this link in order to complete the transaction within the app, where the 
      * returned session can be captured. If the link is not captured, it retrieves a test page on the Bridge server as 
      * configured by default. That test page will complete the transaction and return a session token.
+     *
+     * Returns the userId, or null if the user doesn't exist.
      */
-    public void requestEmailSignIn(SignIn signIn) {
-        requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, 
+    public String requestEmailSignIn(SignIn signIn) {
+        return requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
                 signIn, true, this::getNextToken, (study, account, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             String shortUrl = getShortEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
@@ -520,8 +523,9 @@ public class AccountWorkflowService {
             sendMailService.sendEmail(provider);
         });
     }
-    
-    private void requestChannelSignIn(ChannelType channelType, Validator validator, AtomicLong atomicLong,
+
+    /** Requests channel sign-in. Returns the userId, or null if the user does not exist. */
+    private String requestChannelSignIn(ChannelType channelType, Validator validator, AtomicLong atomicLong,
             SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
             TriConsumer<Study, Account, String> messageSender) {
         long startTime = System.currentTimeMillis();
@@ -549,14 +553,14 @@ public class AccountWorkflowService {
             } catch(InterruptedException e) {
                 // Just return, the thread was killed by the connection, the server died, etc.
             }
-            return;
+            return null;
         }
 
         ThrottleRequestType throttleType = channelType == EMAIL ? ThrottleRequestType.EMAIL_SIGNIN :
                 ThrottleRequestType.PHONE_SIGNIN;
         if (shouldThrottle && isRequestThrottled(throttleType, account.getId())) {
             // Too many requests. Throttle.
-            return;
+            return account.getId();
         }
 
         CacheKey cacheKey = null;
@@ -574,6 +578,8 @@ public class AccountWorkflowService {
 
         messageSender.accept(study, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
+
+        return account.getId();
     }
 
     /**

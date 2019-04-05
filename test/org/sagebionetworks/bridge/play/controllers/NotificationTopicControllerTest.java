@@ -2,18 +2,15 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -77,15 +74,12 @@ public class NotificationTopicControllerTest {
         doReturn(Environment.UAT).when(mockBridgeConfig).getEnvironment();
 
         doReturn(TEST_STUDY).when(mockUserSession).getStudyIdentifier();
-
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
     }
 
     @Test
     public void getAllTopicsIncludeDeleted() throws Exception {
-        mockPlayContext();
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, true);
 
@@ -103,7 +97,8 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void getAllTopicsExcludeDeleted() throws Exception {
-        mockPlayContext();
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, false);
 
@@ -117,8 +112,9 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void createTopic() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
-        mockPlayContextWithJson(topic);
+        TestUtils.mockPlay().withBody(topic).mock();
         doReturn(topic).when(mockTopicService).createTopic(any());
 
         Result result = controller.createTopic();
@@ -135,7 +131,8 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void getTopic() throws Exception {
-        mockPlayContext();
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        TestUtils.mockPlay().mock();
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockTopicService).getTopic(TEST_STUDY, GUID);
 
@@ -154,9 +151,10 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void updateTopic() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockTopicService).updateTopic(any());
-        mockPlayContextWithJson(topic);
+        TestUtils.mockPlay().withBody(topic).mock();
 
         Result result = controller.updateTopic(GUID);
         TestUtils.assertResult(result, 200);
@@ -172,6 +170,7 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void deleteTopic() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
         Result result = controller.deleteTopic(GUID, "false");
         TestUtils.assertResult(result, 200);
 
@@ -180,6 +179,7 @@ public class NotificationTopicControllerTest {
     
     @Test
     public void deleteTopicPermanently() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
         when(mockUserSession.isInRole(ADMIN)).thenReturn(true);
         
         Result result = controller.deleteTopic(GUID, "true");
@@ -191,6 +191,7 @@ public class NotificationTopicControllerTest {
 
     @Test
     public void deleteTopicPermanentlyForDeveloper() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Result result = controller.deleteTopic(GUID, "true");
         TestUtils.assertResult(result, 200);
 
@@ -200,17 +201,17 @@ public class NotificationTopicControllerTest {
 
     @Test(expected = NotAuthenticatedException.class)
     public void cannotSendMessageAsDeveloper() throws Exception {
-        TestUtils.mockPlayContextWithJson(TestUtils.getNotificationMessage());
+        TestUtils.mockPlay().withBody(TestUtils.getNotificationMessage()).mock();
 
         controller.sendNotification(GUID);
     }
 
     @Test
     public void sendNotification() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(RESEARCHER);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(ADMIN);
 
         NotificationMessage message = TestUtils.getNotificationMessage();
-        TestUtils.mockPlayContextWithJson(message);
+        TestUtils.mockPlay().withBody(message).mock();
 
         Result result = controller.sendNotification(GUID);
         TestUtils.assertResult(result, 202);

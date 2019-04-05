@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -12,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -20,7 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -88,12 +89,14 @@ public class UserAdminServiceMockTest {
     
     @Captor
     private ArgumentCaptor<SignIn> signInCaptor;
+    
+    @Captor
+    private ArgumentCaptor<Account> accountCaptor;
 
     private UserAdminService service;
     
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
-    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         service = new UserAdminService();
@@ -121,9 +124,8 @@ public class UserAdminServiceMockTest {
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
         
-        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anyObject(),
+        doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(any(), any(),
                 anyBoolean());
-        doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
         doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
                 anyString(), anyBoolean());
     }
@@ -233,10 +235,17 @@ public class UserAdminServiceMockTest {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         
         AccountId accountId = AccountId.forId(study.getIdentifier(),  "userId");
+
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        as1.setExternalId("subAextId");
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+        as2.setExternalId("subBextId");
+        Set<AccountSubstudy> substudies = ImmutableSet.of(as1, as2);
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
         doReturn("externalId").when(account).getExternalId();
+        doReturn(substudies).when(account).getAccountSubstudies();
         doReturn(account).when(accountDao).getAccount(accountId);
         
         service.deleteUser(study, "userId");
@@ -249,8 +258,12 @@ public class UserAdminServiceMockTest {
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");
-        verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
+        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("externalId"));
+        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subAextId"));
+        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subBextId"));
         verify(accountDao).deleteAccount(accountId);
+        
+        assertEquals("healthCode", accountCaptor.getValue().getHealthCode());
     }
     
 }

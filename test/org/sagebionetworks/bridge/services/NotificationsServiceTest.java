@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -97,7 +97,6 @@ public class NotificationsServiceTest {
         doReturn(map).when(mockStudy).getPushNotificationARNs();
      
         doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
-        doReturn(TestConstants.TEST_STUDY).when(mockStudy).getStudyIdentifier();
     }
 
     @Test

@@ -44,7 +44,7 @@ public final class ABTestScheduleStrategy implements ScheduleStrategy {
         return group.getSchedule();
     }
     @Override
-    public void validate(Set<String> dataGroups, Set<String> taskIdentifiers, Errors errors) {
+    public void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors) {
         int percentage = 0;
         for (ABTestGroup group : groups) {
             percentage += group.getPercentage();

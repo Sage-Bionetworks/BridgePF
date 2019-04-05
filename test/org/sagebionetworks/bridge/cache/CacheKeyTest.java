@@ -58,9 +58,15 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void itp() {
+    public void itpWithPhone() {
         assertEquals("guid:"+TestConstants.PHONE.getNumber()+":api:itp",
                 CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, TestConstants.PHONE).toString());
+    }
+    
+    @Test
+    public void itpWithEmail() {
+        assertEquals("guid:email@email.com:api:itp",
+                CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, "email@email.com").toString());
     }
     
     @Test
@@ -94,11 +100,6 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void sessionKey() {
-        assertEquals("sessionToken:session", CacheKey.session("sessionToken").toString());
-    }
-    
-    @Test
     public void study() {
         assertEquals("api:study", CacheKey.study("api").toString());
     }    
@@ -114,11 +115,6 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void userSessionKey() {
-        assertEquals("userId:session:user", CacheKey.sessionByUserId("userId").toString());
-    }
-    
-    @Test
     public void verificationToken() {
         assertEquals("token", CacheKey.verificationToken("token").toString());
     }
@@ -129,13 +125,18 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void reauthCacheKey() {
-        assertEquals("reauthToken:studyId:reauthCacheKey", CacheKey.reauthCacheKey("reauthToken", "studyId").toString());
+    public void userIdToSession() {
+        assertEquals("userId:session2:user", CacheKey.userIdToSession("userId").toString());
+    }
+    
+    @Test
+    public void tokenToUserId() { 
+        assertEquals("aSessionToken:session2", CacheKey.tokenToUserId("aSessionToken").toString());
     }
     
     @Test
     public void isPublic() {
-        CacheKey privateKey = CacheKey.reauthCacheKey("reauthToken", "studyId");
+        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TestConstants.TEST_STUDY);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
         CacheKey publicKey = CacheKey.study("studyId");

@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +42,6 @@ import com.google.common.base.Charsets;
  * Set-up here for consent-specific tests is extensive, so tests for the participant roster
  * are in a separate class.
  */
-@SuppressWarnings("unchecked")
 public class SendMailViaAmazonServiceConsentTest {
     private static final String SUPPORT_EMAIL = "study-support-email@study.com";
     private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
@@ -93,7 +92,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test
     public void sendConsentEmail() {
         // mock email client with success
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
+        when(emailClient.sendRawEmail(notNull())).thenReturn(
                 new SendRawEmailResult().withMessageId("test message id"));
         when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
         
@@ -133,7 +132,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test
     public void sendConsentEmailWithSignatureImage() {
         // mock email client with success
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
+        when(emailClient.sendRawEmail(notNull())).thenReturn(
                 new SendRawEmailResult().withMessageId("test message id"));
         when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
         
@@ -182,7 +181,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test
     public void messageRejectedNotPropagated() {
         // mock email client with exception
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenThrow(MessageRejectedException.class);
+        when(emailClient.sendRawEmail(notNull())).thenThrow(MessageRejectedException.class);
         when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
         
         // set up inputs
@@ -211,7 +210,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test(expected = BridgeServiceException.class)
     public void otherExceptionsPropagated() {
         // mock email client with exception
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenThrow(AmazonServiceException.class);
+        when(emailClient.sendRawEmail(notNull())).thenThrow(AmazonServiceException.class);
 
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
@@ -25,10 +26,18 @@ public class HibernateHelper {
 
     /**
      * Creates (inserts) an object through Hibernate. Throws a ConcurrentModificationException if creating the object
-     * would violate a key constraint, most commonly if the row already exists.
+     * would violate a key constraint, most commonly if the row already exists. A consumer may be passed to this method 
+     * that will receive the object in the context of a database transaction; if the consumer throws a runtime error, 
+     * the transaction will be aborted.
      */
-    public void create(Object obj) {
-        executeWithExceptionHandling(obj, session -> session.save(obj));
+    public <T> void create(T obj, Consumer<T> consumer) {
+        executeWithExceptionHandling(obj, session -> {
+            session.save(obj);
+            if (consumer != null) {
+                consumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
+            return obj;
+        });
     }
 
     /** Deletes the given object. */
@@ -108,11 +117,29 @@ public class HibernateHelper {
             return query.executeUpdate();
         });
     }
+    
+    /**
+     * Execute SQL query with no return value, like a batch delete. 
+     */
+    public void query(String queryString, Map<String,Object> parameters) {
+        executeWithExceptionHandling(null, session -> { 
+            Query<?> query = session.createQuery(queryString);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.executeUpdate();
+        });
+    }
 
     /** Updates a single object. */
-    public <T> T update(T obj) {
+    public <T> T update(T obj, Consumer<T> afterPersistConsumer) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
+            if (afterPersistConsumer != null) {
+                afterPersistConsumer.accept(obj); // if this throws, changes to account are abandoned    
+            }
             return obj;
         });
     }

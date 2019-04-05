@@ -7,11 +7,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -28,7 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
@@ -75,6 +74,9 @@ public class SubpopulationServiceTest {
     SubpopulationDao subpopDao;
     
     @Mock
+    SubstudyService substudyService;
+    
+    @Mock
     Study study;
     
     @Mock
@@ -104,6 +106,7 @@ public class SubpopulationServiceTest {
         service.setStudyConsentService(studyConsentService);
         service.setStudyConsentDao(studyConsentDao);
         service.setDefaultConsentForm(form);
+        service.setSubstudyService(substudyService);
         service.setCacheProvider(cacheProvider);
         
         subpop = Subpopulation.create();
@@ -118,7 +121,6 @@ public class SubpopulationServiceTest {
         when(subpopDao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
         
         when(view.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
-        when(consent.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
         
         when(studyConsentService.addConsent(any(), any())).thenReturn(view);
         when(studyConsentService.publishConsent(any(), any(), eq(CONSENT_CREATED_ON))).thenReturn(view);
@@ -159,6 +161,7 @@ public class SubpopulationServiceTest {
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
         verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
@@ -223,12 +226,11 @@ public class SubpopulationServiceTest {
         assertEquals(TEST_STUDY_IDENTIFIER, result.getStudyIdentifier());
         
         verify(subpopDao).updateSubpopulation(subpop);
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
     public void updateSubpopulationVerifiesStudyConsent() {
-        when(studyConsentService.getConsent(anyObject(), anyLong())).thenThrow(new EntityNotFoundException(StudyConsent.class));
-        
         // doesn't even get to validation, so no need to fill this out.
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("test-guid");
@@ -246,8 +248,7 @@ public class SubpopulationServiceTest {
     
     @Test
     public void updateSubpopulationSetsConsentCreatedOn() {
-        doReturn(1000L).when(view).getCreatedOn();
-        when(studyConsentDao.getConsent(anyObject(), anyLong())).thenReturn(consent);
+        when(studyConsentDao.getConsent(any(), anyLong())).thenReturn(consent);
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");

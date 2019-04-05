@@ -11,10 +11,12 @@ import org.springframework.validation.Validator;
 public class SchedulePlanValidator implements Validator {
 
     private final Set<String> dataGroups;
+    private final Set<String> substudyIds;
     private final Set<String> taskIdentifiers;
     
-    public SchedulePlanValidator(Set<String> dataGroups, Set<String> taskIdentifiers) {
+    public SchedulePlanValidator(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers) {
         this.dataGroups = dataGroups;
+        this.substudyIds = substudyIds;
         this.taskIdentifiers = taskIdentifiers;
     }
     
@@ -36,7 +38,7 @@ public class SchedulePlanValidator implements Validator {
             errors.rejectValue("strategy", "is required");
         } else {
             errors.pushNestedPath("strategy");
-            plan.getStrategy().validate(dataGroups, taskIdentifiers, errors);
+            plan.getStrategy().validate(dataGroups, substudyIds, taskIdentifiers, errors);
             errors.popNestedPath();
         }
     }

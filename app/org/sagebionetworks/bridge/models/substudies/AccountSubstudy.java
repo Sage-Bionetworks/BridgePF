@@ -16,4 +16,7 @@ public interface AccountSubstudy {
     String getStudyId();
     String getSubstudyId();
     String getAccountId();
+    String getExternalId();
+    void setExternalId(String externalId);
+    void setSubstudyId(String substudyId); // for migration, then can be removed
 }

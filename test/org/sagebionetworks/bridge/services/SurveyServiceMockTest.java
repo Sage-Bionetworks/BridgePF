@@ -7,12 +7,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anySetOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +31,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
@@ -106,8 +105,7 @@ public class SurveyServiceMockTest {
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(TestUtils.getValidStudy(
                 SurveyServiceMockTest.class));
 
-        when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgumentAt(0,
-                Survey.class));
+        when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Create service.
         service = new SurveyService();
@@ -237,7 +235,6 @@ public class SurveyServiceMockTest {
                 .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
         getActivityList(plans).set(0, activity);
         
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
@@ -266,7 +263,7 @@ public class SurveyServiceMockTest {
                 .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
         getActivityList(plans).set(0, activity);
         
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
@@ -288,7 +285,7 @@ public class SurveyServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void logicallyDeleteSurveyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
         
@@ -299,11 +296,14 @@ public class SurveyServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void physicallyDeleteSurveyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
+                any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
 
-        doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        // there are no schedules to constraint this delete, it is prevented
+        // by the presence of a shared module
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true))
+                .thenReturn(ImmutableList.of()); 
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -436,12 +436,14 @@ public class SurveyServiceMockTest {
     
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
-        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
-        
         // Two published surveys in the list, no exception thrown
+        List<SchedulePlan> plans = ImmutableList.of(createSchedulePlanListWithSurveyReference(true).get(0),
+                createSchedulePlanListWithSurveyReference(true).get(0));
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
+        
         Survey survey = createSurvey();
         when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        when(mockSurveyDao.getSurveyAllVersions(any(), any(), anyBoolean())).thenReturn(ImmutableList.of(survey));
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -495,12 +497,12 @@ public class SurveyServiceMockTest {
     
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByCompoundScheduleWithMultiplePublishedSurveys() {
-        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
-        
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(survey, false)).thenReturn(survey);
+        doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false);
+        List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }   
@@ -631,7 +633,7 @@ public class SurveyServiceMockTest {
     public void updateSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSurveyDao.updateSurvey(survey)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey((GuidCreatedOnVersionHolder)survey, false)).thenReturn(survey);
         
         try {
             service.updateSurvey(OTHER_STUDY, survey);   
@@ -645,7 +647,7 @@ public class SurveyServiceMockTest {
     public void publishSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSurveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, true)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey((GuidCreatedOnVersionHolder)survey, true)).thenReturn(survey);
         
         try {
             service.publishSurvey(OTHER_STUDY, survey, true);   
@@ -659,7 +661,7 @@ public class SurveyServiceMockTest {
     public void versionSurveyInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSurveyDao.versionSurvey(SURVEY_KEYS)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, false)).thenReturn(survey);
         
         try {
             service.versionSurvey(OTHER_STUDY, SURVEY_KEYS);   
@@ -671,6 +673,10 @@ public class SurveyServiceMockTest {
 
     @Test
     public void deleteSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(survey);
+        
         try {
             service.deleteSurvey(OTHER_STUDY, SURVEY_KEYS);
             fail("Should have thrown an exception");
@@ -698,7 +704,7 @@ public class SurveyServiceMockTest {
     public void getSurveyMostRecentlyPublishedVersionInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, true)).thenReturn(survey);
+        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true)).thenReturn(survey);
         
         service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
     }
@@ -716,8 +722,6 @@ public class SurveyServiceMockTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getSurveyMostRecentlyPublishedVersionMissingSurvey() {
-        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(eq(TestConstants.TEST_STUDY), any(), eq(true))).thenReturn(null);
-        
         service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
     }
 
@@ -725,15 +729,13 @@ public class SurveyServiceMockTest {
     public void getSurveyMostRecentVersionInOtherStudy() {
         Survey survey = Survey.create();
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSurveyDao.getSurveyMostRecentVersion(TestConstants.TEST_STUDY, SURVEY_GUID)).thenReturn(survey);
+        when(mockSurveyDao.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID)).thenReturn(survey);
         
         service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getSurveyMostRecentVersionMissingSurvey() {
-        when(mockSurveyDao.getSurveyMostRecentVersion(eq(TestConstants.TEST_STUDY), any())).thenReturn(null);
-        
         service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
     }
     

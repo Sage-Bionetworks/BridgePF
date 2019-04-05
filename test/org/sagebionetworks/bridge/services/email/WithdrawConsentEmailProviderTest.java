@@ -20,7 +20,6 @@ public class WithdrawConsentEmailProviderTest {
 
     private static final long UNIX_TIMESTAMP = 1446073435148L;
     private static final Withdrawal WITHDRAWAL = new Withdrawal("<p>Because, reasons.</p>");
-    private static final String EXTERNAL_ID = "<u>AAA</u>";
     
     private WithdrawConsentEmailProvider provider;
     private Study study;
@@ -33,7 +32,7 @@ public class WithdrawConsentEmailProviderTest {
         account = Account.create();
         account.setEmail("d@d.com");
         
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
     }
     
     @Test
@@ -43,7 +42,7 @@ public class WithdrawConsentEmailProviderTest {
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
 
-        provider = new WithdrawConsentEmailProvider(study, null, account, new Withdrawal(null), UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, account, new Withdrawal(null), UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(EmailType.WITHDRAW_CONSENT, email.getType());
         
@@ -69,7 +68,7 @@ public class WithdrawConsentEmailProviderTest {
         account.setFirstName("<b>Jack</b>");
         account.setLastName("<i>Aubrey</i>");
 
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(EmailType.WITHDRAW_CONSENT, email.getType());
 
@@ -84,13 +83,13 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("Notification of consent withdrawal for Study Name", email.getSubject());
         
         MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", body.getContent());
+        assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", body.getContent());
     }
     
     @Test
     public void unverifiedStudyConsentEmailGeneratesNoRecipients() {
         study.setConsentNotificationEmailVerified(false);
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
         
         assertTrue(provider.getRecipients().isEmpty());
     }
@@ -100,7 +99,7 @@ public class WithdrawConsentEmailProviderTest {
         // email shouldn't be verified if it is null, but regardless, there should still be no recipients
         study.setConsentNotificationEmailVerified(true); 
         study.setConsentNotificationEmail(null);
-        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
         
         assertTrue(provider.getRecipients().isEmpty());
     }

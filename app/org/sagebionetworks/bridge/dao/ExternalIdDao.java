@@ -1,8 +1,9 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -15,57 +16,44 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 public interface ExternalIdDao {
 
     String EXTERNAL_ID_GET_RATE = "external.id.get.rate";
-    String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
-    String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
     /**
-     * Get a single external ID record. Returns null if there is no record.
+     * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
+     * substudy membership.
      */
-    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
-    
-    /**
-     * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 
-     * records. Each page is identified by the offsetKey of the last record of the immediately prior page. If that value is 
-     * null, there is not a further page of IDs to retrieve.
-     * 
-     * More interestingly, you can retrieve the next available ID by asking for pageSize=1, assignmentFilter=FALSE.
-     *   
-     * @param studyId
-     *      study of caller
-     * @param offsetKey
-     *      if it exists, the key that must be passed to the next call of getExternalIds() to move the cursor forward one 
-     *      more page.
-     * @param pageSize
-     *      the number of records to return
-     * @param idFilter
-     *      a case-sensitive string that must be found in an external identifier to return it in the results
-     * @param assignmentFilter
-     *      an optional boolean (can be null). If TRUE, all records returned will be assigned. More usefully, if FALSE,
-     *      will return unassigned external identifiers. 
-     */
-    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey,
-            int pageSize, String idFilter, Boolean assignmentFilter);
-    
-    /**
-     * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.
-     */
-    void addExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
-    
-    /**
-     * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 
-     * nothing happens.  
-     */
-    void assignExternalId(StudyIdentifier studyId, String externalIdentifier, String healthCode);
-    
-    /**
-     * Unassign an external ID. This makes the identifier available again. This method should be called when a user
-     * is deleted, usually during testing.
-     */
-    void unassignExternalId(StudyIdentifier studyId, String externalIdentifier);
+    Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId);
 
     /**
-     * Delete external IDs. This is used by tests to delete test records.
+     * Get a forward-only cursor page of results. All external IDs for the study are returned, however, if a 
+     * given substudy ID association is a substudy that the user is not associated to (if the caller is associated 
+     * to any substudies), then the external ID will have a substudy of null. 
      */
-    void deleteExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
+    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
+            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
+    
+    /**
+     * Create a new external identifier.
+     */
+    void createExternalId(ExternalIdentifier externalIdentifier);
+    
+    /**
+     * Delete an external identifier.
+     */
+    void deleteExternalId(ExternalIdentifier externalIdentifier);
+    
+    /**
+     * Complete the external ID assignment. This operation has to be orchestrated with the persistence of an 
+     * account, and is similar to a create operation except that DynamoDB will enforce a check that the 
+     * externalIdentifier has not been assigned a health code.
+     */
+    void commitAssignExternalId(ExternalIdentifier externalId);
+    
+    /**
+     * Unassign an external ID. This makes the identifier available again and adjusts the account object so it can 
+     * be persisted. Calling this method when the external identifier is not assigned to the account, but the 
+     * account has not been correctly updated, will adjust the account so it is correct and can be persisted. It is
+     * therefore safest to always update the account after calling this method.
+     */
+    void unassignExternalId(Account account, String externalIdentifier);
     
 }

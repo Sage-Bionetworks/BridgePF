@@ -22,7 +22,7 @@ public class AuthenticationFailedExceptionTest {
     public void serializesCorrectly() throws Throwable {
         ExceptionInterceptor interceptor = spy(ExceptionInterceptor.class);
         AuthenticationFailedException e = new AuthenticationFailedException();
-        TestUtils.mockPlayContext();
+        TestUtils.mockPlay().mock();
         
         MethodInvocation invocation = mock(MethodInvocation.class);
         when(invocation.proceed()).thenThrow(e);

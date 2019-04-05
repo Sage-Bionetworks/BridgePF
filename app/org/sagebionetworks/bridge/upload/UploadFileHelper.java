@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Charsets;
@@ -104,7 +105,10 @@ public class UploadFileHelper {
                     // Case 1a: The whole file is an attachment. Upload the file. Field JSON is attachment filename.
                     String attachmentFilename = uploadId + '-' + fieldName;
                     fieldNode = TextNode.valueOf(attachmentFilename);
-                    s3Helper.writeFileToS3(ATTACHMENT_BUCKET, attachmentFilename, fieldFile);
+                    
+                    ObjectMetadata metadata = new ObjectMetadata();
+                    metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                    s3Helper.writeFileToS3(ATTACHMENT_BUCKET, attachmentFilename, fieldFile, metadata);
                 } else {
                     // Case 1b: The file is an empty attachment. Skip and return null.
                     fieldNode = null;
@@ -213,8 +217,11 @@ public class UploadFileHelper {
             throws UploadValidationException {
         String filename = uploadId + '-' + fieldName;
         String jsonText = node.toString();
+        
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         try {
-            s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, filename, jsonText.getBytes(Charsets.UTF_8));
+            s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, filename, jsonText.getBytes(Charsets.UTF_8), metadata);
         } catch (IOException ex) {
             throw new UploadValidationException("Error writing attachment to S3, uploadId=" + uploadId +
                     ", fieldName=" + fieldName, ex);

@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -91,7 +91,6 @@ public class UserAdminService {
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
     }
-    
     
     /**
      * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
@@ -202,12 +201,11 @@ public class UserAdminService {
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-
-            // Remove the externalId from the table even if validation is not enabled. If the study
-            // turns it off/back on again, we want to track what has changed
-            if (account.getExternalId() != null) {
-                externalIdService.unassignExternalId(study, account.getExternalId(), healthCode);    
+            for (String externalId : BridgeUtils.collectExternalIds(account)) {
+                externalIdService.unassignExternalId(account, externalId);
             }
+            // AccountSecret records and AccountsSubstudies records are are deleted on a 
+            // cascading delete from Account
             accountDao.deleteAccount(accountId);
         }
     }

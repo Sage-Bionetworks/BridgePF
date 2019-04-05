@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -129,7 +130,7 @@ public class HealthDataServiceSubmitHealthDataTest {
 
         // UploadArtifactsHandler needs to write record ID back into the context.
         doAnswer(invocation -> {
-            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
+            UploadValidationContext context = invocation.getArgument(0);
             HealthDataRecord record = context.getHealthDataRecord();
             record.setId(context.getUploadId());
             context.setRecordId(context.getUploadId());
@@ -253,13 +254,16 @@ public class HealthDataServiceSubmitHealthDataTest {
         // Validate raw data submitted to S3
         String expectedRawDataAttachmentId = uploadId + HealthDataService.RAW_ATTACHMENT_SUFFIX;
         ArgumentCaptor<byte[]> rawBytesCaptor = ArgumentCaptor.forClass(byte[].class);
+        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
         verify(mockS3Helper).writeBytesToS3(eq(HealthDataService.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
-                rawBytesCaptor.capture());
+                rawBytesCaptor.capture(), metadataCaptor.capture());
         assertEquals(expectedRawDataAttachmentId, contextRecord.getRawDataAttachmentId());
 
         byte[] rawBytes = rawBytesCaptor.getValue();
         JsonNode rawJsonNode = BridgeObjectMapper.get().readTree(rawBytes);
         assertEquals(inputData, rawJsonNode);
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
 
         // validate the other handlers are called
         verify(mockTranscribeConsentHandler).handle(context);

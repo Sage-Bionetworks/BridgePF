@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -27,8 +28,8 @@ public class AccountSummaryTest {
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", TestConstants.PHONE,
-                "externalId", "ABC", dateTime, AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY,
-                ImmutableSet.of("sub1", "sub2"));
+                "oldExternalId", ImmutableMap.of("sub1", "externalId"), "ABC", dateTime, AccountStatus.UNVERIFIED,
+                TestConstants.TEST_STUDY, ImmutableSet.of("sub1", "sub2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
         assertEquals("firstName", node.get("firstName").textValue());
@@ -38,7 +39,8 @@ public class AccountSummaryTest {
         assertEquals(TestConstants.PHONE.getNumber(), node.get("phone").get("number").textValue());
         assertEquals(TestConstants.PHONE.getRegionCode(), node.get("phone").get("regionCode").textValue());
         assertEquals(TestConstants.PHONE.getNationalFormat(), node.get("phone").get("nationalFormat").textValue());
-        assertEquals("externalId", node.get("externalId").textValue());
+        assertEquals("oldExternalId", node.get("externalId").textValue());
+        assertEquals("externalId", node.get("externalIds").get("sub1").textValue());
         assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").textValue());
         assertEquals("unverified", node.get("status").textValue());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").get("identifier").textValue());

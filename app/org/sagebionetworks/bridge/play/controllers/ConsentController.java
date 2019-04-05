@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
@@ -72,7 +74,7 @@ public class ConsentController extends BaseController {
     }
     
     public Result changeSharingScope() throws Exception {
-        SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), 2);
+        SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
     
@@ -152,11 +154,17 @@ public class ConsentController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        final ConsentSignature consentSignature = ConsentSignature.fromJSON(requestToJSON(request()));
-        final SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), version);
-
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
+        final ConsentSignature consentSignature = ConsentSignature.fromJSON(parseJson(request(), JsonNode.class));
+        final SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), version);
         
+        // On client update, clients have sent consent signatures even before the session reflects the need
+        // for the new consent. Update the criteria context before consent, using the latest User-Agent
+        // header, so the server is synchronized with the client's state.
+        CriteriaContext context = getCriteriaContext(session);
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = consentService.getConsentStatuses(context);
+        
+        // If provided subpopulation is not in the statuses, it either doesn't exist or doesn't apply to 
+        // this user, and we return a 404
         ConsentStatus status = consentStatuses.get(subpopGuid);
         if (status == null) {
             throw new EntityNotFoundException(Subpopulation.class);
@@ -165,9 +173,7 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        
         sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
 
         return createdResult(UserSessionInfo.toJSON(session));

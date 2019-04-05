@@ -25,10 +25,11 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -38,14 +39,15 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -78,9 +80,6 @@ public class UserProfileControllerTest {
     private CacheProvider cacheProvider;
     
     @Mock
-    private ExternalIdService externalIdService;
-    
-    @Mock
     private StudyService studyService;
     
     @Mock
@@ -100,6 +99,12 @@ public class UserProfileControllerTest {
     
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
+    
+    @Captor
+    private ArgumentCaptor<AccountId> accountIdCaptor;
+    
+    @Captor
+    private ArgumentCaptor<ExternalIdentifier> externalIdCaptor;
     
     private UserSession session;
     
@@ -127,7 +132,6 @@ public class UserProfileControllerTest {
         controller.setAccountDao(accountDao);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
-        controller.setExternalIdService(externalIdService);
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
         
@@ -218,8 +222,9 @@ public class UserProfileControllerTest {
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
-                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}"));
+        TestUtils.mockPlay().withMockResponse().withJsonBody(
+                TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
+                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}")).mock();
         
         Result result = controller.updateUserProfile();
         
@@ -248,7 +253,7 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
-        TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
+        TestUtils.mockPlay().withJsonBody("{\"identifier\":\"ABC-123-XYZ\"}").mock();
                 
         Result result = controller.createExternalIdentifier();
         
@@ -256,7 +261,12 @@ public class UserProfileControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
-        verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
+        verify(participantService).assignExternalId(accountIdCaptor.capture(), externalIdCaptor.capture());
+        
+        assertEquals(HEALTH_CODE, accountIdCaptor.getValue().getHealthCode());
+        assertEquals(TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals("ABC-123-XYZ", externalIdCaptor.getValue().getIdentifier());
+        assertEquals(TEST_STUDY_IDENTIFIER, externalIdCaptor.getValue().getStudyId());
     }
 
     @Test
@@ -270,14 +280,15 @@ public class UserProfileControllerTest {
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS) // which includes substudyA
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
-        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
-        
+        TestUtils.mockPlay().withMockResponse()
+                .withJsonBody("{\"dataGroups\":[\"group1\"]}").mock();
+
         Result result = controller.updateDataGroups();
         TestUtils.assertResult(result, 200);
         
@@ -292,11 +303,13 @@ public class UserProfileControllerTest {
         assertEquals(ID, participant.getId());
         assertEquals(dataGroupSet, participant.getDataGroups());
         assertEquals("First", participant.getFirstName());
-        
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, participant.getSubstudyIds());
         assertEquals(dataGroupSet, contextCaptor.getValue().getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, contextCaptor.getValue().getUserSubstudyIds());
         
         // Session continues to be initialized
         assertEquals(dataGroupSet, session.getParticipant().getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, session.getParticipant().getSubstudyIds());
         assertEquals("healthCode", session.getParticipant().getHealthCode());
         assertEquals("First", session.getParticipant().getFirstName());
     }
@@ -311,7 +324,7 @@ public class UserProfileControllerTest {
         doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study),
                 any());
         
-        TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
+        TestUtils.mockPlay().withJsonBody("{\"dataGroups\":[\"completelyInvalidGroup\"]}").mock();
         try {
             controller.updateDataGroups();
             fail("Should have thrown an exception");
@@ -352,7 +365,8 @@ public class UserProfileControllerTest {
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
-        TestUtils.mockPlayContextWithJson("{}");
+        
+        TestUtils.mockPlay().withJsonBody("{}").withMockResponse().mock();
         
         Result result = controller.updateDataGroups();
         TestUtils.assertResult(result, 200);

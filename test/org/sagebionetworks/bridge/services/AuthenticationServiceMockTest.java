@@ -3,10 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -17,28 +18,36 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.BridgeConstants;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -48,10 +57,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -66,6 +77,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
@@ -79,6 +91,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthenticationServiceMockTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
@@ -88,7 +101,6 @@ public class AuthenticationServiceMockTest {
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
-    private static final CacheKey REAUTH_CACHE_TOKEN = CacheKey.reauthCacheKey(TOKEN, "api");
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "Password~!1";
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID)
@@ -116,13 +128,14 @@ public class AuthenticationServiceMockTest {
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
-    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
+    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
-            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withLanguages(LANGUAGES).build();
+            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+            .withLanguages(LANGUAGES).build();
 
     @Mock
     private CacheProvider cacheProvider;
@@ -144,6 +157,8 @@ public class AuthenticationServiceMockTest {
     private ExternalIdService externalIdService;
     @Mock
     private IntentService intentService;
+    @Mock
+    private AccountSecretDao accountSecretDao;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
@@ -152,6 +167,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<AccountId> accountIdCaptor;
     @Captor
     private ArgumentCaptor<Tuple<String>> tupleCaptor;
+    @Captor
+    private ArgumentCaptor<CriteriaContext> contextCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -169,6 +186,7 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         account = Account.create();
+        account.setId(USER_ID);
 
         // Wire up service.
         service.setCacheProvider(cacheProvider);
@@ -181,8 +199,66 @@ public class AuthenticationServiceMockTest {
         service.setAccountWorkflowService(accountWorkflowService);
         service.setExternalIdService(externalIdService);
         service.setIntentToParticipateService(intentService);
+        service.setAccountSecretDao(accountSecretDao);
 
         doReturn(study).when(studyService).getStudy(STUDY_ID);
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test // Test some happy path stuff, like the correct initialization of the user session
+    public void signIn() {
+        study.setReauthenticationEnabled(true);
+        
+        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
+        
+        account.setReauthToken("REAUTH_TOKEN");
+        account.setHealthCode(HEALTH_CODE);
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        account.setId(USER_ID);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withLanguages(LANGUAGES)
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
+            .withIpAddress("127.1.1.11").build();
+        
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(contextCaptor.capture(), any());
+        doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
+        doReturn("SESSION_TOKEN").when(service).getGuid();
+        doReturn(Environment.PROD).when(config).getEnvironment();
+        
+        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+        
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(cacheProvider).setUserSession(session);
+        
+        assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
+        assertTrue(session.isAuthenticated());
+        assertEquals("127.1.1.11", session.getIpAddress());
+        assertEquals("SESSION_TOKEN", session.getSessionToken());
+        assertEquals("SESSION_TOKEN", session.getInternalSessionToken());
+        assertEquals(REAUTH_TOKEN, session.getReauthToken());
+        assertEquals(Environment.PROD, session.getEnvironment());
+        assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
+
+        // updated context
+        CriteriaContext updatedContext = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedContext.getHealthCode());
+        assertEquals(LANGUAGES, updatedContext.getLanguages());
+        assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, updatedContext.getUserSubstudyIds());
+        assertEquals(USER_ID, updatedContext.getUserId());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
     
     @Test
@@ -216,12 +292,13 @@ public class AuthenticationServiceMockTest {
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(account));
         
         // Does not throw consent required exception, despite being unconsented, because user has DEVELOPER role.
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test
@@ -255,12 +332,13 @@ public class AuthenticationServiceMockTest {
                 .copyOf(PARTICIPANT).withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         // Does not throw consent required exception, despite being unconsented, because user has RESEARCHER role. 
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
 
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test
@@ -291,7 +369,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -299,10 +377,13 @@ public class AuthenticationServiceMockTest {
         
         assertNotNull(retSession);
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
-        verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
-        verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
-        verify(cacheProvider).setUserSession(retSession);
+        
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        inOrder.verify(cacheProvider).setUserSession(retSession);
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -327,49 +408,55 @@ public class AuthenticationServiceMockTest {
         
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
     }
     
     @Test
     public void emailSignInThrowsConsentRequired() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withStatus(AccountStatus.DISABLED)
+                .build();
 
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         try {
             service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
-            verify(cacheProvider).setUserSession(e.getUserSession());    
+            verify(cacheProvider).setUserSession(e.getUserSession());
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());
         }
     }
     
     @Test
     public void emailSignInAdminOK() {
-        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         // Does not throw a consent required exception because the participant is an admin. 
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        UserSession retrieved = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        assertEquals(UNCONSENTED_STATUS_MAP, retrieved.getConsentStatuses());
     }
     
     @Test
     public void reauthentication() {
+        study.setReauthenticationEnabled(true);
         account.setId(USER_ID);
-        account.setReauthToken(REAUTH_TOKEN);
+        
+        doReturn(REAUTH_TOKEN).when(service).generateReauthToken();
 
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
@@ -379,42 +466,32 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         
         verify(accountDao).reauthenticate(study, REAUTH_REQUEST);
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(sessionCaptor.capture());
         
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
-        verify(cacheProvider).setObject(eq(REAUTH_CACHE_TOKEN), tupleCaptor.capture(),
-                eq(BridgeConstants.REAUTH_TOKEN_GRACE_PERIOD_SECONDS));
         
-        Tuple<String> tuple = tupleCaptor.getValue();
-        assertEquals(session.getSessionToken(), tuple.getLeft());
-        assertEquals(REAUTH_TOKEN, tuple.getRight());
+        verify(accountSecretDao).createSecret(REAUTH, USER_ID, REAUTH_TOKEN);
     }
     
     @Test
-    public void reauthenticationFromCache() {
-        Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
+    public void reauthenticationPersistsExistingSessionTokens() {
+        study.setReauthenticationEnabled(true);
         
-        UserSession session = new UserSession();
-        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
-        doReturn(session).when(cacheProvider).getUserSession(TOKEN);
+        UserSession existing = new UserSession();
+        existing.setSessionToken("existingToken");
+        existing.setInternalSessionToken("existingInternalToken");
+        doReturn(existing).when(cacheProvider).getUserSessionByUserId(USER_ID);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(RECIPIENT_EMAIL).build();
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
         
-        UserSession returned = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
-        assertEquals(session, returned);
-        assertEquals("newReauthToken", session.getReauthToken());
-        
-        // We don't have to retrieve this.
-        verify(accountDao, never()).reauthenticate(any(), any());
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void reauthenticationWithoutSessionThrows() {
-        Tuple<String> tuple = new Tuple<>("left", "right");
-        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
-        
-        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        UserSession session = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        assertEquals("existingToken", session.getSessionToken());
+        assertEquals("existingInternalToken", session.getInternalSessionToken());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -422,15 +499,21 @@ public class AuthenticationServiceMockTest {
         service.reauthenticate(study, CONTEXT, SIGN_IN_WITH_EMAIL); // doesn't have reauth token
     }
     
-    @Test(expected = ConsentRequiredException.class)
+    @Test
     public void reauthThrowsUnconsentedException() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withStatus(AccountStatus.ENABLED).build();
         
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
-        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        try {
+            service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+            fail("Should have thrown exception");
+        } catch(ConsentRequiredException e) {
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());
+        }
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -482,18 +565,35 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
-        doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "userId", "user-id")).when(participantService)
+        doThrow(new EntityAlreadyExistsException(Account.class, "userId", "user-id")).when(participantService)
                 .createParticipant(study, participant, true);
         
         service.signUp(study, participant);
-        
-        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         
         verify(participantService).createParticipant(eq(study), any(), eq(true));
         verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals("user-id", captured.getId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, captured.getStudyId());
+    }
+    
+    @Test
+    public void signUpExistingExternalId() {
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setExternalIdValidationEnabled(true);
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        
+        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", EXTERNAL_ID)).when(participantService)
+                .createParticipant(study, participant, true);
+        
+        service.signUp(study, participant);
+        
+        verify(participantService).createParticipant(eq(study), any(), eq(true));
+        verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
+        
+        AccountId captured = accountIdCaptor.getValue();
+        assertEquals(EXTERNAL_ID, captured.getExternalId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, captured.getStudyId());
     }
     
@@ -508,7 +608,7 @@ public class AuthenticationServiceMockTest {
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate.
@@ -519,9 +619,11 @@ public class AuthenticationServiceMockTest {
         assertEquals("Tester", session.getParticipant().getLastName());
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
-        verify(cacheProvider).removeSessionByUserId(USER_ID);
-        verify(cacheProvider).setUserSession(session);
-        verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
+        inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
+        inOrder.verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        inOrder.verify(cacheProvider).setUserSession(session);
     }
 
     @Test(expected = AuthenticationFailedException.class)
@@ -535,19 +637,20 @@ public class AuthenticationServiceMockTest {
     @Test
     public void phoneSignInThrowsConsentRequired() {
         // Put some stuff in participant to verify session is initialized
-        StudyParticipant participant = new StudyParticipant.Builder()
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
-        
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+         
         try {
             service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
             fail("Should have thrown exception");
         } catch(ConsentRequiredException e) {
-            verify(cacheProvider).setUserSession(e.getUserSession());    
+            verify(cacheProvider).setUserSession(e.getUserSession());
+            assertEquals(UNCONSENTED_STATUS_MAP, e.getUserSession().getConsentStatuses());            
         }
     }
     
@@ -652,7 +755,8 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void generatePasswordExternalIdRecordMissiong() {
+    public void generatePasswordExternalIdRecordMissing() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
         study.setExternalIdValidationEnabled(true);
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -661,8 +765,8 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordNoAccountDoNotCreateAccount() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         service.generatePassword(study, EXTERNAL_ID, false);
     }
@@ -672,7 +776,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         IdentifierHolder idHolder = new IdentifierHolder("userId");
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
@@ -691,7 +796,8 @@ public class AuthenticationServiceMockTest {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
@@ -708,15 +814,33 @@ public class AuthenticationServiceMockTest {
         verifyNoMoreInteractions(participantService);
     }
     
+    
+    @Test
+    public void generatePasswordAndAccountWhenExternalIdMissing() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        externalIdentifier.setHealthCode("someoneElsesHealthCode");
+        study.setExternalIdValidationEnabled(true);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+            .thenReturn(Optional.empty());
+        
+        try {
+            service.generatePassword(study, EXTERNAL_ID, true);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+            // expected exception
+        }
+        verify(accountDao, never()).getAccount(any());
+        verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
+        verify(accountDao, never()).changePassword(any(), any(), any());
+    }
+    
     @Test
     public void generatePasswordOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         
         when(accountDao.getAccount(any())).thenReturn(account);
         account.setHealthCode(HEALTH_CODE);
@@ -737,6 +861,39 @@ public class AuthenticationServiceMockTest {
         ValidatorUtils.validatePassword(errors, PasswordPolicy.DEFAULT_PASSWORD_POLICY, password);
         assertFalse(errors.hasErrors());
         assertEquals(100, password.length());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void generatePasswordExternalIdMismatchesCallerSubstudies() {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+        study.setExternalIdValidationEnabled(true);
+        
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        externalIdentifier.setSubstudyId("substudyA");
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
+        
+        account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyA", "id")));
+        
+        service.generatePassword(study, EXTERNAL_ID, false);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void generatePasswordAccountMismatchesCallerSubstudies() {
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        study.setExternalIdValidationEnabled(true);
+        
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        externalIdentifier.setSubstudyId("substudyA");
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(Optional.of(externalIdentifier));
+        
+        when(accountDao.getAccount(any())).thenReturn(account);
+        account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyB", "id")));
+        
+        service.generatePassword(study, EXTERNAL_ID, false);
     }
 
     @Test(expected = UnauthorizedException.class)
@@ -783,15 +940,15 @@ public class AuthenticationServiceMockTest {
     @Test
     public void emailSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
+        consentedAccount.setId(USER_ID);
 
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
                 SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account, consentedAccount);
         when(participantService.getParticipant(study, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
         when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
@@ -805,15 +962,15 @@ public class AuthenticationServiceMockTest {
     @Test
     public void phoneSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
-
+        consentedAccount.setId(USER_ID);
+        
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
                 SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account, consentedAccount);
         when(participantService.getParticipant(study, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
         when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
@@ -839,7 +996,7 @@ public class AuthenticationServiceMockTest {
     public void consentedEmailSignInDoesNotExecuteIntentToParticipate() {
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
                 SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
         when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
         
@@ -852,7 +1009,7 @@ public class AuthenticationServiceMockTest {
     public void consentedPhoneSignInDoesNotExecuteIntentToParticipate() {
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
                 SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
         when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
         
@@ -868,19 +1025,20 @@ public class AuthenticationServiceMockTest {
         // Create inputs.
         Study study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setReauthenticationEnabled(true);
 
         CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
-        account.setReauthToken(REAUTH_TOKEN);
 
         // Mock pre-reqs.
         when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
         when(config.getEnvironment()).thenReturn(Environment.LOCAL);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
-
+        when(service.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        
         // Execute and validate.
         UserSession session = service.getSessionFromAccount(study, context, account);
         assertSame(PARTICIPANT, session.getParticipant());
@@ -892,5 +1050,31 @@ public class AuthenticationServiceMockTest {
         assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
+        
+        verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
+    }
+    
+    @Test
+    public void getSessionFromAccountWithoutReauthentication() {
+        // Create inputs.
+        Study study = Study.create();
+        study.setReauthenticationEnabled(false);
+
+        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+
+        Account account = Account.create();
+
+        // Mock pre-reqs.
+        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
+        when(config.getEnvironment()).thenReturn(Environment.LOCAL);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+        
+        // Execute and validate.
+        UserSession session = service.getSessionFromAccount(study, context, account);
+        assertNull(REAUTH_TOKEN, session.getReauthToken());
+        
+        verify(service, never()).generateReauthToken();
+        verify(accountSecretDao, never()).createSecret(any(), any(), any());
     }
 }

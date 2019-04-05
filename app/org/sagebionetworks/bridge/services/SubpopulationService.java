@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,7 @@ public class SubpopulationService {
     private SubpopulationDao subpopDao;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
+    private SubstudyService substudyService;
     private StudyConsentForm defaultConsentDocument;
     private CacheProvider cacheProvider;
     
@@ -59,6 +61,10 @@ public class SubpopulationService {
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
     }
     @Value("classpath:study-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
@@ -82,7 +88,9 @@ public class SubpopulationService {
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
 
-        Validator validator = new SubpopulationValidator(study.getDataGroups());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
+        Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation created = subpopDao.createSubpopulation(subpop);
@@ -139,7 +147,9 @@ public class SubpopulationService {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         
-        Validator validator = new SubpopulationValidator(study.getDataGroups());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        
+        Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);

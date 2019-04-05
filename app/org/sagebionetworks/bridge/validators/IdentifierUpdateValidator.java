@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -63,9 +66,9 @@ public class IdentifierUpdateValidator implements Validator {
                 errors.rejectValue("externalIdUpdate", "cannot be blank");
             } else if (study.isExternalIdValidationEnabled()) {
                 // the same validation we perform when adding a participant where external ID is required on sign up.
-                ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+                Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
                         update.getExternalIdUpdate());
-                if (externalId == null) {
+                if (!optionalId.isPresent()) {
                     errors.rejectValue("externalIdUpdate", "is not a valid external ID");
                 }
             }

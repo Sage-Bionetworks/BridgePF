@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -20,7 +20,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.List;
 
@@ -36,7 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import play.core.j.JavaResultExtractor;
 import play.mvc.Result;
 import play.test.Helpers;
@@ -120,7 +119,6 @@ public class StudyControllerTest {
         // mock session with study identifier
         studyId = new StudyIdentifierImpl(TestConstants.TEST_STUDY_IDENTIFIER + "test");
         when(mockSession.getStudyIdentifier()).thenReturn(studyId);
-        when(mockSession.isAuthenticated()).thenReturn(true);
         
         study = new DynamoStudy();
         study.setSupportEmail(EMAIL_ADDRESS);
@@ -130,7 +128,6 @@ public class StudyControllerTest {
         study.setActive(true);
         
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
-        when(mockStudyService.getStudy(studyId.getIdentifier())).thenReturn(study);
         when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(study);
 
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
@@ -147,7 +144,7 @@ public class StudyControllerTest {
         
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
-        mockPlayContext();
+        TestUtils.mockPlay().mock();
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -203,15 +200,11 @@ public class StudyControllerTest {
 
     @Test(expected = NotAuthenticatedException.class)
     public void cannotDeactivateForDeveloper() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
-
         controller.deleteStudy(study.getIdentifier(), "false");
     }
 
     @Test(expected = NotAuthenticatedException.class)
     public void cannotDeleteForDeveloper() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
-
         controller.deleteStudy(study.getIdentifier(), "true");
     }
 
@@ -251,8 +244,7 @@ public class StudyControllerTest {
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(adminIds, study, mockUsers);
-        String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUsers);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withBody(mockStudyAndUsers).mock();
 
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
@@ -280,8 +272,7 @@ public class StudyControllerTest {
     public void canCreateSynapse() throws Exception {
         // mock
         List<String> mockUserIds = ImmutableList.of(TEST_USER_ID);
-        String json = BridgeObjectMapper.get().writeValueAsString(mockUserIds);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlay().withBody(mockUserIds).mock();
 
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -304,11 +295,6 @@ public class StudyControllerTest {
     public void canGetCmsPublicKeyPemFile() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("healthCode")
-                .withRoles(Sets.newHashSet(DEVELOPER)).build();
-        when(mockSession.getParticipant()).thenReturn(participant);
-        
         Result result = controller.getStudyPublicKeyAsPem();
         TestUtils.assertResult(result, 200);
 
@@ -321,7 +307,7 @@ public class StudyControllerTest {
     
     @Test
     public void getEmailStatus() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         Result result = controller.getEmailStatus();
         TestUtils.assertResult(result, 200);
@@ -438,7 +424,7 @@ public class StudyControllerTest {
     @SuppressWarnings("deprecation")
     @Test
     public void canGetUploadsForStudy() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
@@ -540,9 +526,6 @@ public class StudyControllerTest {
         assertTrue((Boolean)list.getRequestParams().get("summary"));
 
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
-
-        // Throw an exception if the code makes it this far.
-        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
     }
 
     @Test
@@ -554,9 +537,6 @@ public class StudyControllerTest {
         TestUtils.assertResult(result, 200);
 
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
-        
-        // Throw an exception if the code makes it this far.
-        doThrow(new RuntimeException()).when(controller).getAuthenticatedSession(ADMIN);
     }
 
     @Test

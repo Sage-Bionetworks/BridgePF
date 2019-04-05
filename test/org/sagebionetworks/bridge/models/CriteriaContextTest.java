@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -29,6 +30,8 @@ public class CriteriaContextTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
         assertEquals(ImmutableList.of(), context.getLanguages());
+        assertEquals(ImmutableSet.of(), context.getUserDataGroups());
+        assertEquals(ImmutableSet.of(), context.getUserSubstudyIds());
     }
     
     @Test(expected = NullPointerException.class)
@@ -42,15 +45,20 @@ public class CriteriaContextTest {
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
                 .withUserId(USER_ID)
                 .withClientInfo(CLIENT_INFO)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
         
         // There are defaults
         assertEquals(CLIENT_INFO, context.getClientInfo());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, context.getUserSubstudyIds());
         
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(CLIENT_INFO, copy.getClientInfo());
+        assertEquals(TestConstants.TEST_STUDY, copy.getStudyIdentifier());
+        assertEquals(USER_ID, copy.getUserId());
         assertEquals(TestConstants.USER_DATA_GROUPS, copy.getUserDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, copy.getUserSubstudyIds());
     }
     
     @Test

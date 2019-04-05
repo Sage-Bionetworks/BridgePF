@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -54,6 +55,21 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
     
+    public static class SubstudyAssociations {
+        private final Set<String> substudyIdsVisibleToCaller;
+        private final Map<String, String> externalIdsVisibleToCaller;
+        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
+            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
+            this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
+        }
+        public Set<String> getSubstudyIdsVisibleToCaller() {
+            return substudyIdsVisibleToCaller;
+        }
+        public Map<String, String> getExternalIdsVisibleToCaller() {
+            return externalIdsVisibleToCaller;
+        }
+    }
+
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
@@ -64,12 +80,24 @@ public class BridgeUtils {
     private static final int ONE_MINUTE = 60;
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
+            ImmutableMap.of());
 
     // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
     // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
     // "request context" object into every method of every class.
     private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
+    public static Map<String,String> mapSubstudyMemberships(Account account) {
+        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
+            String value = (acctSubstudy.getExternalId() == null) ? 
+                    "<none>" : acctSubstudy.getExternalId();
+            builder.put(acctSubstudy.getSubstudyId(), value);
+        }
+        return builder.build();
+    }
+    
     public static Tuple<String> parseAutoEventValue(String automaticEventValue) {
         int lastIndex = automaticEventValue.lastIndexOf(":P");
         if (lastIndex == -1) {
@@ -80,11 +108,26 @@ public class BridgeUtils {
     }
     
     public static boolean isExternalIdAccount(StudyParticipant participant) {
+        // We do not look at externalIds because it is a read-only reflection of the substudies
+        // a user is associated to. It cannot be submitted by the caller.
         return (StringUtils.isNotBlank(participant.getExternalId()) && 
                 StringUtils.isBlank(participant.getEmail()) && 
                 participant.getPhone() == null);
     }
 
+    public static Set<String> collectExternalIds(Account account) {
+        ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
+        for (AccountSubstudy accountSubstudy: account.getAccountSubstudies()) {
+            if (accountSubstudy.getExternalId() != null) {
+                builder.add(accountSubstudy.getExternalId());
+            }
+        }
+        if (account.getExternalId() != null) {
+            builder.add(account.getExternalId());
+        }
+        return builder.build();
+    }
+    
     /** Gets the request context for the current thread. See also RequestInterceptor. */
     public static RequestContext getRequestContext() {
         RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
@@ -117,7 +160,43 @@ public class BridgeUtils {
         }
         return null;
     }
-
+    
+    /**
+     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
+     * substudy memberships (then they are global and see everything).
+     */
+    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
+        if (accountSubstudies == null || accountSubstudies.isEmpty()) {
+            return NO_ASSOCIATIONS;
+        }
+        ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
+        ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
+        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
+        for (AccountSubstudy acctSubstudy : accountSubstudies) {
+            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
+                substudyIds.add(acctSubstudy.getSubstudyId());
+                if (acctSubstudy.getExternalId() != null) {
+                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
+                }
+            }
+        }
+        return new SubstudyAssociations(substudyIds.build(), externalIds.build()); 
+    }
+    
+    public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {
+        if (externalId != null) {
+            RequestContext context = getRequestContext();
+            Set<String> callerSubstudies = context.getCallerSubstudies();
+            if (BridgeUtils.isEmpty(callerSubstudies)) {
+                return externalId;
+            }
+            if (callerSubstudies.contains(externalId.getSubstudyId())) {
+                return externalId;
+            }
+        }
+        return null;
+    }
+    
     /**
      * Convert expiration measures in seconds to an English language explanation of
      * the expiration time. This is not intended to cover odd cases--our expirations 

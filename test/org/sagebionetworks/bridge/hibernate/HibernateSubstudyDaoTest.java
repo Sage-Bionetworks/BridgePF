@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
@@ -19,7 +18,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
@@ -57,7 +56,7 @@ public class HibernateSubstudyDaoTest {
     
     @Test
     public void getSubstudiesIncludeDeleted() {
-        when(hibernateHelper.queryGet(any(), any(), anyInt(), anyInt(), eq(HibernateSubstudy.class)))
+        when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateSubstudy.class)))
                 .thenReturn(SUBSTUDIES);
         
         List<Substudy> list = dao.getSubstudies(TestConstants.TEST_STUDY, true);
@@ -74,7 +73,7 @@ public class HibernateSubstudyDaoTest {
 
     @Test
     public void getSubstudiesExcludeDeleted() {
-        when(hibernateHelper.queryGet(any(), any(), anyInt(), anyInt(), eq(HibernateSubstudy.class)))
+        when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateSubstudy.class)))
             .thenReturn(SUBSTUDIES);
 
         List<Substudy> list = dao.getSubstudies(TestConstants.TEST_STUDY, false);
@@ -112,7 +111,7 @@ public class HibernateSubstudyDaoTest {
         VersionHolder holder = dao.createSubstudy(substudy);
         assertEquals(new Long(2), holder.getVersion());
         
-        verify(hibernateHelper).create(substudyCaptor.capture());
+        verify(hibernateHelper).create(substudyCaptor.capture(), eq(null));
         
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(new Long(2), persisted.getVersion());
@@ -126,7 +125,7 @@ public class HibernateSubstudyDaoTest {
         VersionHolder holder = dao.updateSubstudy(substudy);
         assertEquals(new Long(2), holder.getVersion());
         
-        verify(hibernateHelper).update(substudyCaptor.capture());
+        verify(hibernateHelper).update(substudyCaptor.capture(), eq(null));
         
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(new Long(2), persisted.getVersion());
@@ -134,9 +133,6 @@ public class HibernateSubstudyDaoTest {
 
     @Test
     public void deleteSubstudyPermanently() {
-        HibernateSubstudy substudy = new HibernateSubstudy();
-        when(hibernateHelper.getById(eq(HibernateSubstudy.class), any())).thenReturn(substudy);
-        
         dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
         
         verify(hibernateHelper).deleteById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());

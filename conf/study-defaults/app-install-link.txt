@@ -1,0 +1,9 @@
+<p>Hi,</p>
+
+<p>Use this link <em>on your phone</em> to install the ${studyName} app:</p>
+
+<p>${appInstallUrl}</p>
+
+<p>Regards,</p>
+
+<p>${sponsorName}</p>

@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -74,6 +74,9 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
+    private SubstudyService substudyService;
+    
+    @Mock
     private SurveyService mockSurveyService;
     
     @Mock
@@ -111,6 +114,7 @@ public class AppConfigServiceTest {
         service.setStudyService(mockStudyService);
         service.setSurveyService(mockSurveyService);
         service.setUploadSchemaService(mockSchemaService);
+        service.setSubstudyService(substudyService);
         service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
@@ -125,6 +129,8 @@ public class AppConfigServiceTest {
         savedAppConfig.setModifiedOn(TIMESTAMP.getMillis());
         when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
+     
+        when(substudyService.getSubstudyIds(TEST_STUDY)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY.getIdentifier());
@@ -309,17 +315,12 @@ public class AppConfigServiceTest {
         
         AppConfig appConfig = service.getAppConfigForUser(context, false);
 
-        verify(service).logError("CriteriaContext matches more than one app config: criteriaContext=" + 
-                context + ", appConfigs=" + Lists.newArrayList(appConfig2, appConfig1));
         assertEquals(appConfig2, appConfig);
     }
     
     // This should not actually ever happen. We're suppressing exceptions if the survey is missing.
     @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true))
-                .thenThrow(new EntityNotFoundException(Survey.class));
-        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();
@@ -374,7 +375,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -383,6 +384,7 @@ public class AppConfigServiceTest {
         setupConfigsForUser();
         AppConfig appConfig = service.getAppConfigForUser(context, true);
         assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
+        assertEquals("theIdentifier", appConfig.getSurveyReferences().get(0).getIdentifier());
     }
     
     @Test
@@ -418,6 +420,8 @@ public class AppConfigServiceTest {
         assertEquals(TIMESTAMP.getMillis(), captured.getCreatedOn());
         assertEquals(TIMESTAMP.getMillis(), captured.getModifiedOn());
         assertEquals(GUID, captured.getGuid());
+        
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
@@ -435,6 +439,8 @@ public class AppConfigServiceTest {
         
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(oldConfig, appConfigCaptor.getValue());
+        
+        verify(substudyService).getSubstudyIds(TEST_STUDY);
 
         assertEquals(returnValue, oldConfig);
     }

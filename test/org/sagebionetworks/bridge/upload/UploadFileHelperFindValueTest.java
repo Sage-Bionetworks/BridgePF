@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -12,11 +13,13 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -32,6 +35,7 @@ public class UploadFileHelperFindValueTest {
     private S3Helper mockS3Helper;
     private File tmpDir;
     private UploadFileHelper uploadFileHelper;
+    private ArgumentCaptor<ObjectMetadata> metadataCaptor;
 
     @Before
     public void before() {
@@ -43,6 +47,8 @@ public class UploadFileHelperFindValueTest {
         // Mock dependencies.
         mockS3Helper = mock(S3Helper.class);
 
+        metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        
         // Create UploadFileHelper.
         uploadFileHelper = new UploadFileHelper();
         uploadFileHelper.setFileHelper(inMemoryFileHelper);
@@ -65,8 +71,10 @@ public class UploadFileHelperFindValueTest {
         assertEquals(expectedAttachmentFilename, result.textValue());
 
         // Verify uploaded file
-        verify(mockS3Helper).writeFileToS3(UploadFileHelper.ATTACHMENT_BUCKET, expectedAttachmentFilename,
-                recordJsonFile);
+        verify(mockS3Helper).writeFileToS3(eq(UploadFileHelper.ATTACHMENT_BUCKET), eq(expectedAttachmentFilename),
+                eq(recordJsonFile), metadataCaptor.capture());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 
     @Test
@@ -165,8 +173,10 @@ public class UploadFileHelperFindValueTest {
         assertEquals(expectedAttachmentFilename, result.textValue());
 
         // Verify uploaded file
-        verify(mockS3Helper).writeBytesToS3(UploadFileHelper.ATTACHMENT_BUCKET, expectedAttachmentFilename,
-                "\"record-value\"".getBytes(Charsets.UTF_8));
+        verify(mockS3Helper).writeBytesToS3(eq(UploadFileHelper.ATTACHMENT_BUCKET), eq(expectedAttachmentFilename),
+                eq("\"record-value\"".getBytes(Charsets.UTF_8)), metadataCaptor.capture());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 
     @Test

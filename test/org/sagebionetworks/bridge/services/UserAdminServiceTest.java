@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.Resource;
 
@@ -17,20 +17,25 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.google.common.collect.Lists;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -57,10 +62,15 @@ public class UserAdminServiceTest {
     @Resource
     ExternalIdService externalIdService;
     
+    @Resource
+    SubstudyService substudyService;
+    
     @Resource(name = "externalIdDdbMapper")
     private DynamoDBMapper mapper;
     
     private Study study;
+    
+    private Substudy substudy;
 
     private StudyParticipant participant;
 
@@ -71,6 +81,12 @@ public class UserAdminServiceTest {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String email = TestUtils.makeRandomTestEmail(UserAdminServiceTest.class);
         participant = new StudyParticipant.Builder().withEmail(email).withPassword("P4ssword!").build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(TestConstants.TEST_STUDY).build());
+        
+        substudy = Substudy.create();
+        substudy.setName("Test Substudy");
+        substudy.setId(TestUtils.randomName(UserAdminServiceTest.class));
+        substudyService.createSubstudy(TestConstants.TEST_STUDY, substudy);
     }
 
     @After
@@ -78,6 +94,8 @@ public class UserAdminServiceTest {
         if (session != null) {
             userAdminService.deleteUser(study, session.getId());
         }
+        substudyService.deleteSubstudyPermanently(TestConstants.TEST_STUDY, substudy.getId());
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
@@ -157,12 +175,13 @@ public class UserAdminServiceTest {
     }
     
     @Test
-    public void creatingUserThenDeletingRemovesExternalIdAssignment() {
+    public void creatingUserThenDeletingRemovesExternalIdAssignment() throws Exception {
         String externalId = BridgeUtils.generateGuid();
         participant = new StudyParticipant.Builder().copyOf(participant).withExternalId(externalId).build();
         
-        List<String> idForTest = Lists.newArrayList(externalId);
-        externalIdService.addExternalIds(study, idForTest);
+        ExternalIdentifier idForTest = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);
+        idForTest.setSubstudyId(substudy.getId());
+        externalIdService.createExternalId(idForTest, false);
         try {
             study.setExternalIdValidationEnabled(true);
             session = userAdminService.createUser(study, participant, null, true, true);
@@ -177,17 +196,44 @@ public class UserAdminServiceTest {
             assertNull(identifier.getHealthCode());
             
             // Now this works
-            externalIdService.assignExternalId(study, externalId, session.getHealthCode());
+            Account account = Account.create();
+            account.setId(BridgeUtils.generateGuid());
+            account.setStudyId(session.getStudyIdentifier().getIdentifier());
+            account.setHealthCode(BridgeUtils.generateGuid());
+            ExternalIdentifier extIdObj = setupExternalId(account, externalId);
+            externalIdService.commitAssignExternalId(extIdObj);
         } finally {
             session = null;
             // this is a cheat, for sure, but allow deletion
             study.setExternalIdValidationEnabled(false);
-            externalIdService.deleteExternalIds(study, idForTest);
+            externalIdService.deleteExternalIdPermanently(study, idForTest);
         }
+    }
+    
+    // This behavior is very similar to ParticipantService.beginAssignExternalId().
+    private ExternalIdentifier setupExternalId(Account account, String externalId) {
+        Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(TestConstants.TEST_STUDY, externalId);
+        if (!optionalId.isPresent()) {
+            return null;
+        }
+        ExternalIdentifier identifier = optionalId.get();
+        identifier.setHealthCode(account.getHealthCode());
+        if (account.getExternalId() == null) {
+            account.setExternalId(identifier.getIdentifier());    
+        }
+        if (identifier.getSubstudyId() != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    identifier.getSubstudyId(), account.getId());
+            acctSubstudy.setExternalId(identifier.getIdentifier());
+            if (!account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().add(acctSubstudy);    
+            }
+        }
+        return identifier;
     }
 
     private DynamoExternalIdentifier getDynamoExternalIdentifier(UserSession session, String externalId) {
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getStudyIdentifier(), externalId);
+        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getIdentifier(), externalId);
         return mapper.load(keyObject);
     }
 }
