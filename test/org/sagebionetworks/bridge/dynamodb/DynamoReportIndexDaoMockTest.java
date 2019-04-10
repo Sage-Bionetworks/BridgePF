@@ -38,7 +38,7 @@ import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DynamoReportIndexDaoTest {
+public class DynamoReportIndexDaoMockTest {
 
     DynamoReportIndexDao dao;
     
