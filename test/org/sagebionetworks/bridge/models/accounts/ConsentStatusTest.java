@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,7 +23,8 @@ import com.google.common.collect.Maps;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ConsentStatusTest {
-
+    
+    private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     private Map<SubpopulationGuid,ConsentStatus> statuses;
     
     @Before
@@ -38,20 +41,32 @@ public class ConsentStatusTest {
     @Test
     public void canSerialize() throws Exception {
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
-                .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
+                .withConsented(true).withRequired(true).withSignedMostRecentConsent(true)
+                .withSignedOn(TIMESTAMP.getMillis()).build();
 
         String json = BridgeObjectMapper.get().writeValueAsString(status);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals("Name", node.get("name").asText());
-        assertEquals("GUID", node.get("subpopulationGuid").asText());
-        assertTrue(node.get("required").asBoolean());
-        assertTrue(node.get("consented").asBoolean());
-        assertTrue(node.get("signedMostRecentConsent").asBoolean());
-        assertEquals("ConsentStatus", node.get("type").asText());
+        assertEquals("Name", node.get("name").textValue());
+        assertEquals("GUID", node.get("subpopulationGuid").textValue());
+        assertTrue(node.get("required").booleanValue());
+        assertTrue(node.get("consented").booleanValue());
+        assertTrue(node.get("signedMostRecentConsent").booleanValue());
+        assertEquals(TIMESTAMP.toString(), node.get("signedOn").textValue());
+        assertEquals("ConsentStatus", node.get("type").textValue());
         
         ConsentStatus status2 = BridgeObjectMapper.get().readValue(json, ConsentStatus.class);
         assertEquals(status, status2);
+    }
+    
+    @Test
+    public void consentStatusWithoutSignedOnTimestamp() throws Exception {
+        ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
+                .withConsented(true).withRequired(true).withSignedMostRecentConsent(true)
+                .build();
+        JsonNode node = BridgeObjectMapper.get().valueToTree(status);
+        
+        assertNull(node.get("signedOn"));
     }
 
     @Test
@@ -61,8 +76,8 @@ public class ConsentStatusTest {
         
         assertNull(statuses.get(subpop.getGuid()));
         
-        ConsentStatus status1 = new ConsentStatus("Name1", "foo", false, false, false);
-        ConsentStatus status2 = new ConsentStatus("Name2", "test", false, false, false);
+        ConsentStatus status1 = new ConsentStatus("Name1", "foo", false, false, false, TIMESTAMP.getMillis());
+        ConsentStatus status2 = new ConsentStatus("Name2", "test", false, false, false, TIMESTAMP.getMillis());
         statuses.put(subpop.getGuid(), status1);
         statuses.put(subpop.getGuid(), status2);
         

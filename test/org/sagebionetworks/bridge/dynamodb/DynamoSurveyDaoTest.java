@@ -291,13 +291,10 @@ public class DynamoSurveyDaoTest {
         assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
 
         List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-        assertEquals(2, fieldDefList.size());
+        assertEquals(1, fieldDefList.size());
 
-        assertEquals("high_bp", fieldDefList.get(0).getName());
-        assertEquals(UploadFieldType.BOOLEAN, fieldDefList.get(0).getType());
-
-        assertEquals("last_checkup", fieldDefList.get(1).getName());
-        assertEquals(UploadFieldType.CALENDAR_DATE, fieldDefList.get(1).getType());
+        assertEquals("answers", fieldDefList.get(0).getName());
+        assertEquals(UploadFieldType.LARGE_TEXT_ATTACHMENT, fieldDefList.get(0).getType());
 
         // validate get most recently published survey
         Survey pubSurvey = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);

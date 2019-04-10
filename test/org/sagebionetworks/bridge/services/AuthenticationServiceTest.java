@@ -19,6 +19,8 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +73,8 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
     
+    private static final DateTime CONSENT_CREATED_ON = DateTime.now(DateTimeZone.UTC);
+    private static final DateTime SIGNED_ON = CONSENT_CREATED_ON.plusMinutes(1);
     private static final String PASSWORD = "P@ssword`1";
     private static final Set<String> ORIGINAL_DATA_GROUPS = Sets.newHashSet("group1");
     private static final Set<String> UPDATED_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2","group1");
@@ -160,6 +164,8 @@ public class AuthenticationServiceTest {
                     .withOsName(OperatingSystem.ANDROID)
                     .withConsentSignature(new ConsentSignature.Builder()
                             .withName("Name")
+                            .withConsentCreatedOn(CONSENT_CREATED_ON.getMillis())
+                            .withSignedOn(SIGNED_ON.getMillis())
                             .withBirthdate("1970-01-01").build())
                     .withSubpopGuid(TestConstants.TEST_STUDY_IDENTIFIER).build();
             intentService.submitIntentToParticipate(intent);
@@ -181,7 +187,11 @@ public class AuthenticationServiceTest {
             // You should be able to sign in, and be consented. No exception.
             SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                     .withEmail(email).withPassword(PASSWORD).build();
-            authService.signIn(study, context, signIn);
+            UserSession session = authService.signIn(study, context, signIn);
+            
+            ConsentStatus status = session.getConsentStatuses()
+                    .get(SubpopulationGuid.create(TestConstants.TEST_STUDY_IDENTIFIER));
+            assertEquals(new Long(SIGNED_ON.getMillis()), status.getSignedOn());
         } finally {
             if (holder != null) {
                 userAdminService.deleteUser(study, holder.getIdentifier());

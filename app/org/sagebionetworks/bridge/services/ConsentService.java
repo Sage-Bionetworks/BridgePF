@@ -270,6 +270,7 @@ public class ConsentService {
             ConsentStatus status = new ConsentStatus.Builder().withName(subpop.getName())
                     .withGuid(subpop.getGuid()).withRequired(subpop.isRequired())
                     .withConsented(hasConsented).withSignedMostRecentConsent(hasSignedActiveConsent)
+                    .withSignedOn(hasConsented ? signature.getSignedOn() : null)
                     .build();
             builder.put(subpop.getGuid(), status);
         }

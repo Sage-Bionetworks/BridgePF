@@ -156,9 +156,15 @@ public class ConsentController extends BaseController {
 
         final ConsentSignature consentSignature = ConsentSignature.fromJSON(parseJson(request(), JsonNode.class));
         final SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), version);
-
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         
+        // On client update, clients have sent consent signatures even before the session reflects the need
+        // for the new consent. Update the criteria context before consent, using the latest User-Agent
+        // header, so the server is synchronized with the client's state.
+        CriteriaContext context = getCriteriaContext(session);
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = consentService.getConsentStatuses(context);
+        
+        // If provided subpopulation is not in the statuses, it either doesn't exist or doesn't apply to 
+        // this user, and we return a 404
         ConsentStatus status = consentStatuses.get(subpopGuid);
         if (status == null) {
             throw new EntityNotFoundException(Subpopulation.class);
@@ -168,8 +174,8 @@ public class ConsentController extends BaseController {
                 sharing.getSharingScope(), true);
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
-        CriteriaContext context = getCriteriaContext(session);
-        UserSession updatedSession = authenticationService.getSession(study, context);
+        CriteriaContext updatedContext = getCriteriaContext(session);
+        UserSession updatedSession = authenticationService.getSession(study, updatedContext);
         cacheProvider.setUserSession(updatedSession);
         
         return createdResult(UserSessionInfo.toJSON(updatedSession));

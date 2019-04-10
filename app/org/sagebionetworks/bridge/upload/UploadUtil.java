@@ -43,6 +43,7 @@ public class UploadUtil {
     // Common field names
     public static final String FILENAME_INFO_JSON = "info.json";
     public static final String FILENAME_METADATA_JSON = "metadata.json";
+    public static final String FIELD_ANSWERS = "answers";
     public static final String FIELD_APP_VERSION = "appVersion";
     public static final String FIELD_CREATED_ON = "createdOn";
     public static final String FIELD_DATA_FILENAME = "dataFilename";
@@ -76,6 +77,11 @@ public class UploadUtil {
 
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
+
+    // Field def for survey schemas, which contains a key-value pair of all survey answers.
+    public static final UploadFieldDefinition ANSWERS_FIELD_DEF = new UploadFieldDefinition.Builder()
+            .withName(FIELD_ANSWERS).withRequired(true).withType(UploadFieldType.LARGE_TEXT_ATTACHMENT)
+            .build();
 
     // Map of allowed field type changes. Key is the old type. Value is the new type.
     //
@@ -178,8 +184,6 @@ public class UploadUtil {
      * called "jogtime_unit".
      */
     public static final String UNIT_FIELD_SUFFIX = "_unit";
-    public static final String DIASTOLIC_FIELD_SUFFIX = "_diastolic";
-    public static final String SYSTOLIC_FIELD_SUFFIX = "_systolic";
 
     /** Calculates the total field size for the list of field definitions. */
     public static UploadFieldSize calculateFieldSize(List<UploadFieldDefinition> fieldDefList) {

@@ -152,9 +152,9 @@ public class ConsentControllerMockedTest {
         TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
         
         when(authenticationService.getSession(any(), any())).thenReturn(updatedSession);
-        session.setConsentStatuses(TestConstants.UNCONSENTED_STATUS_MAP);
-        // This call does not need to be consented, we specifically with the mocking
         doReturn(session).when(controller).getAuthenticatedSession();
+        
+        when(consentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
