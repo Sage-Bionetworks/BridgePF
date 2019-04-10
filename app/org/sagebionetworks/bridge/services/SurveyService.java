@@ -16,8 +16,10 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -34,12 +36,15 @@ import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
 import org.sagebionetworks.bridge.validators.SurveySaveValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.collect.ImmutableMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 @Component
 public class SurveyService {
+    static final String KEY_IDENTIFIER = "identifier";
 
     private Validator publishValidator;
     private SurveyDao surveyDao;
@@ -89,6 +94,19 @@ public class SurveyService {
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
 
+        // Check survey ID uniqueness.
+        if (isNotBlank(survey.getStudyIdentifier()) && isNotBlank(survey.getIdentifier())) {
+            StudyIdentifier studyId = new StudyIdentifierImpl(survey.getStudyIdentifier());
+            String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(studyId, survey.getIdentifier());
+            if (existingSurveyGuid != null) {
+                String errMsg = "Survey identifier " + survey.getIdentifier() + " is already used by survey " +
+                        existingSurveyGuid;
+                Map<String, Object> entityKeyMap = ImmutableMap.of(KEY_IDENTIFIER, survey.getIdentifier());
+                throw new EntityAlreadyExistsException(Survey.class, errMsg, entityKeyMap);
+            }
+        }
+
+        // Validate survey.
         survey.setGuid(BridgeUtils.generateGuid());
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
@@ -99,7 +117,7 @@ public class SurveyService {
             dataGroups = study.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
-        
+
         return surveyDao.createSurvey(survey);
     }
 

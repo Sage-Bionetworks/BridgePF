@@ -281,7 +281,6 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey existing = getSurvey(survey, false);
         
         // copy over mutable fields
-        existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
         existing.setCopyrightNotice(survey.getCopyrightNotice());
@@ -378,7 +377,35 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
-    
+
+    /** {@inheritDoc} */
+    @Override
+    public String getSurveyGuidForIdentifier(StudyIdentifier studyId, String surveyId) {
+        // Hash key.
+        DynamoSurvey hashKey = new DynamoSurvey();
+        hashKey.setStudyIdentifier(studyId.getIdentifier());
+
+        // Range key.
+        Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(surveyId));
+
+        // Construct query.
+        DynamoDBQueryExpression<DynamoSurvey> expression = new DynamoDBQueryExpression<DynamoSurvey>()
+                .withConsistentRead(false)
+                .withHashKeyValues(hashKey)
+                .withRangeKeyCondition("identifier", rangeKeyCondition)
+                .withLimit(1);
+
+        // Execute query.
+        QueryResultPage<DynamoSurvey> resultPage = surveyMapper.queryPage(DynamoSurvey.class, expression);
+        List<DynamoSurvey> surveyList = resultPage.getResults();
+        if (surveyList.isEmpty()) {
+            return null;
+        }
+
+        return surveyList.get(0).getGuid();
+    }
+
     /**
      * This scan gets expensive when there are many revisions. We don't know the set of unique GUIDs, so 
      * we also have to iterate over everything. 
