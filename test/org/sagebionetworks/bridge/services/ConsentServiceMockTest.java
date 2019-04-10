@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -65,6 +66,7 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
+
 import org.springframework.core.io.ByteArrayResource;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -166,8 +168,16 @@ public class ConsentServiceMockTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void userCannotGetConsentForSubpopulationToWhichTheyAreNotMapped() {
+    public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
         when(subpopService.getSubpopulation(study, SUBPOP_GUID)).thenThrow(new EntityNotFoundException(Subpopulation.class));
+        
+        consentService.getConsentSignature(study, SUBPOP_GUID, PARTICIPANT.getId());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void userCannotGetConsentSignatureWithNoActiveSig() {
+        // set signatures in the account... but not the right signatures
+        account.setConsentSignatureHistory(SubpopulationGuid.create("second-subpop"), ImmutableList.of(CONSENT_SIGNATURE));
         
         consentService.getConsentSignature(study, SUBPOP_GUID, PARTICIPANT.getId());
     }
@@ -222,7 +232,7 @@ public class ConsentServiceMockTest {
         assertTrue(recipients.contains(study.getConsentNotificationEmail()));
         assertTrue(recipients.contains(PARTICIPANT.getEmail()));
     }
-
+    
     @Test
     public void emailConsentAgreementSuccess() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -503,6 +513,27 @@ public class ConsentServiceMockTest {
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
 
         verify(notificationsService, never()).deleteAllRegistrations(any(), any());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void withdrawConsentWhenAllConsentsAreWithdrawn() {
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setName(SUBPOP_GUID.getGuid());
+        subpop1.setGuid(SUBPOP_GUID);
+        subpop1.setRequired(true);
+        
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setName(SECOND_SUBPOP.getGuid());
+        subpop2.setGuid(SECOND_SUBPOP);
+        subpop2.setRequired(true);
+        
+        ConsentSignature withdrawnSignature = new ConsentSignature.Builder().withName("Test User")
+                .withBirthdate("1990-01-01").withWithdrewOn(WITHDREW_ON).withSignedOn(SIGNED_ON).build();
+        
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE, withdrawnSignature));
+        account.setConsentSignatureHistory(SECOND_SUBPOP, ImmutableList.of(withdrawnSignature));
+
+        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
     }
     
     @Test
@@ -842,6 +873,13 @@ public class ConsentServiceMockTest {
     }
     
     @Test
+    public void getSignedConsentUrl() {
+        String url = consentService.getSignedConsentUrl();
+        assertTrue(url.endsWith(".pdf"));
+        assertEquals(25, url.length());
+    }
+
+    @Test
     public void getConsentStatuses() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         account.setConsentSignatureHistory(SECOND_SUBPOP, ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE));
@@ -915,4 +953,5 @@ public class ConsentServiceMockTest {
         account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }
+
 }
