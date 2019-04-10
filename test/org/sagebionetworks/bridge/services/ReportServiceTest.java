@@ -655,6 +655,13 @@ public class ReportServiceTest {
         assertFalse(captured.isPublic());
     }
     
+    @Test(expected = InvalidEntityException.class)
+    public void updateReportIndexValidates() throws Exception { 
+        ReportIndex updatedIndex = ReportIndex.create();
+        
+        service.updateReportIndex(TestConstants.TEST_STUDY, ReportType.PARTICIPANT, updatedIndex);
+    }
+    
     @Test
     public void getParticipantReportV4() throws Exception {
         service.getParticipantReportV4(TEST_STUDY, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE);

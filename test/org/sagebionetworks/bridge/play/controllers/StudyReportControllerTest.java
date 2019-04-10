@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +24,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -132,7 +135,6 @@ public class StudyReportControllerTest {
         
         doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
         doReturn(session).when(controller).getSessionIfItExists();
-        //doReturn(session).when(controller).getAuthenticatedSession();
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
@@ -146,6 +148,15 @@ public class StudyReportControllerTest {
                 .withRequestParam(ResourceList.PAGE_SIZE, Integer.parseInt(PAGE_SIZE))
                 .withRequestParam(ResourceList.START_TIME, START_TIME)
                 .withRequestParam(ResourceList.END_TIME, END_TIME);
+        
+        // There are some tests that need to clear this for the call to work correctly.
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+    }
+    
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
     
     @Test
@@ -292,6 +303,7 @@ public class StudyReportControllerTest {
                 .readValue(Helpers.contentAsString(result), REPORT_REF);
         assertEquals(2, reportData.getItems().size());
         
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
         verify(mockReportService).getReportIndex(key);
         verify(mockReportService).getStudyReport(TEST_STUDY, REPORT_ID, START_DATE, END_DATE);
     }
@@ -371,10 +383,11 @@ public class StudyReportControllerTest {
         
         verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
                 OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
-        
         assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
         assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
         assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));

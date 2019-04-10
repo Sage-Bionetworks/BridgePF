@@ -49,7 +49,10 @@ public class DynamoReportIndexDaoMockTest {
     private PaginatedQueryList<DynamoReportIndex> results;
     
     @Captor
-    private ArgumentCaptor<DynamoReportIndex> indexCaptor;
+    private ArgumentCaptor<DynamoReportIndex> loadIndexCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DynamoReportIndex> saveIndexCaptor;
     
     @Captor
     private ArgumentCaptor<DynamoDBSaveExpression> saveExpressionCaptor;
@@ -71,9 +74,9 @@ public class DynamoReportIndexDaoMockTest {
     public void getIndex() {
         dao.getIndex(KEY);
         
-        verify(mapper).load(indexCaptor.capture());
+        verify(mapper).load(loadIndexCaptor.capture());
         
-        DynamoReportIndex index = indexCaptor.getValue();
+        DynamoReportIndex index = loadIndexCaptor.getValue();
         assertEquals(KEY.getIndexKeyString(), index.getKey());
         assertEquals(KEY.getIdentifier(), index.getIdentifier());
     }
@@ -82,15 +85,15 @@ public class DynamoReportIndexDaoMockTest {
     public void addIndex() {
         dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
         
-        verify(mapper).load(indexCaptor.capture());
-        verify(mapper).save(indexCaptor.capture(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
+        verify(mapper).load(loadIndexCaptor.capture());
+        verify(mapper).save(saveIndexCaptor.capture(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
         
-        DynamoReportIndex lookupKey = indexCaptor.getValue();
+        DynamoReportIndex lookupKey = loadIndexCaptor.getValue();
         assertEquals(KEY.getIndexKeyString(), lookupKey.getKey());
         assertEquals(KEY.getIdentifier(), lookupKey.getIdentifier());
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, lookupKey.getSubstudyIds());
         
-        DynamoReportIndex savedIndex = indexCaptor.getValue();
+        DynamoReportIndex savedIndex = saveIndexCaptor.getValue();
         assertEquals(KEY.getIndexKeyString(), savedIndex.getKey());
         assertEquals(KEY.getIdentifier(), savedIndex.getIdentifier());
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, savedIndex.getSubstudyIds());
@@ -120,10 +123,10 @@ public class DynamoReportIndexDaoMockTest {
         
         dao.removeIndex(KEY);
         
-        verify(mapper).load(indexCaptor.capture());
+        verify(mapper).load(loadIndexCaptor.capture());
         verify(mapper).delete(index);
         
-        DynamoReportIndex lookupKey = indexCaptor.getValue();
+        DynamoReportIndex lookupKey = loadIndexCaptor.getValue();
         assertEquals(KEY.getIndexKeyString(), lookupKey.getKey());
         assertEquals(KEY.getIdentifier(), lookupKey.getIdentifier());
     }
@@ -149,9 +152,9 @@ public class DynamoReportIndexDaoMockTest {
         // service.
         dao.updateIndex(updatedIndex);
         
-        verify(mapper).save(indexCaptor.capture(), saveExpressionCaptor.capture());
+        verify(mapper).save(saveIndexCaptor.capture(), saveExpressionCaptor.capture());
         
-        DynamoReportIndex index = indexCaptor.getValue();
+        DynamoReportIndex index = saveIndexCaptor.getValue();
         assertEquals("api:STUDY", index.getKey());
         assertEquals(updatedIndex.getIdentifier(), index.getIdentifier());
         assertEquals(TestConstants.USER_SUBSTUDY_IDS, index.getSubstudyIds());

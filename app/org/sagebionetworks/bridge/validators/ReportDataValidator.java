@@ -37,8 +37,7 @@ public class ReportDataValidator implements Validator {
             errors.rejectValue("data", "is required");
         }
         if (existingSubstudies != null && data.getSubstudyIds() != null) {
-            Set<String> diff = Sets.symmetricDifference(existingSubstudies, data.getSubstudyIds());
-            if (!diff.isEmpty()) {
+            if (!existingSubstudies.equals(data.getSubstudyIds())) {
                 errors.rejectValue("substudyIds", "cannot be changed once created for a report");
             }
         }
