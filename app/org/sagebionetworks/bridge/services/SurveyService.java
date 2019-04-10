@@ -94,6 +94,19 @@ public class SurveyService {
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
 
+        // Check survey ID uniqueness.
+        if (isNotBlank(survey.getStudyIdentifier()) && isNotBlank(survey.getIdentifier())) {
+            StudyIdentifier studyId = new StudyIdentifierImpl(survey.getStudyIdentifier());
+            String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(studyId, survey.getIdentifier());
+            if (existingSurveyGuid != null) {
+                String errMsg = "Survey identifier " + survey.getIdentifier() + " is already used by survey " +
+                        existingSurveyGuid;
+                Map<String, Object> entityKeyMap = ImmutableMap.of(KEY_IDENTIFIER, survey.getIdentifier());
+                throw new EntityAlreadyExistsException(Survey.class, errMsg, entityKeyMap);
+            }
+        }
+
+        // Validate survey.
         survey.setGuid(BridgeUtils.generateGuid());
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
@@ -105,16 +118,6 @@ public class SurveyService {
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
 
-        // Check survey ID uniqueness.
-        StudyIdentifier studyId = new StudyIdentifierImpl(survey.getStudyIdentifier());
-        String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(studyId, survey.getIdentifier());
-        if (existingSurveyGuid != null) {
-            String errMsg = "Survey identifier " + survey.getIdentifier() + " is already used by survey " +
-                    existingSurveyGuid;
-            Map<String, Object> entityKeyMap = ImmutableMap.of(KEY_IDENTIFIER, survey.getIdentifier());
-            throw new EntityAlreadyExistsException(Survey.class, errMsg, entityKeyMap);
-        }
-        
         return surveyDao.createSurvey(survey);
     }
 

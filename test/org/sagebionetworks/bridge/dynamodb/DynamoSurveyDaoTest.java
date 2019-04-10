@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyDaoTest {
-    private static final Logger logger = LoggerFactory.getLogger(DynamoSurveyDaoTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoSurveyDaoTest.class);
 
     @Resource
     DynamoSurveyDao surveyDao;
@@ -83,7 +83,7 @@ public class DynamoSurveyDaoTest {
             try {
                 surveyDao.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
+                LOG.error(ex.getMessage(), ex);
             }
         }
     }
