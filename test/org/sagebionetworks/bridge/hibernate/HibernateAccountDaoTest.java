@@ -764,12 +764,12 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void getAccountAsAuthenticated() throws Exception {
+    public void getByEmail() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EMAIL);
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL);
         
         assertEquals(hibernateAccount, account);
     }
@@ -820,35 +820,6 @@ public class HibernateAccountDaoTest {
         verify(mockAccountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
 
-    @Test
-    public void getAccountAfterAuthentication() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        setReauthInAccount(hibernateAccount);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-        
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EMAIL);
-        
-        assertEquals(ACCOUNT_ID, account.getId());
-        assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
-        assertEquals(TestConstants.PHONE, account.getPhone());
-        assertTrue(account.getPhoneVerified());
-        assertEquals(EXTERNAL_ID, account.getExternalId());
-        assertEquals(EMAIL, account.getEmail());
-        assertTrue(account.getEmailVerified());
-        assertEquals(AccountStatus.ENABLED, account.getStatus());
-        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
-        assertEquals(1, account.getVersion());
-        verify(mockHibernateHelper, never()).update(any(), any());
-    }
-    
-    @Test
-    public void getAccountAfterAuthenticateReturnsNull() throws Exception {
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EMAIL);
-        assertNull(account);
-    }
-    
     @Test
     public void createAccountSuccess() {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
@@ -1149,29 +1120,6 @@ public class HibernateAccountDaoTest {
         assertNull(account);
     }
 
-    @Test
-    public void getByPhoneAfterAuthentication() throws Exception {
-        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "+
-                "acct.accountSubstudies AS acctSubstudy WITH acct.id = "+
-                "acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.phone.number=:number AND acct.phone.regionCode=:regionCode GROUP BY acct.id";
-
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, PHONE_QUERY_PARAMS, 
-                null, null, HibernateAccount.class)).thenReturn(ImmutableList.of(hibernateAccount));
-
-        // execute and validate
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
-        assertEquals(hibernateAccount.getEmail(), account.getEmail());
-    }
-    
-    @Test
-    public void getByPhoneNotFoundAfterAuthentication() {
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
-        assertNull(account);
-    }
-    
     // ACCOUNT_ID_WITH_HEALTHCODE
     @Test
     public void getByHealthCode() throws Exception {
@@ -1195,27 +1143,6 @@ public class HibernateAccountDaoTest {
         assertNull(account);
     }
 
-    @Test
-    public void getByHealthCodeAfterAuthentication() throws Exception {
-        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "+
-                "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "+
-                "acct.healthCode=:healthCode GROUP BY acct.id";
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-        
-        // execute and validate
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
-        assertEquals(hibernateAccount.getEmail(), account.getEmail());
-    }
-    
-    @Test
-    public void getByHealthCodeNotFoundAfterAuthentication() {
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
-        assertNull(account);
-    }    
-    
     // ACCOUNT_ID_WITH_EXTID
     @Test
     public void getByExternalId() throws Exception {
@@ -1239,28 +1166,6 @@ public class HibernateAccountDaoTest {
         assertNull(account);
     }
 
-    @Test
-    public void getByExternalIdAfterAuthentication() throws Exception {
-        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "+
-                "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "+
-                "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
-        
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, EXTID_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        // execute and validate
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EXTID);
-        assertEquals(hibernateAccount.getEmail(), account.getEmail());
-    }
-    
-    @Test
-    public void getByExternalIdNotFoundAfterAuthentication() {
-        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EXTID);
-        assertNull(account);
-    }    
-    
     @Test
     public void deleteWithoutId() throws Exception {
         // Can't use email, so it will do a lookup of the account

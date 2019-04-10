@@ -412,6 +412,13 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             }
         }
 
+        // New survey format is to have key-value pairs in a top-level field called "answers". For backwards
+        // compatibility, we'll do both. Add all the JsonNodes to a separate ObjectNode, then add the ObjectNode back
+        // to the survey map.
+        ObjectNode answersNode = BridgeObjectMapper.get().createObjectNode();
+        convertedSurveyMap.forEach(answersNode::set);
+        convertedSurveyMap.put(UploadUtil.FIELD_ANSWERS, answersNode);
+
         return convertedSurveyMap;
     }
 

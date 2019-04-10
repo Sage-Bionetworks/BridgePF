@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
@@ -25,6 +27,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class UserSessionTest {
+    
+    private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     
     @Test
     public void canSerialize() throws Exception {
@@ -137,18 +141,18 @@ public class UserSessionTest {
         // All required consents are consented, even one that's not up-to-date
         session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(
-            new ConsentStatus("Name", "guid1", true, true, false),
-            new ConsentStatus("Name", "guid2", true, true, true),
-            new ConsentStatus("Name", "guid3", false, false, false)
+            new ConsentStatus("Name", "guid1", true, true, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid2", true, true, true, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid3", false, false, false, TIMESTAMP.getMillis())
         ));
         assertTrue(session.doesConsent());
         
         // A required consent is not consented
         session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(
-            new ConsentStatus("Name", "guid1", true, true, false),
-            new ConsentStatus("Name", "guid2", true, false, false),
-            new ConsentStatus("Name", "guid3", false, false, false)
+            new ConsentStatus("Name", "guid1", true, true, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid2", true, false, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid3", false, false, false, TIMESTAMP.getMillis())
         ));
         assertFalse(session.doesConsent());
     }
@@ -163,25 +167,25 @@ public class UserSessionTest {
         // All required consents are consented, even one that's not up-to-date
         session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(
-            new ConsentStatus("Name", "guid1", true, true, false),
-            new ConsentStatus("Name", "guid2", true, true, true),
-            new ConsentStatus("Name", "guid3", false, false, false)
+            new ConsentStatus("Name", "guid1", true, true, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid2", true, true, true, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid3", false, false, false, TIMESTAMP.getMillis())
         ));
         assertFalse(session.hasSignedMostRecentConsent());
         
         // A required consent is not consented
         session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(
-            new ConsentStatus("Name", "guid1", true, true, false),
-            new ConsentStatus("Name", "guid2", true, false, false),
-            new ConsentStatus("Name", "guid3", false, false, false)
+            new ConsentStatus("Name", "guid1", true, true, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid2", true, false, false, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid3", false, false, false, TIMESTAMP.getMillis())
         ));
         assertFalse(session.hasSignedMostRecentConsent());
         
         session = new UserSession();
         session.setConsentStatuses(TestUtils.toMap(
-            new ConsentStatus("Name", "guid1", true, true, true),
-            new ConsentStatus("Name", "guid3", false, false, false)
+            new ConsentStatus("Name", "guid1", true, true, true, TIMESTAMP.getMillis()),
+            new ConsentStatus("Name", "guid3", false, false, false, TIMESTAMP.getMillis())
         ));
         // Again, we don't count optional consents, only required consents.
         assertTrue(session.hasSignedMostRecentConsent());

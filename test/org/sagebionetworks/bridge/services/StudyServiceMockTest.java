@@ -608,6 +608,16 @@ public class StudyServiceMockTest {
     }
 
     @Test
+    public void loadingStudyWithoutAppInstalLinkTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAppInstallLinkTemplate());
+    }
+    
+    @Test
     public void createStudyWithoutSignedConsentTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setSignedConsentTemplate(null);
@@ -924,11 +934,11 @@ public class StudyServiceMockTest {
         UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
         UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
-                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+                .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxLength(10).build();
         UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+                .withType(UploadFieldType.STRING).withMaxLength(10).build();
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+                .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
         Study oldStudy = getTestStudy();
@@ -955,11 +965,11 @@ public class StudyServiceMockTest {
         UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
         UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
-                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+                .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxLength(10).build();
         UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+                .withType(UploadFieldType.STRING).withMaxLength(10).build();
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+                .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
         Study oldStudy = getTestStudy();
@@ -1531,7 +1541,7 @@ public class StudyServiceMockTest {
     }
     
     @Test
-    public void testAllFiveTemplatesAreSanitized() {
+    public void testAllSixTemplatesAreSanitized() {
         EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
         Study study = new DynamoStudy();
         study.setEmailSignInTemplate(source);
@@ -1539,6 +1549,7 @@ public class StudyServiceMockTest {
         study.setVerifyEmailTemplate(source);
         study.setAccountExistsTemplate(source);
         study.setSignedConsentTemplate(source);
+        study.setAppInstallLinkTemplate(source);
         
         service.sanitizeHTML(study);
         assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
@@ -1546,6 +1557,7 @@ public class StudyServiceMockTest {
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
         assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
         assertHtmlTemplateSanitized( study.getSignedConsentTemplate() );
+        assertHtmlTemplateSanitized( study.getAppInstallLinkTemplate() );
     }
     
     @Test

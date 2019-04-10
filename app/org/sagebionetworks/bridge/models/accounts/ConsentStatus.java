@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.Map;
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,16 +57,19 @@ public final class ConsentStatus {
     private final boolean required;
     private final boolean consented;
     private final boolean signedMostRecentConsent;
+    private final Long signedOn;
     
     @JsonCreator
     ConsentStatus(@JsonProperty("name") String name, @JsonProperty("subpopulationGuid") String subpopulationGuid,
             @JsonProperty("required") boolean isRequired, @JsonProperty("consented") boolean isConsented, 
-            @JsonProperty("signedMostRecentConsent") boolean signedMostRecentConsent) {
+            @JsonProperty("signedMostRecentConsent") boolean signedMostRecentConsent,
+            @JsonProperty("signedOn") Long signedOn) {
         this.name = checkNotNull(name);
         this.subpopulationGuid = checkNotNull(subpopulationGuid);
         this.required = isRequired;
         this.consented = isConsented;
         this.signedMostRecentConsent = signedMostRecentConsent;
+        this.signedOn = signedOn;
     }
     
     public String getName() {
@@ -85,10 +91,15 @@ public final class ConsentStatus {
     public boolean getSignedMostRecentConsent() {
         return signedMostRecentConsent;
     }
+    
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    public Long getSignedOn() {
+        return signedOn;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, subpopulationGuid, required, consented, signedMostRecentConsent);
+        return Objects.hash(name, subpopulationGuid, required, consented, signedMostRecentConsent, signedOn);
     }
 
     @Override
@@ -100,12 +111,13 @@ public final class ConsentStatus {
         ConsentStatus other = (ConsentStatus) obj;
         return Objects.equals(name, other.name) && Objects.equals(subpopulationGuid, other.subpopulationGuid)
                 && Objects.equals(required, other.required) && Objects.equals(consented, other.consented)
-                && Objects.equals(signedMostRecentConsent, other.signedMostRecentConsent);
+                && Objects.equals(signedMostRecentConsent, other.signedMostRecentConsent)
+                && Objects.equals(signedOn, other.signedOn);
     }
 
     @Override
     public String toString() {
-        return "ConsentStatus [name="+name+", subpopulationGuid="+subpopulationGuid+", isRequired="+required+", isConsented="+ consented+", hasSignedMostRecentConsent="+signedMostRecentConsent+"]";
+        return "ConsentStatus [name="+name+", subpopulationGuid="+subpopulationGuid+", isRequired="+required+", isConsented="+ consented+", hasSignedMostRecentConsent="+signedMostRecentConsent+", signedOn="+signedOn+"]";
     }
     
     public static class Builder {
@@ -114,6 +126,7 @@ public final class ConsentStatus {
         private boolean required;
         private boolean consented;
         private boolean signedMostRecentConsent;
+        private Long signedOn;
         
         public Builder withConsentStatus(ConsentStatus status) {
             this.name = status.getName();
@@ -121,6 +134,7 @@ public final class ConsentStatus {
             this.required = status.isRequired();
             this.consented = status.isConsented();
             this.signedMostRecentConsent = status.getSignedMostRecentConsent();
+            this.signedOn = status.signedOn;
             return this;
         }
         public Builder withName(String name) {
@@ -148,8 +162,14 @@ public final class ConsentStatus {
             this.signedMostRecentConsent = signedMostRecentConsent;
             return this;
         }
+        @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+        public Builder withSignedOn(Long signedOn) {
+            this.signedOn = signedOn;
+            return this;
+        }
         public ConsentStatus build() {
-            return new ConsentStatus(name, subpopulationGuid.getGuid(), required, consented, signedMostRecentConsent);
+            return new ConsentStatus(name, subpopulationGuid.getGuid(), required, consented, 
+                    signedMostRecentConsent, signedOn);
         }
     }
     

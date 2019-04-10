@@ -12,6 +12,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
@@ -19,13 +20,16 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -35,7 +39,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -73,7 +76,7 @@ public class ConsentControllerMockedTest {
     
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     
-    private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
+    private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     
     private ConsentController controller;
 
@@ -101,7 +104,7 @@ public class ConsentControllerMockedTest {
     
     @Before
     public void before() {
-        DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
+        DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
 
         participant = new StudyParticipant.Builder().withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).withDataGroups(TestConstants.USER_DATA_GROUPS)
@@ -195,7 +198,8 @@ public class ConsentControllerMockedTest {
     @SuppressWarnings("deprecation")
     public void consentSignatureJSONCorrectDeprecated() throws Exception {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
-                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(TIMESTAMP.getMillis())
+                .withWithdrewOn(TIMESTAMP.getMillis()).build();
 
         when(consentService.getConsentSignature(study, DEFAULT_SUBPOP_GUID, session.getId())).thenReturn(sig);
 
@@ -205,13 +209,14 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, node.size());
-        assertEquals("Jack Aubrey", node.get("name").asText());
-        assertEquals("1970-10-10", node.get("birthdate").asText());
-        assertEquals("ConsentSignature", node.get("type").asText());
-        assertEquals("data:asdf", node.get("imageData").asText());
-        assertEquals("image/png", node.get("imageMimeType").asText());
-        // no signedOn value when serializing
+        assertEquals(7, node.size());
+        assertEquals("Jack Aubrey", node.get("name").textValue());
+        assertEquals("1970-10-10", node.get("birthdate").textValue());
+        assertEquals("ConsentSignature", node.get("type").textValue());
+        assertEquals("data:asdf", node.get("imageData").textValue());
+        assertEquals("image/png", node.get("imageMimeType").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("signedOn").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("withdrewOn").textValue());
     }
 
     @Test
@@ -302,7 +307,8 @@ public class ConsentControllerMockedTest {
     @Test
     public void consentSignatureJSONCorrect() throws Exception {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
-                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+                .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(TIMESTAMP.getMillis())
+                .withWithdrewOn(TIMESTAMP.getMillis()).build();
 
         when(consentService.getConsentSignature(study, SUBPOP_GUID, session.getId())).thenReturn(sig);
 
@@ -312,13 +318,14 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, node.size());
-        assertEquals("Jack Aubrey", node.get("name").asText());
-        assertEquals("1970-10-10", node.get("birthdate").asText());
-        assertEquals("ConsentSignature", node.get("type").asText());
-        assertEquals("data:asdf", node.get("imageData").asText());
-        assertEquals("image/png", node.get("imageMimeType").asText());
-        // no signedOn value when serializing
+        assertEquals(7, node.size());
+        assertEquals("Jack Aubrey", node.get("name").textValue());
+        assertEquals("1970-10-10", node.get("birthdate").textValue());
+        assertEquals("ConsentSignature", node.get("type").textValue());
+        assertEquals("data:asdf", node.get("imageData").textValue());
+        assertEquals("image/png", node.get("imageMimeType").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("signedOn").textValue());
+        assertEquals(TIMESTAMP.toString(), node.get("withdrewOn").textValue());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -326,7 +333,7 @@ public class ConsentControllerMockedTest {
         String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf',"+
                 "'imageMimeType':'image/png','scope':'no_sharing'}");
         
-        TestUtils.mockPlay().withJsonBody(json).mock();
+        TestUtils.mockPlay().withMockResponse().withJsonBody(json).mock();
         
         controller.giveV3("bad-guid");
     }
@@ -350,6 +357,37 @@ public class ConsentControllerMockedTest {
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
         verify(cacheProvider).setUserSession(any());
+    }
+    
+    @Test
+    public void consentBeforeServerHasUpdatedSessionWorks() throws Exception {
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf'"+
+                ",'imageMimeType':'image/png','scope':'sponsors_and_partners'}");
+        TestUtils.mockPlay().withJsonBody(json).withMockResponse().mock();
+        
+        Map<SubpopulationGuid,ConsentStatus> beforeStatuses = new HashMap<>();
+        beforeStatuses.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(true).withGuid(SUBPOP_GUID)
+                .withName("Another Consent").withRequired(true).build());
+        session.setConsentStatuses(beforeStatuses);
+
+        SubpopulationGuid newGuid = SubpopulationGuid.create("newGuid");
+        
+        Map<SubpopulationGuid,ConsentStatus> afterStatuses = new HashMap<>();
+        afterStatuses.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(true).withGuid(SUBPOP_GUID)
+                .withName("Another Consent").withRequired(true).build());
+        afterStatuses.put(newGuid, new ConsentStatus.Builder().withConsented(false).withGuid(newGuid)
+                .withName("New Required Consent").withRequired(true).build());
+        
+        when(consentService.getConsentStatuses(any())).thenReturn(afterStatuses);
+        
+        Result result = controller.giveV3("newGuid");
+        TestUtils.assertResult(result, 201);
+        
+        InOrder inOrder = Mockito.inOrder(consentService);
+        inOrder.verify(consentService).getConsentStatuses(any()); // this should be called first
+        inOrder.verify(consentService).consentToResearch(eq(study), eq(newGuid), eq(session.getParticipant()), any(),
+                eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
+        inOrder.verify(consentService).getConsentStatuses(any()); // then called again after consent
     }
     
     @Test
@@ -638,7 +676,7 @@ public class ConsentControllerMockedTest {
     }
     
     private void validateSignature(ConsentSignature signature) {
-        assertEquals(UNIX_TIMESTAMP, signature.getSignedOn());
+        assertEquals(TIMESTAMP.getMillis(), signature.getSignedOn());
         assertEquals("Jack Aubrey", signature.getName());
         assertEquals("1970-10-10", signature.getBirthdate());
         assertEquals("data:asdf", signature.getImageData());

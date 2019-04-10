@@ -228,6 +228,15 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
             if (fieldNode != null && !fieldNode.isNull()) {
                 dataMap.set(fieldName, fieldNode);
+            } else if (UploadUtil.FIELD_ANSWERS.equals(fieldName) && !dataFileNode.isNull()) {
+                // Special case: This is the auto-generated "answers" field for surveys. Since surveys are usually
+                // submitted using the dataFile, this should be populated by just copying over the dataFile.
+                if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
+                    fieldNode = uploadFileHelper.uploadJsonNodeAsAttachment(dataFileNode, uploadId, fieldName);
+                } else {
+                    fieldNode = dataFileNode;
+                }
+                dataMap.set(fieldName, fieldNode);
             }
         }
     }

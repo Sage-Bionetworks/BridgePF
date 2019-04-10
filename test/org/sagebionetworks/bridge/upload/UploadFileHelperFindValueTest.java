@@ -35,6 +35,7 @@ public class UploadFileHelperFindValueTest {
     private S3Helper mockS3Helper;
     private File tmpDir;
     private UploadFileHelper uploadFileHelper;
+    private ArgumentCaptor<ObjectMetadata> metadataCaptor;
 
     @Before
     public void before() {
@@ -46,6 +47,8 @@ public class UploadFileHelperFindValueTest {
         // Mock dependencies.
         mockS3Helper = mock(S3Helper.class);
 
+        metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+        
         // Create UploadFileHelper.
         uploadFileHelper = new UploadFileHelper();
         uploadFileHelper.setFileHelper(inMemoryFileHelper);
@@ -68,8 +71,10 @@ public class UploadFileHelperFindValueTest {
         assertEquals(expectedAttachmentFilename, result.textValue());
 
         // Verify uploaded file
-        verify(mockS3Helper).writeFileToS3(UploadFileHelper.ATTACHMENT_BUCKET, expectedAttachmentFilename,
-                recordJsonFile);
+        verify(mockS3Helper).writeFileToS3(eq(UploadFileHelper.ATTACHMENT_BUCKET), eq(expectedAttachmentFilename),
+                eq(recordJsonFile), metadataCaptor.capture());
+        
+        assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadataCaptor.getValue().getSSEAlgorithm());
     }
 
     @Test
@@ -167,9 +172,6 @@ public class UploadFileHelperFindValueTest {
         JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
         assertEquals(expectedAttachmentFilename, result.textValue());
 
-        // To verify we have to capture ObjectMetadata, as the class doesn't implement value equality
-        ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
-        
         // Verify uploaded file
         verify(mockS3Helper).writeBytesToS3(eq(UploadFileHelper.ATTACHMENT_BUCKET), eq(expectedAttachmentFilename),
                 eq("\"record-value\"".getBytes(Charsets.UTF_8)), metadataCaptor.capture());
