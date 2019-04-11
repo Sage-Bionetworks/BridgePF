@@ -182,9 +182,8 @@ public final class DynamoSubpopulation implements Subpopulation {
     
     /** {@inheritDoc */
     public void setDataGroupsAssignedWhileConsented(Set<String> dataGroups) {
-        if (dataGroups != null) {
-            this.dataGroupsAssignedWhileConsented = new HashSet<>(dataGroups);    
-        }
+        this.dataGroupsAssignedWhileConsented = (dataGroups != null) ? 
+                new HashSet<>(dataGroups) : new HashSet<>();
     }
     
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
@@ -194,9 +193,8 @@ public final class DynamoSubpopulation implements Subpopulation {
 
     /** {@inheritDoc */
     public void setSubstudyIdsAssignedOnConsent(Set<String> substudyIds) {
-        if (substudyIds != null) {
-            this.substudyIdsAssignedOnConsent = new HashSet<>(substudyIds);    
-        }
+        this.substudyIdsAssignedOnConsent = (substudyIds != null) ? 
+                new HashSet<>(substudyIds) : new HashSet<>();
     }
     
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)

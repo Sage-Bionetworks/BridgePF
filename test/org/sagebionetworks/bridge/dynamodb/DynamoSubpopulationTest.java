@@ -120,6 +120,9 @@ public class DynamoSubpopulationTest {
     @Test
     public void cannotNullifySets() {
         Subpopulation subpop = new DynamoSubpopulation();
+        // Set some values to verify that null resets these to the empty set
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("A"));
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("B"));
         subpop.setDataGroupsAssignedWhileConsented(null);
         subpop.setSubstudyIdsAssignedOnConsent(null);
         
