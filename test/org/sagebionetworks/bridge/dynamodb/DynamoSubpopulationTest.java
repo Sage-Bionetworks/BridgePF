@@ -123,9 +123,11 @@ public class DynamoSubpopulationTest {
         // Set some values to verify that null resets these to the empty set
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("A"));
         subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("B"));
+        assertEquals(ImmutableSet.of("A"), subpop.getDataGroupsAssignedWhileConsented());
+        assertEquals(ImmutableSet.of("B"), subpop.getSubstudyIdsAssignedOnConsent());
+        
         subpop.setDataGroupsAssignedWhileConsented(null);
         subpop.setSubstudyIdsAssignedOnConsent(null);
-        
         assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
         assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
     }

@@ -377,13 +377,7 @@ public class ConsentControllerMockedTest {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE),
-                accountConsumerCaptor.capture());
-        
-        Consumer<Account> accountConsumer = accountConsumerCaptor.getValue();
-        Account updatedAccount = Account.create();
-        accountConsumer.accept(updatedAccount);
-        assertEquals(SharingScope.NO_SHARING, updatedAccount.getSharingScope());
+        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
     }
     
     @Test

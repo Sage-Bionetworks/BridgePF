@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 public class SubpopulationValidatorTest {
 
@@ -36,6 +37,8 @@ public class SubpopulationValidatorTest {
         subpop.setStudyIdentifier("test-study");
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
+        subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
+        subpop.setSubstudyIdsAssignedOnConsent(TestConstants.USER_SUBSTUDY_IDS);
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
         criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));

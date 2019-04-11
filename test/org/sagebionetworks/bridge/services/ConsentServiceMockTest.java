@@ -431,7 +431,10 @@ public class ConsentServiceMockTest {
     public void withdrawFromStudyRemovesDataGroups() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        account.setDataGroups(new HashSet<>(TestConstants.USER_DATA_GROUPS));
+        Set<String> dataGroups = new HashSet<>(TestConstants.USER_DATA_GROUPS);
+        dataGroups.add("remainingDataGroup1");
+        dataGroups.add("remainingDataGroup2");
+        account.setDataGroups(dataGroups);
 
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
@@ -439,7 +442,7 @@ public class ConsentServiceMockTest {
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
         
-        assertTrue(account.getDataGroups().isEmpty());
+        assertEquals(ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"), account.getDataGroups());
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
         verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
     }
