@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -27,6 +28,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -43,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -96,6 +99,9 @@ public class ParticipantReportControllerTest {
     
     @Captor
     ArgumentCaptor<ReportIndex> reportDataIndex;
+    
+    @Captor
+    ArgumentCaptor<ReportDataKey> reportDataKeyCaptor;
     
     ParticipantReportController controller;
     
@@ -407,6 +413,29 @@ public class ParticipantReportControllerTest {
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+    }
+    
+    @Test
+    public void getParticipantReportIndex() throws Exception {
+        ReportIndex index = ReportIndex.create();
+        index.setIdentifier(REPORT_ID);
+        index.setPublic(true);
+        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        
+        when(mockReportService.getReportIndex(any())).thenReturn(index);
+        
+        Result result = controller.getParticipantReportIndex(REPORT_ID);
+        assertEquals(200, result.status());
+        ReportIndex retrieved = TestUtils.getResponsePayload(result, ReportIndex.class);
+        
+        assertEquals(REPORT_ID, retrieved.getIdentifier());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, retrieved.getSubstudyIds());
+        
+        verify(mockReportService).getReportIndex(reportDataKeyCaptor.capture());
+        ReportDataKey key = reportDataKeyCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY, key.getStudyId());
+        assertEquals(REPORT_ID, key.getIdentifier());
+        assertEquals(ReportType.PARTICIPANT, key.getReportType());
     }
     
     @Test

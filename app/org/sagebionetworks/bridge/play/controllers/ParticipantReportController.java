@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -101,6 +102,17 @@ public class ParticipantReportController extends BaseController {
         ReportTypeResourceList<? extends ReportIndex> indices = reportService
                 .getReportIndices(session.getStudyIdentifier(), ReportType.PARTICIPANT);
         return okResult(indices);
+    }
+    
+    public Result getParticipantReportIndex(String identifier) {
+        UserSession session = getAuthenticatedSession();
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(ReportType.PARTICIPANT)
+                .withStudyIdentifier(session.getStudyIdentifier()).build();
+        
+        ReportIndex index = reportService.getReportIndex(key);
+        return okResult(index);
     }
 
     /** API to get reports for the given user by date. */

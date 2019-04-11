@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
@@ -13,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -82,7 +83,10 @@ public class StudyReportController extends BaseController {
             String endDateString) {
         StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
-        verifyIndex(studyId, identifier);
+        verifyIndexIsPublic(studyId, identifier);
+        // We do not want to inherit a user's session information, if a session token is being 
+        // passed to this method.
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
 
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
@@ -118,7 +122,10 @@ public class StudyReportController extends BaseController {
             String endTimeString, String offsetKey, String pageSizeString) {
         StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
-        verifyIndex(studyId, identifier);
+        verifyIndexIsPublic(studyId, identifier);
+        // We do not want to inherit a user's session information, if a session token is being 
+        // passed to this method.
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
 
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
@@ -186,7 +193,7 @@ public class StudyReportController extends BaseController {
      * Get a single study report index
      */
     public Result getStudyReportIndex(String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession();
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(ReportType.STUDY)
@@ -211,12 +218,12 @@ public class StudyReportController extends BaseController {
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(identifier);
         
-        reportService.updateReportIndex(ReportType.STUDY, index);
+        reportService.updateReportIndex(session.getStudyIdentifier(), ReportType.STUDY, index);
         
         return okResult("Report index updated.");
     }
-    
-    private void verifyIndex(final StudyIdentifier studyId, final String identifier) {
+
+    private void verifyIndexIsPublic(final StudyIdentifier studyId, final String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(ReportType.STUDY)
@@ -227,5 +234,4 @@ public class StudyReportController extends BaseController {
             throw new EntityNotFoundException(ReportIndex.class);
         }
     }
-    
 }
