@@ -1,15 +1,23 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 
 public class ReportDataValidator implements Validator {
 
-    public static final ReportDataValidator INSTANCE = new ReportDataValidator();
-    private ReportDataValidator() {}
+    private final Set<String> existingSubstudies;
+    
+    public ReportDataValidator(ReportIndex index) {
+        this.existingSubstudies = (index == null) ? null : index.getSubstudyIds();    
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -27,6 +35,11 @@ public class ReportDataValidator implements Validator {
         }
         if (data.getData() == null) {
             errors.rejectValue("data", "is required");
+        }
+        if (existingSubstudies != null && data.getSubstudyIds() != null) {
+            if (!existingSubstudies.equals(data.getSubstudyIds())) {
+                errors.rejectValue("substudyIds", "cannot be changed once created for a report");
+            }
         }
         ReportDataKey key = data.getReportDataKey();
         if (key == null) {

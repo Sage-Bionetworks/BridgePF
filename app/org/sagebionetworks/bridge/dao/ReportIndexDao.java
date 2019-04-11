@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dao;
 
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -19,7 +21,7 @@ public interface ReportIndexDao {
     /**
      * Add an index item for a report, so the identifier of the report can be retrieved in a list of such identifiers.
      */
-    void addIndex(ReportDataKey key);
+    void addIndex(ReportDataKey key, Set<String> substudies);
     
     /**
      * Update an existing index metadata.
