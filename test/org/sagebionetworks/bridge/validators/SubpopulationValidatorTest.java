@@ -73,6 +73,34 @@ public class SubpopulationValidatorTest {
         }
     }
     
+    @Test
+    public void emptyListsOK() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setStudyIdentifier("test-study");
+        subpop.setGuidString("AAA");
+        subpop.setName("Name");
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of());
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of());
+        
+        Validate.entityThrowingException(validator, subpop);
+        assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
+        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
+    }
+    
+    @Test
+    public void nullListsOK() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setStudyIdentifier("test-study");
+        subpop.setGuidString("AAA");
+        subpop.setName("Name");
+        subpop.setDataGroupsAssignedWhileConsented(null);
+        subpop.setSubstudyIdsAssignedOnConsent(null);
+        
+        Validate.entityThrowingException(validator, subpop);
+        assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
+        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
+    }
+    
     private void assertMessage(InvalidEntityException e, String propName, String error) {
         Map<String,List<String>> errors = e.getErrors();
         List<String> messages = errors.get(propName);

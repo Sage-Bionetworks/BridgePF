@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.io.IOUtils;
@@ -334,15 +335,18 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawConsentRemovesDataGroups() throws Exception {
+        Set<String> dataGroups = Sets.newHashSet(TestConstants.USER_DATA_GROUPS);
+        dataGroups.add("leaveBehind1");
+        dataGroups.add("leaveBehind2");
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        
+        account.setDataGroups(dataGroups);
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountDao.getAccount(any())).thenReturn(account);
         
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
         
-        assertTrue(account.getDataGroups().isEmpty());
+        assertEquals(ImmutableSet.of("leaveBehind1", "leaveBehind2"), account.getDataGroups());
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
         verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
     }
