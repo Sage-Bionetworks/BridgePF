@@ -17,13 +17,16 @@ import static org.mockito.Mockito.when;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.io.IOUtils;
@@ -45,7 +48,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -332,6 +334,24 @@ public class ConsentServiceMockTest {
     }
     
     @Test
+    public void withdrawConsentRemovesDataGroups() throws Exception {
+        Set<String> dataGroups = Sets.newHashSet(TestConstants.USER_DATA_GROUPS);
+        dataGroups.add("leaveBehind1");
+        dataGroups.add("leaveBehind2");
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        account.setDataGroups(dataGroups);
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        
+        assertEquals(ImmutableSet.of("leaveBehind1", "leaveBehind2"), account.getDataGroups());
+        verify(subpopulation).getDataGroupsAssignedWhileConsented();
+        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
+    }
+    
+    @Test
     public void withdrawConsentWithAccount() throws Exception {
         setupWithdrawTest();
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
@@ -405,6 +425,26 @@ public class ConsentServiceMockTest {
         }
 
         verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
+    }
+    
+    @Test
+    public void withdrawFromStudyRemovesDataGroups() {
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+
+        Set<String> dataGroups = new HashSet<>(TestConstants.USER_DATA_GROUPS);
+        dataGroups.add("remainingDataGroup1");
+        dataGroups.add("remainingDataGroup2");
+        account.setDataGroups(dataGroups);
+
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        
+        assertEquals(ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"), account.getDataGroups());
+        verify(subpopulation).getDataGroupsAssignedWhileConsented();
+        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
     }
     
     @Test
@@ -607,6 +647,8 @@ public class ConsentServiceMockTest {
     public void withdrawAllConsentsNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
         study.setConsentNotificationEmail(null);
+        
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
         
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
         
@@ -826,6 +868,21 @@ public class ConsentServiceMockTest {
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, false);
         
         verify(smsService, never()).sendSmsMessage(any(), any());
+    }
+    
+    @Test
+    public void consentToResearchAssignsDataGroupsAndSubstudies() throws Exception {
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
+        when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        
+        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, false);
+        
+        assertEquals(TestConstants.USER_DATA_GROUPS, account.getDataGroups());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId).collect(Collectors.toSet()));
     }
 
     @Test

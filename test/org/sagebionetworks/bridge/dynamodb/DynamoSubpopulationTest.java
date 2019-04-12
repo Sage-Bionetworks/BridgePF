@@ -11,6 +11,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -20,6 +21,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -59,6 +61,14 @@ public class DynamoSubpopulationTest {
         assertEquals("study-key", node.get("studyIdentifier").textValue());
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(3L, node.get("version").longValue());
+        
+        Set<String> dataGroups = ImmutableSet.of(node.get("dataGroupsAssignedWhileConsented").get(0).textValue(),
+                node.get("dataGroupsAssignedWhileConsented").get(1).textValue());                
+        assertEquals(TestConstants.USER_DATA_GROUPS, dataGroups);
+        
+        Set<String> substudyIds = ImmutableSet.of(node.get("substudyIdsAssignedOnConsent").get(0).textValue(),
+                node.get("substudyIdsAssignedOnConsent").get(1).textValue());
+        assertEquals(TestConstants.USER_SUBSTUDY_IDS, substudyIds);
         assertEquals("Subpopulation", node.get("type").textValue());
         
         JsonNode critNode = node.get("criteria");
@@ -102,7 +112,24 @@ public class DynamoSubpopulationTest {
         subpop.setDeleted(true);
         subpop.setAutoSendConsentSuppressed(true);
         subpop.setVersion(3L);
+        subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
+        subpop.setSubstudyIdsAssignedOnConsent(TestConstants.USER_SUBSTUDY_IDS);
         return subpop;
+    }
+    
+    @Test
+    public void cannotNullifySets() {
+        Subpopulation subpop = new DynamoSubpopulation();
+        // Set some values to verify that null resets these to the empty set
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("A"));
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("B"));
+        assertEquals(ImmutableSet.of("A"), subpop.getDataGroupsAssignedWhileConsented());
+        assertEquals(ImmutableSet.of("B"), subpop.getSubstudyIdsAssignedOnConsent());
+        
+        subpop.setDataGroupsAssignedWhileConsented(null);
+        subpop.setSubstudyIdsAssignedOnConsent(null);
+        assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
+        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
     }
     
     @Test

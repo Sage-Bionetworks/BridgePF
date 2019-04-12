@@ -5,6 +5,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -73,6 +75,24 @@ public interface Subpopulation extends BridgeEntity {
     
     void setPublishedConsentCreatedOn(long consentCreatedOn);
     long getPublishedConsentCreatedOn();
+    
+    /**
+     * Assign these data groups to the study participant when they consent to be a member 
+     * of this subpopulation. If the user is withdrawn from this subpopulation, the same 
+     * data groups will be removed, so they should probably be reserved for this flagging 
+     * purpose only. 
+     */
+    void setDataGroupsAssignedWhileConsented(Set<String> dataGroups);
+    Set<String> getDataGroupsAssignedWhileConsented();
+    
+    /**
+     * Assign the participant to these substudies when they consent to be a member of this 
+     * subpopulation. If the user is withdrawn from this subpopulation, the user will NOT 
+     * be withdrawn from these substudies, which is an important difference from the 
+     * assignment of data groups. 
+     */
+    void setSubstudyIdsAssignedOnConsent(Set<String> substudyIds);
+    Set<String> getSubstudyIdsAssignedOnConsent();
     
     /**
      * URL for retrieving the HTML version of the published consent for this study.

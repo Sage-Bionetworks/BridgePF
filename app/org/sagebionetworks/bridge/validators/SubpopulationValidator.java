@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.util.Set;
 
@@ -37,6 +38,20 @@ public class SubpopulationValidator implements Validator {
         }
         if (isBlank(subpop.getGuidString())) {
             errors.rejectValue("guid", "is required");
+        }
+        for (String dataGroup : subpop.getDataGroupsAssignedWhileConsented()) {
+            if (!dataGroups.contains(dataGroup)) {
+                String listStr = (dataGroups.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(dataGroups);
+                String message = String.format("'%s' is not in enumeration: %s", dataGroup, listStr);
+                errors.rejectValue("dataGroupsAssignedWhileConsented", message);
+            }
+        }
+        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
+            if (!substudyIds.contains(substudyId)) {
+                String listStr = (substudyIds.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(substudyIds);
+                String message = String.format("'%s' is not in enumeration: %s", substudyId, listStr);
+                errors.rejectValue("substudyIdsAssignedOnConsent", message);
+            }
         }
         CriteriaUtils.validate(subpop.getCriteria(), dataGroups, substudyIds, errors);
     }

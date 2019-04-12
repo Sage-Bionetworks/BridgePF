@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import java.util.Set;
 
-import com.google.common.collect.Sets;
-
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
