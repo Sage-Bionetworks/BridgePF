@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,6 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -75,6 +75,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -116,8 +117,6 @@ public class ParticipantControllerTest {
     
     private static final String ID = "ASDF";
     
-    private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, "ASDF");
-
     private static final String EMAIL = "email@email.com";
     
     private static final String ACTIVITY_GUID = "activityGuid";
@@ -328,7 +327,7 @@ public class ParticipantControllerTest {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE).build();
         
-        when(mockParticipantService.getParticipant(study, ACCOUNT_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID, true);
         TestUtils.assertResult(result, 200);
@@ -340,14 +339,14 @@ public class ParticipantControllerTest {
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
         
-        verify(mockParticipantService).getParticipant(study, ACCOUNT_ID, true);
+        verify(mockParticipantService).getParticipant(study, ID, true);
     }
     
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         study.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(study, ACCOUNT_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID, true);
         TestUtils.assertResult(result, 200);
@@ -514,23 +513,88 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getSelfParticipant() throws Exception {
+    public void getSelfParticipantNoConsentHistories() throws Exception {
+        TestUtils.mockPlay().withMockResponse().mock();
+        
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withId(ID)
                 .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withFirstName("Test").build();
         
-        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getSelfParticipant(eq(study), any(), eq(false))).thenReturn(studyParticipant);
 
-        Result result = controller.getSelfParticipant();
+        Result result = controller.getSelfParticipant(false);
         assertResult(result, 200);
         
-        verify(mockParticipantService).getParticipant(study, ID, false);
+        verify(mockParticipantService).getSelfParticipant(eq(study), contextCaptor.capture(), eq(false));
+        assertEquals(ID, contextCaptor.getValue().getUserId());
         
         StudyParticipant deserParticipant = MAPPER.readValue(Helpers.contentAsString(result), StudyParticipant.class);
 
         assertEquals("Test", deserParticipant.getFirstName());
         assertNull(deserParticipant.getHealthCode());
         assertNull(deserParticipant.getEncryptedHealthCode());
+    }
+    
+    @Test
+    public void getSelfParticipantWithConsentHistories() throws Exception {
+        TestUtils.mockPlay().withMockResponse().mock();
+        
+        DateTime timestamp = DateTime.now(DateTimeZone.UTC);
+        UserConsentHistory history = new UserConsentHistory.Builder()
+                .withHealthCode("healthCode")
+                .withSubpopulationGuid(SubpopulationGuid.create("guid"))
+                .withConsentCreatedOn(timestamp.getMillis())
+                .withName("Test Name")
+                .withBirthdate("2000-01-01")
+                .withImageData("imageData")
+                .withImageMimeType("imageMimeType")
+                .withSignedOn(timestamp.getMillis())
+                .withWithdrewOn(timestamp.getMillis())
+                .withHasSignedActiveConsent(true).build();
+        
+        Map<String,List<UserConsentHistory>> consentHistories = new HashMap<>();
+        consentHistories.put("guid", ImmutableList.of(history));
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
+                .withFirstName("Test")
+                .withConsentHistories(consentHistories)
+                .build();
+        
+        when(mockParticipantService.getSelfParticipant(eq(study), any(), eq(true))).thenReturn(studyParticipant);
+
+        Result result = controller.getSelfParticipant(true);
+        assertResult(result, 200);
+        
+        verify(mockParticipantService).getSelfParticipant(eq(study), any(), eq(true));
+        
+        JsonNode nodeParticipant = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode nodeHistory = nodeParticipant.get("consentHistories").get("guid").get(0);
+        // Verify these are formatted correctly. These are just the unusual fields that required an annotation
+        assertEquals(timestamp.toString(), nodeHistory.get("consentCreatedOn").textValue());
+        assertEquals(timestamp.toString(), nodeHistory.get("signedOn").textValue());
+        assertEquals(timestamp.toString(), nodeHistory.get("withdrewOn").textValue());
+        
+        StudyParticipant deserParticipant = MAPPER.treeToValue(nodeParticipant, StudyParticipant.class);
+
+        assertEquals("Test", deserParticipant.getFirstName());
+        assertNull(deserParticipant.getHealthCode());
+        assertNull(deserParticipant.getEncryptedHealthCode());
+        
+        List<UserConsentHistory> deserHistories = deserParticipant.getConsentHistories().get("guid");
+        assertEquals(1, deserHistories.size());
+        
+        UserConsentHistory deserHistory = deserHistories.get(0);
+        assertEquals("guid", deserHistory.getSubpopulationGuid());
+        assertEquals(timestamp.getMillis(), deserHistory.getConsentCreatedOn());
+        assertEquals("Test Name", deserHistory.getName());
+        assertEquals("2000-01-01", deserHistory.getBirthdate());
+        assertEquals("imageData", deserHistory.getImageData());
+        assertEquals("imageMimeType", deserHistory.getImageMimeType());
+        assertEquals(timestamp.getMillis(), deserHistory.getSignedOn());
+        assertEquals(new Long(timestamp.getMillis()), deserHistory.getWithdrewOn());
+        assertTrue(deserHistory.isHasSignedActiveConsent());
     }
     
     @Test
@@ -985,7 +1049,7 @@ public class ParticipantControllerTest {
                 .build();
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, ACCOUNT_ID, true)).thenReturn(foundParticipant);
+        when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(foundParticipant);
         
         Result result = controller.getParticipantForWorker(study.getIdentifier(), ID, true);
         assertResult(result, 200);
@@ -995,7 +1059,7 @@ public class ParticipantControllerTest {
         assertNull(participantNode.get("encryptedHealthCode"));
         assertEquals(ID, participantNode.get("id").textValue());
         
-        verify(mockParticipantService).getParticipant(study, ACCOUNT_ID, true);
+        verify(mockParticipantService).getParticipant(study, ID, true);
     }
     
     @Test
@@ -1108,86 +1172,13 @@ public class ParticipantControllerTest {
     }
     
     @Test
-    public void getParticipantByHealthCode() throws Exception {
-        AccountId accountId = AccountId.forHealthCode(study.getIdentifier(), "hc");
-        
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, accountId, true)).thenReturn(studyParticipant);
-        
-        Result result = controller.getParticipant("healthCode:hc", true);
-        TestUtils.assertResult(result, 200);
-        
-        String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
-        
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode());
-    }
-    
-    @Test
-    public void getParticipantByExternalId() throws Exception { 
-        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), "extid");
-        
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, accountId, true)).thenReturn(studyParticipant);
-        
-        Result result = controller.getParticipant("externalId:extid", true);
-        TestUtils.assertResult(result, 200);
-        
-        String json = Helpers.contentAsString(result);
-        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
-        
-        assertEquals("Test", retrievedParticipant.getFirstName());
-        assertNull(retrievedParticipant.getHealthCode());
-    }
-    
-    @Test
     public void getParticipantWithNoConsents() throws Exception {
-        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
-        
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
         
         controller.getParticipant(ID, false);
         
-        verify(mockParticipantService).getParticipant(study, accountId, false);
-    }
-    
-    @Test
-    public void getParticipantForWorkerByHealthCode() throws Exception { 
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        
-        AccountId accountId = AccountId.forHealthCode(study.getIdentifier(), "hc");
-        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).build();
-        
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, accountId, true)).thenReturn(foundParticipant);
-        
-        Result result = controller.getParticipantForWorker(study.getIdentifier(), "healthCode:hc", true);
-        assertResult(result, 200);
-
-        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, participantNode.get("id").textValue());
-    }
-    
-    @Test
-    public void getParticipantForWorkerByExternalId() throws Exception { 
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        
-        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), "extid");
-        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).build();
-        
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, accountId, true)).thenReturn(foundParticipant);
-        
-        // all lowercase works key prefix works
-        Result result = controller.getParticipantForWorker(study.getIdentifier(), "externalid:extid", true); 
-        assertResult(result, 200);
-
-        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, participantNode.get("id").textValue());
+        verify(mockParticipantService).getParticipant(study, ID, false);
     }
     
     @Test
@@ -1195,15 +1186,14 @@ public class ParticipantControllerTest {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.WORKER)).build());
         
-        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
         StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).build();
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(foundParticipant);
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(foundParticipant);
         
         controller.getParticipantForWorker(study.getIdentifier(), ID, false); 
         
-        verify(mockParticipantService).getParticipant(study, accountId, false);
+        verify(mockParticipantService).getParticipant(study, ID, false);
     }
     
     @Test
@@ -1298,8 +1288,7 @@ public class ParticipantControllerTest {
         participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(Sets.newHashSet("test_user"))
                 .build();
         
-        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
-        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(participant);
         controller.deleteTestParticipant(ID);
         
         verify(userAdminService).deleteUser(study, ID);
@@ -1319,8 +1308,7 @@ public class ParticipantControllerTest {
         participant = new StudyParticipant.Builder().copyOf(participant)
                 .withDataGroups(Sets.newHashSet()).build();
         
-        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
-        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(participant);
         controller.deleteTestParticipant(ID);
     }
     

@@ -54,20 +54,9 @@ public interface AccountDao {
     void deleteReauthToken(AccountId accountId);
     
     /**
-     * Retrieve an account where authentication is handled outside of the DAO (If we
-     * retrieve and return a session to the user through a path that does not call
-     * authenticate/reauthenticate, then you will need to call this method to get
-     * the final account). This retrieves the account, and rotates and returns a new
-     * reauthorization token, the same as the authenticate and reauthenticate calls.
-     * This method returns null if the Account does not exist.
-     */
-    Account getAccountAfterAuthentication(AccountId accountId);
-    
-    /**
-     * Create an account. The account object should initially be retrieved from the 
-     * constructAccount() factory method. If the optional consumer is passed to this method and 
-     * it throws an exception, the account will not be persisted (the consumer is executed after 
-     * the persist is executed in a transaction, however).
+     * Create an account. If the optional consumer is passed to this method and it throws an 
+     * exception, the account will not be persisted (the consumer is executed after the persist 
+     * is executed in a transaction, however).
      */
     void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer);
     

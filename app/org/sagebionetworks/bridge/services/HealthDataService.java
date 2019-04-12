@@ -257,9 +257,15 @@ public class HealthDataService {
             String fieldName = oneFieldDef.getName();
             JsonNode fieldValue = inputData.get(fieldName);
 
-            // Skip non-existent fields.
             if (fieldValue == null || fieldValue.isNull()) {
-                continue;
+                if (UploadUtil.FIELD_ANSWERS.equals(fieldName)) {
+                    // Special case: This is the auto-generated "answers" field for surveys, which contains raw
+                    // key-value pairs for all survey questions.
+                    fieldValue = inputData;
+                } else {
+                    // Skip non-existent fields.
+                    continue;
+                }
             }
 
             // filter on fieldType

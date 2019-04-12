@@ -7,6 +7,8 @@ import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
+import java.util.Set;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -23,6 +25,7 @@ public class DynamoReportData implements ReportData {
     private LocalDate localDate;
     // These values are held to make it easier to validate the report object
     private ReportDataKey reportDataKey;
+    private Set<String> substudyIds;
     private DateTime dateTime;
     private JsonNode data;
     
@@ -48,6 +51,18 @@ public class DynamoReportData implements ReportData {
     public void setKey(String key) {
         this.key = key;
     }
+    
+    @Override
+    @DynamoDBIgnore
+    public Set<String> getSubstudyIds() {
+        return this.substudyIds;
+    }
+    
+    @Override
+    public void setSubstudyIds(Set<String> substudyIds) {
+        this.substudyIds = substudyIds;
+    }
+    
     @DynamoDBRangeKey
     @Override
     public String getDate() {

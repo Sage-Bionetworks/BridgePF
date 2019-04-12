@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -41,6 +43,7 @@ public class UploadUtil {
     // Common field names
     public static final String FILENAME_INFO_JSON = "info.json";
     public static final String FILENAME_METADATA_JSON = "metadata.json";
+    public static final String FIELD_ANSWERS = "answers";
     public static final String FIELD_APP_VERSION = "appVersion";
     public static final String FIELD_CREATED_ON = "createdOn";
     public static final String FIELD_DATA_FILENAME = "dataFilename";
@@ -74,6 +77,11 @@ public class UploadUtil {
 
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
+
+    // Field def for survey schemas, which contains a key-value pair of all survey answers.
+    public static final UploadFieldDefinition ANSWERS_FIELD_DEF = new UploadFieldDefinition.Builder()
+            .withName(FIELD_ANSWERS).withRequired(true).withType(UploadFieldType.LARGE_TEXT_ATTACHMENT)
+            .build();
 
     // Map of allowed field type changes. Key is the old type. Value is the new type.
     //
@@ -141,13 +149,102 @@ public class UploadUtil {
     // List of Synapse keywords that can't be used as field names.
     private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.of("row_etag", "row_id", "row_version");
 
+    // Number of bytes a schema field takes up in Synapse. This doesn't contain all field types, as some field types
+    // have variable size.
+    private static final Map<UploadFieldType, Integer> SYNAPSE_BYTE_SIZE_BY_TYPE =
+            ImmutableMap.<UploadFieldType, Integer>builder()
+                    .put(UploadFieldType.ATTACHMENT_BLOB, 20)
+                    .put(UploadFieldType.ATTACHMENT_CSV, 20)
+                    .put(UploadFieldType.ATTACHMENT_JSON_BLOB, 20)
+                    .put(UploadFieldType.ATTACHMENT_JSON_TABLE, 20)
+                    .put(UploadFieldType.ATTACHMENT_V2, 20)
+                    .put(UploadFieldType.BOOLEAN, 5)
+                    // 10 chars for the calendar date, which is 30 bytes in Synapse
+                    .put(UploadFieldType.CALENDAR_DATE, 30)
+                    // 24 chars for duration, which is 72 bytes in Synapse
+                    .put(UploadFieldType.DURATION_V2, 72)
+                    .put(UploadFieldType.FLOAT, 23)
+                    .put(UploadFieldType.INT, 20)
+                    .put(UploadFieldType.LARGE_TEXT_ATTACHMENT, 3000)
+                    // 12 chars for time, which is 36 bytes in Synapse
+                    .put(UploadFieldType.TIME_V2, 36)
+                    // Timestamp is a Synapse Date (20 bytes) + 5-char timezone (15 bytes)
+                    .put(UploadFieldType.TIMESTAMP, 35)
+                    .build();
+
+    // LargeText (unbounded string) is always 3000 bytes in Synapse.
+    private static final int SYNAPSE_LARGE_TEXT_BYTE_SIZE = 3000;
+
+    // This set lists all the variable-length string types.
+    private static final Set<UploadFieldType> VARIABLE_LENGTH_STRING_TYPE_SET = EnumSet.of(
+            UploadFieldType.INLINE_JSON_BLOB, UploadFieldType.SINGLE_CHOICE, UploadFieldType.STRING);
+
     /*
      * Suffix used for unit fields in schemas. For example, if we had a field called "jogtime", we would have a field
      * called "jogtime_unit".
      */
     public static final String UNIT_FIELD_SUFFIX = "_unit";
-    public static final String DIASTOLIC_FIELD_SUFFIX = "_diastolic";
-    public static final String SYSTOLIC_FIELD_SUFFIX = "_systolic";
+
+    /** Calculates the total field size for the list of field definitions. */
+    public static UploadFieldSize calculateFieldSize(List<UploadFieldDefinition> fieldDefList) {
+        int numBytes = 0;
+        int numColumns = 0;
+        for (UploadFieldDefinition fieldDef : fieldDefList) {
+            UploadFieldType fieldType = fieldDef.getType();
+            if (fieldType == null) {
+                // Since field size calculation happens as part of schema validation, it's possible that we might have
+                // have invalid fields here. We can't calculate field size without an invalid field, so just skip this
+                // field. The validator will throw anyway.
+                continue;
+            }
+
+            // Calculate number of bytes.
+            if (VARIABLE_LENGTH_STRING_TYPE_SET.contains(fieldType)) {
+                // Special case for string types, since this scales based on max length.
+                if (Boolean.TRUE.equals(fieldDef.isUnboundedText())) {
+                    numBytes += SYNAPSE_LARGE_TEXT_BYTE_SIZE;
+                } else {
+                    // Synapse string fields cost 3 bytes per char.
+                    int maxCharLength = fieldDef.getMaxLength() != null ? fieldDef.getMaxLength() : DEFAULT_MAX_LENGTH;
+                    numBytes += 3*maxCharLength;
+                }
+            } else if (fieldType == UploadFieldType.MULTI_CHOICE) {
+                // Multi-choice has a boolean column (5 bytes) for each answer. (Note that the field def builder
+                // guarantees that the multi-choice answer list is not null, though it might be empty.
+                numBytes += 5*fieldDef.getMultiChoiceAnswerList().size();
+
+                // Multi-choice also adds a LargeText (3000 bytes) if allowOtherChoices is true.
+                if (Boolean.TRUE.equals(fieldDef.getAllowOtherChoices())) {
+                    numBytes += SYNAPSE_LARGE_TEXT_BYTE_SIZE;
+                }
+            } else if (SYNAPSE_BYTE_SIZE_BY_TYPE.containsKey(fieldType)) {
+                numBytes += SYNAPSE_BYTE_SIZE_BY_TYPE.get(fieldType);
+            } else {
+                throw new BridgeServiceException("Couldn't get byte size for field type " + fieldType);
+            }
+
+            // Calculate number of columns.
+            if (fieldType == UploadFieldType.MULTI_CHOICE) {
+                // Multi-choice fields have a boolean column for each answer.
+                if (fieldDef.getMultiChoiceAnswerList() != null) {
+                    numColumns += fieldDef.getMultiChoiceAnswerList().size();
+                }
+
+                // Multi-choice also adds a LargeText if allowOtherChoices is true.
+                if (Boolean.TRUE.equals(fieldDef.getAllowOtherChoices())) {
+                    numColumns++;
+                }
+            } else if (fieldType == UploadFieldType.TIMESTAMP) {
+                // Timestamp has two columns, one for epoch time, one for timezone.
+                numColumns += 2;
+            } else  {
+                // Every other field type creates only one column.
+                numColumns++;
+            }
+        }
+
+        return new UploadFieldSize(numBytes, numColumns);
+    }
 
     /** Utility method for canonicalizing an upload JSON value given the schema's field type. */
     public static CanonicalizationResult canonicalize(final JsonNode valueNode, UploadFieldType type) {

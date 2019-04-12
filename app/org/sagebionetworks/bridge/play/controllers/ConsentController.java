@@ -106,15 +106,15 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         final SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        
+
         CriteriaContext context = getCriteriaContext(session);
+        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), context, withdrawal, withdrewOn);
+        
+        // We must do a full refresh of the session because consents can set data groups and substudies.
+        UserSession updatedSession = authenticationService.getSession(study, context);
+        cacheProvider.setUserSession(updatedSession);
 
-        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawConsent(study, subpopGuid,
-                session.getParticipant(), context, withdrawal, withdrewOn);
-
-        sessionUpdateService.updateConsentStatus(session, statuses, session.getParticipant().getSharingScope(), true);
-
-        return okResult(UserSessionInfo.toJSON(session));
+        return okResult(UserSessionInfo.toJSON(updatedSession));
     }
     
     public Result withdrawFromStudy() {
@@ -136,7 +136,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         consentService.resendConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
-        return okResult("Signed consent agreement resent.");
+        return acceptedResult("Signed consent agreement resent.");
     }
     
     Result changeSharingScope(SharingScope sharingScope, String message) {
@@ -150,15 +150,21 @@ public class ConsentController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
+    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         final ConsentSignature consentSignature = ConsentSignature.fromJSON(parseJson(request(), JsonNode.class));
         final SharingOption sharing = SharingOption.fromJson(parseJson(request(), JsonNode.class), version);
-
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         
+        // On client update, clients have sent consent signatures even before the session reflects the need
+        // for the new consent. Update the criteria context before consent, using the latest User-Agent
+        // header, so the server is synchronized with the client's state.
+        CriteriaContext context = getCriteriaContext(session);
+        Map<SubpopulationGuid,ConsentStatus> consentStatuses = consentService.getConsentStatuses(context);
+        
+        // If provided subpopulation is not in the statuses, it either doesn't exist or doesn't apply to 
+        // this user, and we return a 404
         ConsentStatus status = consentStatuses.get(subpopGuid);
         if (status == null) {
             throw new EntityNotFoundException(Subpopulation.class);
@@ -167,11 +173,11 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        CriteriaContext context = getCriteriaContext(session);
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+        // We must do a full refresh of the session because consents can set data groups and substudies.
+        CriteriaContext updatedContext = getCriteriaContext(session);
+        UserSession updatedSession = authenticationService.getSession(study, updatedContext);
+        cacheProvider.setUserSession(updatedSession);
         
-        sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
-
-        return createdResult(UserSessionInfo.toJSON(session));
+        return createdResult(UserSessionInfo.toJSON(updatedSession));
     }
 }

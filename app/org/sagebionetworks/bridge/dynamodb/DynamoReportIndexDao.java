@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -31,7 +32,7 @@ import com.google.common.collect.ImmutableMap;
 public class DynamoReportIndexDao implements ReportIndexDao {
     private static final Logger LOG = LoggerFactory.getLogger(DynamoReportIndexDao.class);
 
-    private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
+    protected static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpected(new ImmutableMap.Builder<String,ExpectedAttributeValue>()
                     .put("key", new ExpectedAttributeValue(false))
                     .put("identifier", new ExpectedAttributeValue(false)).build());
@@ -55,12 +56,13 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
 
     @Override
-    public void addIndex(ReportDataKey key) {
+    public void addIndex(ReportDataKey key, Set<String> substudies) {
         checkNotNull(key);
         
         DynamoReportIndex index = new DynamoReportIndex();
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(key.getIdentifier());
+        index.setSubstudyIds(substudies);
 
         // Optimization: Reads are significantly cheaper than writes. Check to see if the index already exists. If it
         // does, don't bother writing it.
@@ -78,7 +80,7 @@ public class DynamoReportIndexDao implements ReportIndexDao {
             LOG.warn("Race condition creating index for " + key.toString() + ": " + e.getMessage(), e);
         }
     }
-
+    
     @Override
     public void removeIndex(ReportDataKey key) {
         checkNotNull(key);

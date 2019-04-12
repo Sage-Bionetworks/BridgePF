@@ -227,22 +227,6 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     @Override
-    public Account getAccountAfterAuthentication(AccountId accountId) {
-        Account hibernateAccount = getHibernateAccount(accountId);
-
-        if (hibernateAccount != null) {
-            if ( validateHealthCode(hibernateAccount) ) {
-                Account updated = hibernateHelper.update(hibernateAccount, null);
-                hibernateAccount.setVersion(updated.getVersion());
-            }
-            return hibernateAccount;
-        } else {
-            // In keeping with the email implementation, just return null
-            return null;
-        }
-    }
-
-    @Override
     public void deleteReauthToken(AccountId accountId) {
         Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
@@ -312,9 +296,9 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account getAccount(AccountId accountId) {
         Account hibernateAccount = getHibernateAccount(accountId);
+
         if (hibernateAccount != null) {
-            boolean accountUpdated = validateHealthCode(hibernateAccount);
-            if (accountUpdated) {
+            if ( validateHealthCode(hibernateAccount) ) {
                 Account updated = hibernateHelper.update(hibernateAccount, null);
                 hibernateAccount.setVersion(updated.getVersion());
             }

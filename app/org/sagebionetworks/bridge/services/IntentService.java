@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.IntentToParticipateValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -32,6 +34,8 @@ public class IntentService {
     private static final int EXPIRATION_IN_SECONDS = 4 * 60 * 60;
 
     private SmsService smsService;
+    
+    private SendMailService sendMailService;
 
     private StudyService studyService;
     
@@ -49,6 +53,11 @@ public class IntentService {
     @Autowired
     final void setSmsService(SmsService smsService) {
         this.smsService = smsService;
+    }
+    
+    @Autowired
+    final void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
     }
 
     @Autowired
@@ -85,7 +94,12 @@ public class IntentService {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
         // If the account exists, do nothing.
-        AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone());
+        AccountId accountId = null;
+        if (intent.getPhone() != null) {
+            accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone());
+        } else {
+            accountId = AccountId.forEmail(intent.getStudyId(), intent.getEmail());
+        }
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
             return;
@@ -99,7 +113,10 @@ public class IntentService {
         subpopService.getSubpopulation(study, guid);
         
         // validate it has not yet been submitted
-        CacheKey cacheKey = CacheKey.itp(guid, study.getStudyIdentifier(), intent.getPhone());
+        // the validator has ensured that phone or email, but not both, have been provided;
+        CacheKey cacheKey = (intent.getPhone() == null) ?
+                CacheKey.itp(guid, study.getStudyIdentifier(), intent.getEmail()) :
+                CacheKey.itp(guid, study.getStudyIdentifier(), intent.getPhone());
 
         if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
@@ -108,34 +125,47 @@ public class IntentService {
             if (!study.getInstallLinks().isEmpty()) {
                 String url = getInstallLink(intent.getOsName(), study.getInstallLinks());
                 
-                // The URL being sent does not expire. We send with a transaction delivery type because
-                // this is a critical step in onboarding through this workflow and message needs to be 
-                // sent immediately after consenting.
-                SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                        .withStudy(study)
-                        .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
-                        .withTransactionType()
-                        .withPhone(intent.getPhone())
-                        .withToken(APP_INSTALL_URL_KEY, url).build();
-
-                // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
-                // SMS Service.
-                smsService.sendSmsMessage(null, provider);
+                if (intent.getPhone() != null) {
+                    // The URL being sent does not expire. We send with a transaction delivery type because
+                    // this is a critical step in onboarding through this workflow and message needs to be 
+                    // sent immediately after consenting.
+                    SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                            .withStudy(study)
+                            .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
+                            .withTransactionType()
+                            .withPhone(intent.getPhone())
+                            .withToken(APP_INSTALL_URL_KEY, url).build();
+                    // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
+                    // SMS Service.
+                    smsService.sendSmsMessage(null, provider);
+                } else {
+                    BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                            .withStudy(study)
+                            .withEmailTemplate(study.getAppInstallLinkTemplate())
+                            .withRecipientEmail(intent.getEmail())
+                            .withType(EmailType.APP_INSTALL)
+                            .withToken(APP_INSTALL_URL_KEY, url)
+                            .build();
+                    sendMailService.sendEmail(provider);
+                }
             }
         }
     }
     
     public boolean registerIntentToParticipate(Study study, Account account) {
         Phone phone = account.getPhone();
+        String email = account.getEmail();
         // Somehow, this is being called but the user has no phone number.
-        if (phone == null) {
+        if (phone == null && email == null) {
             return false;
         }
         boolean consentsUpdated = false;
         StudyParticipant participant = null;
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
         for (Subpopulation subpop : subpops) {
-            CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
+            CacheKey cacheKey = (phone == null) ?
+                    CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), email) :
+                    CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
                 if (participant == null) {

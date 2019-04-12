@@ -85,6 +85,8 @@ public class IosSchemaValidationHandler2Test {
         tmpDir = inMemoryFileHelper.createTempDir();
 
         // set up test schemas
+        // To test backwards compatibility, survey schema should include both the old style fields and the new
+        // "answers" field.
         UploadSchema surveySchema = UploadSchema.create();
         surveySchema.setStudyId(TEST_STUDY_ID);
         surveySchema.setSchemaId("test-survey");
@@ -92,6 +94,8 @@ public class IosSchemaValidationHandler2Test {
         surveySchema.setName("iOS Survey");
         surveySchema.setSchemaType(UploadSchemaType.IOS_SURVEY);
         surveySchema.setFieldDefinitions(ImmutableList.of(
+                UploadUtil.ANSWERS_FIELD_DEF,
+
                 new UploadFieldDefinition.Builder().withName("foo").withType(UploadFieldType.STRING).build(),
                 new UploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.INT).build(),
                 new UploadFieldDefinition.Builder().withName("bar_unit").withType(UploadFieldType.STRING)
@@ -257,7 +261,6 @@ public class IosSchemaValidationHandler2Test {
         String intAsStringAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
                 "   \"numericAnswer\":1337,\n" +
-                "   \"unit\":\"lb\",\n" +
                 "   \"startDate\":\"2015-04-02T03:27:05-07:00\",\n" +
                 "   \"questionTypeName\":\"Integer\",\n" +
                 "   \"item\":\"int-as-string\",\n" +
@@ -324,6 +327,7 @@ public class IosSchemaValidationHandler2Test {
         assertEquals("json", inlineJsonBlobNode.get(1).textValue());
         assertEquals("blob", inlineJsonBlobNode.get(2).textValue());
 
+        // "baz" attachment.
         ArgumentCaptor<JsonNode> blobNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
         verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(blobNodeCaptor.capture(), eq(TEST_UPLOAD_ID),
                 eq("baz"));
@@ -332,6 +336,27 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(2, blobNode.size());
         assertEquals("survey", blobNode.get(0).textValue());
         assertEquals("blob", blobNode.get(1).textValue());
+
+        // Survey "answers" attachment. Note that "answers" is not completely identical to dataNode. This is the raw
+        // key-value pairing, so it includes attachments and doesn't canonicalize strings. This is fine, because the
+        // old stuff works the same, and we don't want to propagate the iOS-specific formatting hacks to the new stuff.
+        ArgumentCaptor<JsonNode> answersNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(answersNodeCaptor.capture(), eq(TEST_UPLOAD_ID),
+                eq(UploadUtil.FIELD_ANSWERS));
+
+        JsonNode answersNode = answersNodeCaptor.getValue();
+        assertEquals(11, answersNode.size());
+        assertEquals("foo answer", answersNode.get("foo").textValue());
+        assertEquals(42, answersNode.get("bar").intValue());
+        assertEquals("lb", answersNode.get("bar_unit").textValue());
+        assertEquals(blobNode, answersNode.get("baz"));
+        assertEquals("2017-01-31", answersNode.get("calendar-date").textValue());
+        assertEquals("16:42:52.256", answersNode.get("time-without-date").textValue());
+        assertEquals("2017-01-31T16:42:52.256-0800", answersNode.get("legacy-date-time").textValue());
+        assertEquals("2017-02-02T09:13:27.212-0800", answersNode.get("new-date-time").textValue());
+        assertEquals(1337, answersNode.get("int-as-string").intValue());
+        assertEquals("2015-12-25T14:41-0800", answersNode.get("timestamp-as-date").textValue());
+        assertEquals(inlineJsonBlobNode, answersNode.get("inline-json-blob"));
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());

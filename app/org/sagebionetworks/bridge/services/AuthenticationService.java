@@ -376,7 +376,7 @@ public class AuthenticationService {
         
         // Throws AuthenticationFailedException if the token is missing or incorrect
         AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
-        Account account = accountDao.getAccountAfterAuthentication(accountId);
+        Account account = accountDao.getAccount(accountId);
         // This should be unlikely, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

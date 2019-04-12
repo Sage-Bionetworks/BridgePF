@@ -54,8 +54,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyDaoTest {
-
-    private static Logger logger = LoggerFactory.getLogger(DynamoSurveyDaoTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoSurveyDaoTest.class);
 
     @Resource
     DynamoSurveyDao surveyDao;
@@ -63,12 +62,15 @@ public class DynamoSurveyDaoTest {
     @Resource
     UploadSchemaService uploadSchemaService;
 
+    private String surveyId;
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
 
     @Before
     public void before() {
+        surveyId = TestUtils.randomName(DynamoSurveyDaoTest.class);
         testSurvey = new TestSurvey(DynamoSurveyDaoTest.class, true);
+        testSurvey.setIdentifier(surveyId);
         // remove all but two questions to reduce DDB usage.
         testSurvey.setElements(testSurvey.getElements().subList(0, 2));
         surveysToDelete = new HashSet<>();
@@ -81,7 +83,7 @@ public class DynamoSurveyDaoTest {
             try {
                 surveyDao.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
+                LOG.error(ex.getMessage(), ex);
             }
         }
     }
@@ -141,9 +143,11 @@ public class DynamoSurveyDaoTest {
         assertNull(survey.getSchemaRevision());
 
         // These fields are updateable.
-        survey.setIdentifier("newIdentifier");
         survey.setName("New Name");
         survey.setCopyrightNotice("New notice");
+
+        // Identifier is not updateable.
+        survey.setIdentifier("newIdentifier");
 
         // These fields are not.
         long originalModifiedOn = survey.getModifiedOn();
@@ -160,7 +164,7 @@ public class DynamoSurveyDaoTest {
         Survey updatedSurvey = surveyDao.getSurvey(survey, true);
 
         // Verify fields updated.
-        assertEquals("Identifier has been changed", "newIdentifier", updatedSurvey.getIdentifier());
+        assertEquals("Identifier has not been changed", surveyId, updatedSurvey.getIdentifier());
         assertEquals("New Name", updatedSurvey.getName());
         assertEquals("New notice", updatedSurvey.getCopyrightNotice());
 
@@ -197,7 +201,7 @@ public class DynamoSurveyDaoTest {
         surveyDao.updateSurvey(survey);
         survey = surveyDao.getSurvey(survey, true);
 
-        assertEquals("Identifier can be updated", "B", survey.getIdentifier());
+        assertEquals("Identifier cannot be updated", surveyId, survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
@@ -291,13 +295,10 @@ public class DynamoSurveyDaoTest {
         assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
 
         List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-        assertEquals(2, fieldDefList.size());
+        assertEquals(1, fieldDefList.size());
 
-        assertEquals("high_bp", fieldDefList.get(0).getName());
-        assertEquals(UploadFieldType.BOOLEAN, fieldDefList.get(0).getType());
-
-        assertEquals("last_checkup", fieldDefList.get(1).getName());
-        assertEquals(UploadFieldType.CALENDAR_DATE, fieldDefList.get(1).getType());
+        assertEquals("answers", fieldDefList.get(0).getName());
+        assertEquals(UploadFieldType.LARGE_TEXT_ATTACHMENT, fieldDefList.get(0).getType());
 
         // validate get most recently published survey
         Survey pubSurvey = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);

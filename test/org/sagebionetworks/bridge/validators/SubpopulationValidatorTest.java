@@ -36,6 +36,8 @@ public class SubpopulationValidatorTest {
         subpop.setStudyIdentifier("test-study");
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
+        subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
+        subpop.setSubstudyIdsAssignedOnConsent(TestConstants.USER_SUBSTUDY_IDS);
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
         criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));
@@ -53,6 +55,9 @@ public class SubpopulationValidatorTest {
         criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyC"));
         criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
         subpop.setCriteria(criteria);
+        
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("group1", "dataGroup3"));
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("substudyA", "substudyC"));
         try {
             Validate.entityThrowingException(validator, subpop);
             fail("Should have thrown an exception");
@@ -65,7 +70,37 @@ public class SubpopulationValidatorTest {
             assertMessage(e, "noneOfGroups", " 'wrongGroup' is not in enumeration");
             assertMessage(e, "allOfSubstudyIds", " 'substudyC' is not in enumeration");
             assertMessage(e, "noneOfSubstudyIds", " 'substudyD' is not in enumeration");
+            assertMessage(e, "dataGroupsAssignedWhileConsented", " 'dataGroup3' is not in enumeration: group1, group2");
+            assertMessage(e, "substudyIdsAssignedOnConsent", " 'substudyC' is not in enumeration: substudyA, substudyB");
         }
+    }
+    
+    @Test
+    public void emptyListsOK() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setStudyIdentifier("test-study");
+        subpop.setGuidString("AAA");
+        subpop.setName("Name");
+        subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of());
+        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of());
+        
+        Validate.entityThrowingException(validator, subpop);
+        assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
+        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
+    }
+    
+    @Test
+    public void nullListsOK() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setStudyIdentifier("test-study");
+        subpop.setGuidString("AAA");
+        subpop.setName("Name");
+        subpop.setDataGroupsAssignedWhileConsented(null);
+        subpop.setSubstudyIdsAssignedOnConsent(null);
+        
+        Validate.entityThrowingException(validator, subpop);
+        assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
+        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
     }
     
     private void assertMessage(InvalidEntityException e, String propName, String error) {

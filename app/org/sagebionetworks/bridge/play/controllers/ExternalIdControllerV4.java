@@ -3,12 +3,9 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
@@ -30,19 +27,6 @@ public class ExternalIdControllerV4 extends BaseController {
     @Autowired
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
-    }
-    
-    public Result migrateExternalIdentifier() {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        JsonNode node = parseJson(request(), JsonNode.class);
-        String externalId = JsonUtils.asText(node, "externalId");
-        String substudyId = JsonUtils.asText(node, "substudyId");
-        
-        externalIdService.migrateExternalIdentifier(study, externalId, substudyId);
-
-        return okResult("External ID '" + externalId + "' associated to substudy '" + substudyId + "'.");
     }
     
     public Result getExternalIdentifiers(String offsetKey, String pageSizeString, String idFilter,

@@ -40,10 +40,4 @@ public enum Unit {
     CUBIC_METERS,
 
     MILLIMETERS_MERCURY;
-
-    /*
-     * We need to know what the longest unit is, so we can reserve the proper sized column in our schemas. Currently,
-     * this is cubic_centimeters. If this ever changes, we need to update this.
-     */
-    public static final int MAX_STRING_LENGTH = MILLIMETERS_MERCURY.name().length();
 }

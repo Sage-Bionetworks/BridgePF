@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,9 +12,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
@@ -25,24 +21,12 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
-import org.sagebionetworks.bridge.models.surveys.Constraints;
-import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
-import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
-import org.sagebionetworks.bridge.models.surveys.PostalCodeConstraints;
-import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
-import org.sagebionetworks.bridge.models.surveys.Unit;
-import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -56,39 +40,6 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class UploadSchemaService {
-    // Mapping from Survey types to Schema types. We have two separate typing systems because the Survey typing system
-    // is slightly incompatible with Schemas, most notably around multi-choice and single-choice questions.
-    private static final Map<DataType, UploadFieldType> SURVEY_TO_SCHEMA_TYPE =
-            ImmutableMap.<DataType, UploadFieldType>builder()
-                    .put(DataType.DURATION, UploadFieldType.INT)
-                    .put(DataType.STRING, UploadFieldType.STRING)
-                    .put(DataType.INTEGER, UploadFieldType.INT)
-                    .put(DataType.DECIMAL, UploadFieldType.FLOAT)
-                    .put(DataType.BOOLEAN, UploadFieldType.BOOLEAN)
-                    .put(DataType.DATE, UploadFieldType.CALENDAR_DATE)
-                    .put(DataType.TIME, UploadFieldType.TIME_V2)
-                    .put(DataType.DATETIME, UploadFieldType.TIMESTAMP)
-                    .put(DataType.HEIGHT, UploadFieldType.FLOAT)
-                    .put(DataType.WEIGHT, UploadFieldType.FLOAT)
-                    .put(DataType.YEARMONTH, UploadFieldType.STRING)
-                    .put(DataType.POSTALCODE, UploadFieldType.STRING)
-                    .build();
-
-    // Default string length for single_choice field. This is needed to prevent single_choice questions from changing
-    // in length a lot. Package-scoped to facilitate unit tests.
-    static final int SINGLE_CHOICE_DEFAULT_LENGTH = 100;
-    private static int singleChoiceDefaultLength = SINGLE_CHOICE_DEFAULT_LENGTH;
-
-    /** Overrides the single_choice default length. Used for unit tests. */
-    static void setSingleChoiceDefaultLength(int singleChoiceDefaultLength) {
-        UploadSchemaService.singleChoiceDefaultLength = singleChoiceDefaultLength;
-    }
-
-    /** Resets the singleChoiceDefaultLength and removes the override. Used for unit tests. */
-    static void resetSingleChoiceDefaultLength() {
-        UploadSchemaService.singleChoiceDefaultLength = SINGLE_CHOICE_DEFAULT_LENGTH;
-    }
-
     private SharedModuleMetadataService sharedModuleMetadataService;
     private UploadSchemaDao uploadSchemaDao;
 
@@ -205,340 +156,54 @@ public class UploadSchemaService {
             }
         }
 
-        // Get survey questions.
-        List<SurveyQuestion> surveyQuestionList = survey.getUnmodifiableQuestionList();
-        if (surveyQuestionList.isEmpty()) {
-            throw new BadRequestException("Can't create a schema from a survey with no questions");
-        }
-
-        // create upload field definitions from survey questions
-        List<UploadFieldDefinition> newFieldDefList = new ArrayList<>();
-        for (SurveyQuestion oneQuestion : surveyQuestionList) {
-            newFieldDefList.addAll(createUploadFieldDefinitions(oneQuestion));
-        }
-
         // If we want to use the existing schema rev, and one exists. Note that we've already validated that it is for
         // the same survey.
         if (!newSchemaRev && oldSchema != null) {
+            // Check that the old schema already has the answers field.
             List<UploadFieldDefinition> oldFieldDefList = oldSchema.getFieldDefinitions();
+            UploadFieldDefinition answersFieldDef = oldFieldDefList.stream()
+                    .filter(fieldDef -> UploadUtil.FIELD_ANSWERS.equals(fieldDef.getName()))
+                    .findFirst().orElse(null);
 
-            // Optimization: If the new schema and the old schema have the same fields, return the old schema
-            // instead of creating a new one.
-            //
-            // Dump the fieldDefLists into a set, because if we have the same fields in a different order, the
-            // schemas are compatible, and we should use the old schema too.
-            Set<UploadFieldDefinition> oldFieldDefSet = ImmutableSet.copyOf(oldFieldDefList);
-            Set<UploadFieldDefinition> newFieldDefSet = ImmutableSet.copyOf(newFieldDefList);
-            if (oldFieldDefSet.equals(newFieldDefSet)) {
-                return oldSchema;
-            }
-
-            // Otherwise, merge the old and new field defs to create a new schema.
-            MergeSurveySchemaResult mergeResult = mergeSurveySchemaFields(oldFieldDefList, newFieldDefList);
-            if (mergeResult.isSuccess()) {
-                // We successfully merged the field def lists. We can successfully update the existing schema
-                // in-place.
-                addSurveySchemaMetadata(oldSchema, survey, mergeResult.getFieldDefinitionList());
+            if (answersFieldDef == null) {
+                // Old schema doesn't have the
+                List<UploadFieldDefinition> newFieldDefList = new ArrayList<>(oldFieldDefList);
+                newFieldDefList.add(UploadUtil.ANSWERS_FIELD_DEF);
+                addSurveySchemaMetadata(oldSchema, survey);
+                oldSchema.setFieldDefinitions(newFieldDefList);
                 return updateSchemaRevisionV4(studyId, schemaId, oldSchema.getRevision(), oldSchema);
             }
+
+            // Answers field needs to be either
+            // (a) an attachment (Large Text or normal)
+            // (b) a string with isUnboundedLength=true
+            UploadFieldType fieldType = answersFieldDef.getType();
+            if (fieldType == UploadFieldType.LARGE_TEXT_ATTACHMENT ||
+                    UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldType) ||
+                    (UploadFieldType.STRING_TYPE_SET.contains(fieldType) &&
+                            Boolean.TRUE.equals(answersFieldDef.isUnboundedText()))) {
+                // The old schema works for the new survey. However, we want to ensure the old schema points to the
+                // latest version of the survey. Update survey metadata in the schema.
+                addSurveySchemaMetadata(oldSchema, survey);
+                return updateSchemaRevisionV4(studyId, schemaId, oldSchema.getRevision(), oldSchema);
+            }
+
+            // If execution gets this far, that means we have a schema with an "answers" field that's not compatible.
+            // At this point, we go into the branch that creates a new schema, below.
         }
 
         // We were unable to reconcile this with the existing schema. Create a new schema. (Create API will
         // automatically bump the rev number if an old schema revision exists.)
         UploadSchema schemaToCreate = UploadSchema.create();
-        addSurveySchemaMetadata(schemaToCreate, survey, newFieldDefList);
+        addSurveySchemaMetadata(schemaToCreate, survey);
+        schemaToCreate.setFieldDefinitions(ImmutableList.of(UploadUtil.ANSWERS_FIELD_DEF));
         return createSchemaRevisionV4(studyId, schemaToCreate);
-    }
-
-    // Helper method to convert a survey question into one or more schema field defs based on the question's constraints
-    static List<UploadFieldDefinition> createUploadFieldDefinitions(SurveyQuestion question) {
-        List<UploadFieldDefinition> uploadFieldDefinitions = Lists.newArrayList();
-
-        // These preconditions should never happen, but we have a Preconditions check here just in case.
-        checkNotNull(question);
-
-        Constraints constraints = question.getConstraints();
-        checkNotNull(constraints);
-
-        DataType surveyQuestionType = constraints.getDataType();
-        checkNotNull(surveyQuestionType);
-
-        // Init field def builder with basic fields. Note that all survey questions are skippable, so mark the field as
-        // optional (not required).
-        String fieldName = question.getIdentifier();
-        UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
-                .withRequired(false);
-
-        UploadFieldType uploadFieldType;
-        if (constraints instanceof MultiValueConstraints) {
-            MultiValueConstraints multiValueConstraints = (MultiValueConstraints) constraints;
-            if (multiValueConstraints.getAllowMultiple()) {
-                uploadFieldType = UploadFieldType.MULTI_CHOICE;
-                fieldDefBuilder.withAllowOtherChoices(multiValueConstraints.getAllowOther());
-
-                // convert the survey answer option list to a list of possible multi-choice answers
-                List<String> fieldAnswerList = new ArrayList<>();
-                //noinspection Convert2streamapi
-                for (SurveyQuestionOption oneSurveyOption : multiValueConstraints.getEnumeration()) {
-                    fieldAnswerList.add(oneSurveyOption.getValue());
-                }
-                fieldDefBuilder.withMultiChoiceAnswerList(fieldAnswerList);
-            } else {
-                uploadFieldType = UploadFieldType.SINGLE_CHOICE;
-
-                // Unfortunately, survey questions don't know their own length. Fortunately, we can determine this
-                // by iterating over all answers.
-                int maxLength = 0;
-                //noinspection Convert2streamapi
-                for (SurveyQuestionOption oneSurveyOption : multiValueConstraints.getEnumeration()) {
-                    maxLength = Math.max(maxLength, oneSurveyOption.getValue().length());
-                }
-
-                if (maxLength <= singleChoiceDefaultLength) {
-                    // If you update the single_choice field with longer answers, this changes the max length and
-                    // breaks the schema. As such, we'll need to "pad" the single_choice field to the default length
-                    // (100), so that Synapse tables don't need to be recreated.
-                    fieldDefBuilder.withMaxLength(singleChoiceDefaultLength);
-                } else {
-                    // If the choices are very long, we should just use an unbounded string. This unfortunately is not
-                    // searchable in Synapse, but it allows for stable survey schema revisions.
-                    fieldDefBuilder.withUnboundedText(true);
-                }
-            }
-            fieldDefBuilder.withType(uploadFieldType);
-
-            uploadFieldDefinitions.add(fieldDefBuilder.build());
-        } else if (constraints instanceof BloodPressureConstraints) {
-            uploadFieldDefinitions.add(
-                    new UploadFieldDefinition.Builder()
-                            .withName(fieldName + UploadUtil.SYSTOLIC_FIELD_SUFFIX)
-                            .withRequired(false)
-                            .withType(UploadFieldType.INT)
-                            .build());
-            uploadFieldDefinitions.add(
-                    new UploadFieldDefinition.Builder()
-                            .withName(fieldName + UploadUtil.DIASTOLIC_FIELD_SUFFIX)
-                            .withRequired(false)
-                            .withType(UploadFieldType.INT)
-                            .build());
-            uploadFieldDefinitions.add(
-                    new UploadFieldDefinition.Builder()
-                            .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX)
-                            .withRequired(false)
-                            .withType(UploadFieldType.STRING)
-                            .withMaxLength(Unit.MAX_STRING_LENGTH)
-                            .build());
-        } else if (constraints instanceof YearMonthConstraints) {
-            uploadFieldDefinitions.add(
-                    new UploadFieldDefinition.Builder()
-                    .withName(fieldName)
-                    .withRequired(false)
-                    .withType(UploadFieldType.STRING)
-                    .withMaxLength(7)
-                    .build());
-        } else if (constraints instanceof PostalCodeConstraints) {
-            // Not known for certainty that all partial postal codes will be less than 
-            // 5 characters, but seems likely from known examples
-            uploadFieldDefinitions.add(
-                    new UploadFieldDefinition.Builder()
-                    .withName(fieldName)
-                    .withRequired(false)
-                    .withType(UploadFieldType.STRING)
-                    .withMaxLength(5)
-                    .build());
-        } else {
-            // Get upload field type from the map.
-            uploadFieldType = SURVEY_TO_SCHEMA_TYPE.get(surveyQuestionType);
-            if (uploadFieldType == null) {
-                throw new BridgeServiceException("Unexpected survey question type: " + surveyQuestionType);
-            }
-
-            // Type-specific parameters.
-            if (constraints instanceof StringConstraints) {
-                Integer maxLength = ((StringConstraints) constraints).getMaxLength();
-                if (maxLength != null) {
-                    fieldDefBuilder.withMaxLength(maxLength);
-                } else {
-                    // No max length specified. Assume this can be unbounded.
-                    fieldDefBuilder.withUnboundedText(true);
-                }
-            }
-            fieldDefBuilder.withType(uploadFieldType);
-
-            uploadFieldDefinitions.add(fieldDefBuilder.build());
-
-            // NumericalConstraints (integer, decimal, duration) have units. We want to write the unit into Synapse in case
-            // (a) the survey question changes the units or (b) we add support for app-specified units.
-            if (constraints instanceof NumericalConstraints) {
-                UploadFieldDefinition unitFieldDef = new UploadFieldDefinition.Builder()
-                        .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX).withType(UploadFieldType.STRING)
-                        .withRequired(false).withMaxLength(Unit.MAX_STRING_LENGTH).build();
-                uploadFieldDefinitions.add(unitFieldDef);
-            }
-        }
-
-        return uploadFieldDefinitions;
-    }
-
-    // Helper method for merging the field def lists for survey schemas. The return value is a struct that contains the
-    // merged list (if successful) and a flag indicating if the merge was successful.
-    // Package-scoped for unit tests.
-    static MergeSurveySchemaResult mergeSurveySchemaFields(List<UploadFieldDefinition> oldFieldDefList,
-            List<UploadFieldDefinition> newFieldDefList) {
-        // This method takes in lists because order matters (for creating Synapse columns). However, the field defs
-        // might have been re-ordered, so we need to use a map to look up the old field defs.
-        Map<String, UploadFieldDefinition> oldFieldDefMap = Maps.uniqueIndex(oldFieldDefList,
-                UploadFieldDefinition::getName);
-
-        List<UploadFieldDefinition> mergedFieldDefList = new ArrayList<>();
-        Set<String> newFieldNameSet = new HashSet<>();
-        boolean success = true;
-        for (UploadFieldDefinition oneNewFieldDef : newFieldDefList) {
-            // Keep track of all the field names in the new field def list, so we can determine which fields from the
-            // old list need to get merged back in.
-            String oneNewFieldName = oneNewFieldDef.getName();
-            newFieldNameSet.add(oneNewFieldName);
-
-            UploadFieldDefinition oneOldFieldDef = oldFieldDefMap.get(oneNewFieldName);
-            if (oneOldFieldDef == null || UploadUtil.isCompatibleFieldDef(oneOldFieldDef, oneNewFieldDef)) {
-                // Either the field is new, or it's compatible with the old field. Either way, we can add it straight
-                // accross to the mergedFieldDefList.
-                mergedFieldDefList.add(oneNewFieldDef);
-            } else if (oneOldFieldDef.getType() != oneNewFieldDef.getType()) {
-                // Field types are different. They aren't compatible, and we can't make them compatible. Mark the merge
-                // as failed and short-cut all the way back out.
-                success = false;
-                break;
-            } else {
-                // There are some common use cases where can "massage" the new field def to be compatible with the old.
-                UploadFieldDefinition.Builder modifiedFieldDefBuilder = new UploadFieldDefinition.Builder()
-                        .copyOf(oneNewFieldDef);
-
-                // If the old field allowed other choices, make the new field also allow other choices.
-                Boolean oldAllowOther = oneOldFieldDef.getAllowOtherChoices();
-                if (oldAllowOther != null && oldAllowOther) {
-                    modifiedFieldDefBuilder.withAllowOtherChoices(true);
-                }
-
-                // If the old max length is longer, use the old max length.
-                Integer oldMaxLength = oneOldFieldDef.getMaxLength();
-                Integer newMaxLength = oneNewFieldDef.getMaxLength();
-                if (oldMaxLength != null && newMaxLength != null && oldMaxLength > newMaxLength) {
-                    modifiedFieldDefBuilder.withMaxLength(oldMaxLength);
-                }
-
-                // Similarly, if we deleted answers from the multi-choice answer list, we want to merge those answers
-                // back in, so we can retain the column(s) in the Synapse tables.
-                List<String> oldAnswerList = oneOldFieldDef.getMultiChoiceAnswerList();
-                List<String> newAnswerList = oneNewFieldDef.getMultiChoiceAnswerList();
-                if (!Objects.equals(oldAnswerList, newAnswerList)) {
-                    List<String> mergedAnswerList = mergeMultiChoiceAnswerLists(oldAnswerList, newAnswerList);
-                    modifiedFieldDefBuilder.withMultiChoiceAnswerList(mergedAnswerList);
-                }
-
-                // If old field is unbounded, then new field is unbounded.
-                Boolean oldIsUnbounded = oneOldFieldDef.isUnboundedText();
-                if (oldIsUnbounded != null && oldIsUnbounded) {
-                    modifiedFieldDefBuilder.withUnboundedText(true);
-
-                    // Clear maxLength, because you can't have both unboundedText and maxLength.
-                    modifiedFieldDefBuilder.withMaxLength(null);
-                }
-
-                // One last check for compatibility.
-                UploadFieldDefinition modifiedFieldDef = modifiedFieldDefBuilder.build();
-                boolean isCompatible = UploadUtil.isCompatibleFieldDef(oneOldFieldDef, modifiedFieldDef);
-                if (isCompatible) {
-                    mergedFieldDefList.add(modifiedFieldDef);
-                } else {
-                    // Failed to make these field defs compatible. Mark as unsuccessful and break out of the loop.
-                    success = false;
-                    break;
-                }
-            }
-        }
-
-        if (!success) {
-            // We had incompatible fields that couldn't be made compatible. Return a result with just the new field
-            // defs and the flag marking the merge as unsuccessful.
-            return new MergeSurveySchemaResult(newFieldDefList, false);
-        }
-
-        // Some fields from the old list don't show up in the new list. We need to merge those back in. Append them to
-        // the end of the merge list in the same order that they came in.
-        //noinspection Convert2streamapi
-        for (UploadFieldDefinition oneOldFieldDef : oldFieldDefList) {
-            if (!newFieldNameSet.contains(oneOldFieldDef.getName())) {
-                mergedFieldDefList.add(oneOldFieldDef);
-            }
-        }
-
-        return new MergeSurveySchemaResult(mergedFieldDefList, true);
-    }
-
-    // Helper method to merge two multi-choice answer lists. Since answer lists can be re-ordered, our merging strategy
-    // is to copy the new answers to a new list, then append answers from the old list (that don't appear in the new)
-    // to the new list, in the original order.
-    //
-    // For example, if old = (foo, bar, baz, qux), and new = (bar, foo, qwerty, asdf), then merged = (bar, foo, qwerty,
-    // asdf, baz, qux)
-    private static List<String> mergeMultiChoiceAnswerLists(List<String> oldAnswerList, List<String> newAnswerList) {
-        // Since both lists are unsorted, and since order matters (or could potentially matter), a traditional "merge"
-        // operation won't work. Instead our approach will be to take the values in old that don't appear in new and
-        // append them (in their original relative order) to new.
-
-        // To determine the values in old that don't appear in new, convert new into a set, loop through old and check
-        // against the set.
-
-        List<String> mergedAnswerList = new ArrayList<>();
-        Set<String> newAnswerSet = new HashSet<>();
-        if (newAnswerList != null) {
-            mergedAnswerList.addAll(newAnswerList);
-            newAnswerSet.addAll(newAnswerList);
-        }
-
-        if (oldAnswerList != null) {
-            //noinspection Convert2streamapi
-            for (String oneOldAnswer : oldAnswerList) {
-                if (!newAnswerSet.contains(oneOldAnswer)) {
-                    // This answer was removed in the new answer list. Add it back to the merged list.
-                    mergedAnswerList.add(oneOldAnswer);
-                }
-            }
-        }
-
-        return mergedAnswerList;
-    }
-
-    // Helper struct to return information about merging survey schema fields. This is package-scoped to facilitate
-    // unit tests.
-    static class MergeSurveySchemaResult {
-        private final List<UploadFieldDefinition> fieldDefList;
-        private final boolean success;
-
-        // trivial constructor
-        public MergeSurveySchemaResult(List<UploadFieldDefinition> fieldDefList, boolean success) {
-            this.fieldDefList = fieldDefList;
-            this.success = success;
-        }
-
-        // The merged field def list. If the merge was not successful, this contains the new field def list.
-        public List<UploadFieldDefinition> getFieldDefinitionList() {
-            return fieldDefList;
-        }
-
-        // True if the merge was successful. False otherwise.
-        public boolean isSuccess() {
-            return success;
-        }
     }
 
     // Helper method to add survey fields to schemas. This is useful so we have the same attributes for newly created
     // schemas, as well as setting them into updated schemas.
-    private static void addSurveySchemaMetadata(UploadSchema schema, Survey survey,
-            List<UploadFieldDefinition> fieldDefList) {
+    private static void addSurveySchemaMetadata(UploadSchema schema, Survey survey) {
         // No need to set rev or version unless updating an existing rev. Study is always taken care of by the APIs.
-        schema.setFieldDefinitions(fieldDefList);
         schema.setName(survey.getName());
         schema.setSchemaId(survey.getIdentifier());
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
