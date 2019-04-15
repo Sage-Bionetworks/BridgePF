@@ -1269,8 +1269,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void existingLanguagePreferencesAreLoaded() {
-        // Language prefs in the user objet and the criteria are different; the values from the database
-        // are taken. These cannot be picked up from the HTTP request once they are set.
+        // Language prefs in the user object and the criteria context are different; the values from the 
+        // database are taken. These cannot be picked up from the HTTP request once they are set.
         account.setLanguages(TestConstants.LANGUAGES);
         when(accountDao.authenticate(study, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
@@ -1286,5 +1286,30 @@ public class AuthenticationServiceMockTest {
         UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
         
         assertEquals(TestConstants.LANGUAGES, session.getParticipant().getLanguages());
+        
+        verify(accountDao, never()).editAccount(any(), any(), any());
+   }
+    
+    @Test
+    public void languagePreferencesArePersisted() {
+        // Language prefs are not persisted, so the context should cause an update
+        when(accountDao.authenticate(study, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withHealthCode(HEALTH_CODE).build();
+        
+        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withContext(CONTEXT)
+                .withLanguages(TestConstants.LANGUAGES).build();
+        
+        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+        
+        assertEquals(TestConstants.LANGUAGES, session.getParticipant().getLanguages());
+        
+        // Note that the context does not have the healthCode, you must use the participant
+        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
    }    
 }
