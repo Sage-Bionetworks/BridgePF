@@ -286,7 +286,7 @@ public class AuthenticationServiceMockTest {
         service.signIn(study, CONTEXT, new SignIn.Builder().build());
     }
     
-    @Test(expected = ConsentRequiredException.class)
+    @Test
     public void signInThrowsConsentRequiredException() {
         study.setReauthenticationEnabled(true);
         
@@ -311,8 +311,13 @@ public class AuthenticationServiceMockTest {
         doReturn("SESSION_TOKEN").when(service).getGuid();
         doReturn(Environment.PROD).when(config).getEnvironment();
         
-        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
-        
+        UserSession session = null;
+        try {
+            session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+            fail("Should have thrown exception");
+        } catch(ConsentRequiredException e) {
+            session = e.getUserSession();
+        }
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountDao);
         inOrder.verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
@@ -1261,4 +1266,25 @@ public class AuthenticationServiceMockTest {
         PasswordReset reset = new PasswordReset(PASSWORD, null, TestConstants.TEST_STUDY_IDENTIFIER);
         service.resetPassword(reset);
     }
+    
+    @Test
+    public void existingLanguagePreferencesAreLoaded() {
+        // Language prefs in the user objet and the criteria are different; the values from the database
+        // are taken. These cannot be picked up from the HTTP request once they are set.
+        account.setLanguages(TestConstants.LANGUAGES);
+        when(accountDao.authenticate(study, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withId(USER_ID).withLanguages(TestConstants.LANGUAGES).build();
+        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withContext(CONTEXT)
+                .withLanguages(ImmutableList.of("es")).build();
+        
+        UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
+        
+        assertEquals(TestConstants.LANGUAGES, session.getParticipant().getLanguages());
+   }    
 }
