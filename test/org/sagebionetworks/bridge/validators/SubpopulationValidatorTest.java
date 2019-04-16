@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 public class SubpopulationValidatorTest {
 

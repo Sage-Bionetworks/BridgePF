@@ -17,7 +17,7 @@ public class PasswordResetValidator implements Validator {
     private StudyService studyService;
     
     @Autowired
-    final void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
     
