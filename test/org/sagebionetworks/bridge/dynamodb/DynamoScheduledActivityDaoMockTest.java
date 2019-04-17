@@ -28,12 +28,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -50,6 +46,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
@@ -60,7 +57,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-@RunWith(MockitoJUnitRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DynamoScheduledActivityDaoMockTest {
 
@@ -68,31 +64,18 @@ public class DynamoScheduledActivityDaoMockTest {
 
     private static final String HEALTH_CODE = "AAA";
     private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forOffsetHours(-7);
+    
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
+    private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
+    private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
+    private static final String ACTIVITY_3_REF = TestUtils.getActivity3().getTask().getIdentifier();
     private static final String ACTIVITY_GUID = "activityGuid";
     private static final DateTime SCHEDULED_ON_START = NOW.minusDays(1);
     private static final DateTime SCHEDULED_ON_END = NOW.plusDays(1);
     private static final String OFFSET_KEY = "offsetKey";
     private static final int PAGE_SIZE = 30;
     
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
-    private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
-    private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
-    private static final String ACTIVITY_3_REF = TestUtils.getActivity3().getTask().getIdentifier();
-    
-    @Mock
     private DynamoDBMapper mapper;
-    
-    @Mock
-    private DynamoIndexHelper indexHelper;
-    
-    @Mock
-    private QueryResultPage<DynamoScheduledActivity> queryResult;
-    
-    @Mock
-    private QueryOutcome outcome;
-    
-    @Captor
-    private ArgumentCaptor<DynamoDBQueryExpression<DynamoScheduledActivity>> queryCaptor;
 
     private DynamoScheduledActivityDao activityDao;
     
@@ -104,10 +87,11 @@ public class DynamoScheduledActivityDaoMockTest {
 
         testSchActivity = new DynamoScheduledActivity();
         
+        // This is the part that will need to be expanded per test.
+        mapper = mock(DynamoDBMapper.class);
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(testSchActivity);
         activityDao = new DynamoScheduledActivityDao();
         activityDao.setDdbMapper(mapper);
-        activityDao.setReferentIndex(indexHelper);
     }
 
     @After
@@ -115,149 +99,43 @@ public class DynamoScheduledActivityDaoMockTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
     
-    @Test
-    public void getActivityHistoryV2() {
-        DynamoScheduledActivity activity = new DynamoScheduledActivity();
-        List<DynamoScheduledActivity> list = ImmutableList.of(activity);
-        when(queryResult.getResults()).thenReturn(list);
-        
-        when(mapper.queryPage(eq(DynamoScheduledActivity.class), any())).thenReturn(queryResult);
-        
-        Map<String, AttributeValue> map = ImmutableMap.of("guid", new AttributeValue(SCHEDULED_ON_START.toLocalDate()+":baz"));
-        when(queryResult.getLastEvaluatedKey()).thenReturn(map);
-        
-        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV2(HEALTH_CODE,
-                ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY, PAGE_SIZE);
-        
-        verify(mapper).queryPage(eq(DynamoScheduledActivity.class), queryCaptor.capture());
-        
-        DynamoDBQueryExpression<DynamoScheduledActivity> query = queryCaptor.getValue();
-        assertEquals(HEALTH_CODE, query.getHashKeyValues().getHealthCode());
-        assertEquals(PAGE_SIZE, (int) query.getLimit());
-        assertEquals(ACTIVITY_GUID+":"+OFFSET_KEY, query.getExclusiveStartKey().get("guid").getS() );
-        assertEquals(HEALTH_CODE, query.getExclusiveStartKey().get("healthCode").getS() );
-        Condition condition = query.getRangeKeyConditions().get("guid");
-        
-        assertEquals(ACTIVITY_GUID + ":" + SCHEDULED_ON_START.toLocalDateTime().toString(),
-                condition.getAttributeValueList().get(0).getS());
-        assertEquals(ACTIVITY_GUID + ":" + SCHEDULED_ON_END.toLocalDateTime().toString(),
-                condition.getAttributeValueList().get(1).getS());
-        
-        assertEquals(1, results.getItems().size());
-        assertEquals("baz", results.getNextPageOffsetKey());
-        assertEquals(OFFSET_KEY, (String)results.getRequestParams().get("offsetKey"));
-        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
-        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
-        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getActivityHistoryV2PageBelowMinSize() {
-        activityDao.getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY,
-                BridgeConstants.API_MINIMUM_PAGE_SIZE-2);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getActivityHistoryV2PageAboveMaxSize() {
-        activityDao.getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY,
-                BridgeConstants.API_MAXIMUM_PAGE_SIZE+2);
-    }
-    
     @SuppressWarnings("unchecked")
-    @Test
-    public void getActivityHistoryV3NoOffsetKey() {
-        Activity activity = TestUtils.getActivity1();
-        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
-        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
-        
-        // Need less than an entire page of records
-        List<Item> items = new ArrayList<>();
-        for (int i=0; i < 10; i++) {
-            Item item = new Item().withString("guid", guid + ((i == 0) ? "" : i))
-                    .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
-            items.add(item);
+    private void mockMapperResults(final List<ScheduledActivity> activities) {
+        // Mocks loading one of the supplied activities.
+        when(mapper.load(any())).thenAnswer(invocation -> {
+            DynamoScheduledActivity thisSchActivity = invocation.getArgument(0);
+            for (ScheduledActivity schActivity : activities) {
+                if (thisSchActivity.getGuid().equals(schActivity.getGuid()) && thisSchActivity.getHealthCode().equals(schActivity.getHealthCode())) {
+                    return thisSchActivity;
+                }
+            }
+            return null;
+        });
+        // Mocks a query that returns all of the activities.
+        final PaginatedQueryList<DynamoScheduledActivity> queryResults = (PaginatedQueryList<DynamoScheduledActivity>) mock(PaginatedQueryList.class);
+        when(queryResults.iterator()).thenReturn(((List<DynamoScheduledActivity>)(List<?>)activities).iterator());
+        when(queryResults.toArray()).thenReturn(activities.toArray());
+        when(mapper.query((Class<DynamoScheduledActivity>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(queryResults);
+
+        List<DynamoScheduledActivity> dynamoActivities = Lists.newArrayListWithCapacity(activities.size());
+        for (ScheduledActivity activity : activities) {
+            dynamoActivities.add((DynamoScheduledActivity)activity);
         }
-        when(outcome.getItems()).thenReturn(items);
-        when(indexHelper.query(any())).thenReturn(outcome);
         
-        List<Object> activities = new ArrayList<>();
-        for (int i=0; i < 10; i++) {
-            DynamoScheduledActivity oneActivity = new DynamoScheduledActivity(); 
-            // These values are mostly to get us through sorting, and are not that important
-            oneActivity.setGuid(guid + ((i == 0) ? "" : i));
-            oneActivity.setReferentGuid(referentGuid);
-            activities.add(oneActivity);
-        }
-        Map<String, List<Object>> resultMap = ImmutableMap.of("guid", activities);
-        when(mapper.batchLoad(any(List.class))).thenReturn(resultMap);
+        QueryResultPage<DynamoScheduledActivity> queryResultPage = (QueryResultPage<DynamoScheduledActivity>)mock(QueryResultPage.class);
+        when(queryResultPage.getResults()).thenReturn(dynamoActivities);
+        when(queryResultPage.getLastEvaluatedKey()).thenReturn(null);
         
-        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV3(HEALTH_CODE,
-                ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START, SCHEDULED_ON_END,
-                null, PAGE_SIZE);
+        when(mapper.queryPage((Class<DynamoScheduledActivity>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(queryResultPage);
         
-        assertEquals(10, results.getItems().size());
-        assertNull(results.getNextPageOffsetKey());
-        assertNull(results.getRequestParams().get("offsetKey"));
-        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
-        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
-        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void getActivityHistoryV3() {
-        Activity activity = TestUtils.getActivity1();
-        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
-        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
-        
-        // Need an entire page of records
-        List<Item> items = new ArrayList<>();
-        for (int i=0; i < 31; i++) {
-            Item item = new Item().withString("guid", guid + ((i == 0) ? "" : i))
-                    .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
-            items.add(item);
-        }
-        when(outcome.getItems()).thenReturn(items);
-        when(indexHelper.query(any())).thenReturn(outcome);
-        
-        List<Object> activities = new ArrayList<>();
-        for (int i=0; i < 31; i++) {
-            DynamoScheduledActivity oneActivity = new DynamoScheduledActivity(); 
-            // These values are mostly to get us through sorting, and are not that important
-            oneActivity.setGuid(guid + ((i == 0) ? "" : i));
-            oneActivity.setReferentGuid(referentGuid);
-            activities.add(oneActivity);
-        }
-        Map<String, List<Object>> resultMap = ImmutableMap.of("guid", activities);
-        when(mapper.batchLoad(any(List.class))).thenReturn(resultMap);
-        
-        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV3(HEALTH_CODE,
-                ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START, SCHEDULED_ON_END,
-                guid, PAGE_SIZE);
-        
-        assertEquals(30, results.getItems().size());
-        assertEquals("activity1guid:2015-04-11T14:20:56.1239", results.getNextPageOffsetKey());
-        assertEquals("activity1guid:2015-04-11T14:20:56.123", results.getRequestParams().get("offsetKey"));
-        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
-        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
-        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getActivityHistoryV3OffsetKeyIsNotInResults() {
-        Activity activity = TestUtils.getActivity1();
-        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
-        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
-        
-        // Need less than an entire page of records
-        Item item = new Item().withString("guid", guid)
-                .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
-        List<Item> items = ImmutableList.of(item);
-        when(outcome.getItems()).thenReturn(items);
-        when(indexHelper.query(any())).thenReturn(outcome);
-        
-        activityDao.getActivityHistoryV3(HEALTH_CODE, ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START,
-                SCHEDULED_ON_END, "03964c90-5944-4373-b5c8-db0dcc186e19:2018-11-18T11:03:08.902", PAGE_SIZE);
+        // Mock a batch load of the activities
+        Map<String,List<Object>> results = Maps.newHashMap();
+        results.put("some-table-name", new ArrayList<Object>(activities));
+        when(mapper.batchLoad(any(List.class))).thenReturn(results);
     }
     
     @Test
@@ -289,7 +167,7 @@ public class DynamoScheduledActivityDaoMockTest {
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void getActivities() throws Exception {
+    public void testGetActivities() throws Exception {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
@@ -302,12 +180,7 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        
-        // Mock a batch load of the activities
-        Map<String,List<Object>> results = Maps.newHashMap();
-        results.put("some-table-name", new ArrayList<Object>(activities));
-        when(mapper.batchLoad(any(List.class))).thenReturn(results);
-        
+        mockMapperResults(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
@@ -337,17 +210,12 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        List<DynamoScheduledActivity> dynamoActivities = dynamoScheduledActivities(activities);
-        
-        // Mock a batch load of the activities
-        Map<String,List<Object>> results = Maps.newHashMap();
-        results.put("some-table-name", ImmutableList.of(dynamoActivities.get(0)));
-        when(mapper.batchLoad(any(List.class))).thenReturn(results);
+        // Only mock the return of one of these activities
+        mockMapperResults(Lists.newArrayList(activities.get(0)));
         
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Regardless of the requested activities, only the ones in the db are returned (in this case, there's 1).
-        assertTrue(activities.size() > 1); // just verify the scheduler did schedule more than one
         assertEquals(1, activities2.size());
         assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
 
@@ -355,6 +223,236 @@ public class DynamoScheduledActivityDaoMockTest {
         verifyNoMoreInteractions(mapper);
     }
 
+    @SuppressWarnings({"unchecked","rawtypes"})
+    @Test
+    public void canDeleteActivities() {
+        mockMapperResults(Lists.newArrayList(new DynamoScheduledActivity(), new DynamoScheduledActivity()));
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        
+        activityDao.deleteActivitiesForUser("AAA");
+        
+        verify(mapper).queryPage(eq(DynamoScheduledActivity.class), any(DynamoDBQueryExpression.class));
+        verify(mapper).batchDelete(argument.capture());
+        
+        assertEquals(2, argument.getValue().size());
+    }
+
+    @SuppressWarnings({"unchecked","rawtypes"})
+    @Test
+    public void canUpdateActivities() {
+        DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
+        activity1.setHealthCode(HEALTH_CODE);
+        activity1.setActivity(TestUtils.getActivity3());
+        activity1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
+        activity1.setGuid(BridgeUtils.generateGuid());
+
+        DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
+        activity2.setHealthCode(HEALTH_CODE);
+        activity2.setActivity(TestUtils.getActivity3());
+        activity2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
+        activity2.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
+        activity2.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
+        activity2.setGuid(BridgeUtils.generateGuid());
+        
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        
+        List<ScheduledActivity> activities = Lists.newArrayList(activity1, activity2);
+        activityDao.updateActivities(HEALTH_CODE, activities);
+
+        // These activities have been updated.
+        verify(mapper).batchSave(argument.capture());
+        verifyNoMoreInteractions(mapper);
+        
+        assertEquals(activities, argument.getValue());
+    }
+    
+    @Test
+    public void callGetActivitiesWithEmptyListReturnsEmptyList() {
+        List<ScheduledActivity> activities = activityDao.getActivities(DateTimeZone.UTC, new ArrayList<>());
+        assertTrue(activities.isEmpty());
+        assertTrue(activities instanceof ImmutableList);
+        
+        verifyNoMoreInteractions(mapper);
+    }
+    
+    private void assertScheduledActivity(ScheduledActivity schActivity, String ref, String dateString) {
+        DateTime date = DateTime.parse(dateString);
+        assertTrue(date.isEqual(schActivity.getScheduledOn()));
+        if (schActivity.getActivity().getActivityType() == ActivityType.TASK) {
+            assertEquals(ref, schActivity.getActivity().getTask().getIdentifier());            
+        } else {
+            assertEquals(ref, schActivity.getActivity().getSurvey().getHref());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getActivityHistoryV2() {
+        DynamoIndexHelper indexHelper = mock(DynamoIndexHelper.class);
+        QueryResultPage<DynamoScheduledActivity> queryResult = mock(QueryResultPage.class);
+        activityDao.setReferentIndex(indexHelper);
+        
+        ArgumentCaptor<DynamoDBQueryExpression<DynamoScheduledActivity>> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        
+        DynamoScheduledActivity activity = new DynamoScheduledActivity();
+        List<DynamoScheduledActivity> list = ImmutableList.of(activity);
+        when(queryResult.getResults()).thenReturn(list);
+
+        when(mapper.queryPage(eq(DynamoScheduledActivity.class), any())).thenReturn(queryResult);
+
+        Map<String, AttributeValue> map = ImmutableMap.of("guid", new AttributeValue(SCHEDULED_ON_START.toLocalDate()+":baz"));
+        when(queryResult.getLastEvaluatedKey()).thenReturn(map);
+
+        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV2(HEALTH_CODE,
+                ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY, PAGE_SIZE);
+
+        verify(mapper).queryPage(eq(DynamoScheduledActivity.class), queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoScheduledActivity> query = queryCaptor.getValue();
+        assertEquals(HEALTH_CODE, query.getHashKeyValues().getHealthCode());
+        assertEquals(PAGE_SIZE, (int) query.getLimit());
+        assertEquals(ACTIVITY_GUID+":"+OFFSET_KEY, query.getExclusiveStartKey().get("guid").getS() );
+        assertEquals(HEALTH_CODE, query.getExclusiveStartKey().get("healthCode").getS() );
+        Condition condition = query.getRangeKeyConditions().get("guid");
+
+        assertEquals(ACTIVITY_GUID + ":" + SCHEDULED_ON_START.toLocalDateTime().toString(),
+                condition.getAttributeValueList().get(0).getS());
+        assertEquals(ACTIVITY_GUID + ":" + SCHEDULED_ON_END.toLocalDateTime().toString(),
+                condition.getAttributeValueList().get(1).getS());
+
+        assertEquals(1, results.getItems().size());
+        assertEquals("baz", results.getNextPageOffsetKey());
+        assertEquals(OFFSET_KEY, (String)results.getRequestParams().get("offsetKey"));
+        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
+        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
+        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getActivityHistoryV2PageBelowMinSize() {
+        activityDao.getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY,
+                BridgeConstants.API_MINIMUM_PAGE_SIZE-2);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getActivityHistoryV2PageAboveMaxSize() {
+        activityDao.getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, SCHEDULED_ON_START, SCHEDULED_ON_END, OFFSET_KEY,
+                BridgeConstants.API_MAXIMUM_PAGE_SIZE+2);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getActivityHistoryV3NoOffsetKey() {
+        DynamoIndexHelper indexHelper = mock(DynamoIndexHelper.class);
+        QueryResultPage<DynamoScheduledActivity> queryResultPage = mock(QueryResultPage.class);
+        QueryOutcome outcome = mock(QueryOutcome.class);
+        activityDao.setReferentIndex(indexHelper);
+        
+        Activity activity = TestUtils.getActivity1();
+        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
+        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
+
+        // Need less than an entire page of records
+        List<Item> items = new ArrayList<>();
+        for (int i=0; i < 10; i++) {
+            Item item = new Item().withString("guid", guid + ((i == 0) ? "" : i))
+                    .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
+            items.add(item);
+        }
+        when(outcome.getItems()).thenReturn(items);
+        when(indexHelper.query(any())).thenReturn(outcome);
+
+        List<Object> activities = new ArrayList<>();
+        for (int i=0; i < 10; i++) {
+            DynamoScheduledActivity oneActivity = new DynamoScheduledActivity(); 
+            // These values are mostly to get us through sorting, and are not that important
+            oneActivity.setGuid(guid + ((i == 0) ? "" : i));
+            oneActivity.setReferentGuid(referentGuid);
+            activities.add(oneActivity);
+        }
+        Map<String, List<Object>> resultMap = ImmutableMap.of("guid", activities);
+        when(mapper.batchLoad(any(List.class))).thenReturn(resultMap);
+
+        when(mapper.queryPage((Class<DynamoScheduledActivity>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(queryResultPage);
+        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV3(HEALTH_CODE,
+                ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START, SCHEDULED_ON_END,
+                null, PAGE_SIZE);
+
+        assertEquals(10, results.getItems().size());
+        assertNull(results.getNextPageOffsetKey());
+        assertNull(results.getRequestParams().get("offsetKey"));
+        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
+        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
+        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getActivityHistoryV3() {
+        DynamoIndexHelper indexHelper = mock(DynamoIndexHelper.class);
+        QueryOutcome outcome = mock(QueryOutcome.class);
+        activityDao.setReferentIndex(indexHelper);
+        
+        Activity activity = TestUtils.getActivity1();
+        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
+        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
+
+        // Need an entire page of records
+        List<Item> items = new ArrayList<>();
+        for (int i=0; i < 31; i++) {
+            Item item = new Item().withString("guid", guid + ((i == 0) ? "" : i))
+                    .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
+            items.add(item);
+        }
+        when(outcome.getItems()).thenReturn(items);
+        when(indexHelper.query(any())).thenReturn(outcome);
+
+        List<Object> activities = new ArrayList<>();
+        for (int i=0; i < 31; i++) {
+            DynamoScheduledActivity oneActivity = new DynamoScheduledActivity(); 
+            // These values are mostly to get us through sorting, and are not that important
+            oneActivity.setGuid(guid + ((i == 0) ? "" : i));
+            oneActivity.setReferentGuid(referentGuid);
+            activities.add(oneActivity);
+        }
+        Map<String, List<Object>> resultMap = ImmutableMap.of("guid", activities);
+        when(mapper.batchLoad(any(List.class))).thenReturn(resultMap);
+
+        ForwardCursorPagedResourceList<ScheduledActivity> results = activityDao.getActivityHistoryV3(HEALTH_CODE,
+                ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START, SCHEDULED_ON_END,
+                guid, PAGE_SIZE);
+
+        assertEquals(30, results.getItems().size());
+        assertEquals("activity1guid:2015-04-11T14:20:56.1239", results.getNextPageOffsetKey());
+        assertEquals("activity1guid:2015-04-11T14:20:56.123", results.getRequestParams().get("offsetKey"));
+        assertEquals(PAGE_SIZE, (int)results.getRequestParams().get("pageSize"));
+        assertEquals(SCHEDULED_ON_START.toString(), results.getRequestParams().get("scheduledOnStart"));
+        assertEquals(SCHEDULED_ON_END.toString(), results.getRequestParams().get("scheduledOnEnd"));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getActivityHistoryV3OffsetKeyIsNotInResults() {
+        DynamoIndexHelper indexHelper = mock(DynamoIndexHelper.class);
+        QueryOutcome outcome = mock(QueryOutcome.class);
+        activityDao.setReferentIndex(indexHelper);
+        
+        Activity activity = TestUtils.getActivity1();
+        String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
+        String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
+
+        // Need less than an entire page of records
+        Item item = new Item().withString("guid", guid)
+                .with("referentGuid", referentGuid).with("healthCode", HEALTH_CODE);
+        List<Item> items = ImmutableList.of(item);
+        when(outcome.getItems()).thenReturn(items);
+        when(indexHelper.query(any())).thenReturn(outcome);
+
+        activityDao.getActivityHistoryV3(HEALTH_CODE, ActivityType.TASK, activity.getGuid(), SCHEDULED_ON_START,
+                SCHEDULED_ON_END, "03964c90-5944-4373-b5c8-db0dcc186e19:2018-11-18T11:03:08.902", PAGE_SIZE);
+    }
+    
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void deleteActivities() {
@@ -458,23 +556,5 @@ public class DynamoScheduledActivityDaoMockTest {
         List<ScheduledActivity> activities = ImmutableList.of();
         activityDao.saveActivities(activities);
         verify(mapper, never()).batchSave(activities);
-    }
-    
-    private void assertScheduledActivity(ScheduledActivity schActivity, String ref, String dateString) {
-        DateTime date = DateTime.parse(dateString);
-        assertTrue(date.isEqual(schActivity.getScheduledOn()));
-        if (schActivity.getActivity().getActivityType() == ActivityType.TASK) {
-            assertEquals(ref, schActivity.getActivity().getTask().getIdentifier());            
-        } else {
-            assertEquals(ref, schActivity.getActivity().getSurvey().getHref());
-        }
-    }
-
-    private List<DynamoScheduledActivity> dynamoScheduledActivities(List<ScheduledActivity> activities) {
-        List<DynamoScheduledActivity> dynamoActivities = Lists.newArrayListWithCapacity(activities.size());
-        for (ScheduledActivity activity : activities) {
-            dynamoActivities.add((DynamoScheduledActivity)activity);
-        }
-        return dynamoActivities;
-    }
+    }    
 }
