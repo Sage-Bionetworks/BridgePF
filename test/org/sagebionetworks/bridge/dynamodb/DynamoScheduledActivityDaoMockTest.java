@@ -50,7 +50,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
@@ -166,7 +165,7 @@ public class DynamoScheduledActivityDaoMockTest {
     
     @SuppressWarnings("unchecked")
     @Test
-    public void getActivityHistoryV3() {
+    public void getActivityHistoryV3NoOffsetKey() {
         Activity activity = TestUtils.getActivity1();
         String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
         String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
@@ -206,7 +205,7 @@ public class DynamoScheduledActivityDaoMockTest {
     
     @SuppressWarnings("unchecked")
     @Test
-    public void getActivityHistoryV3NoOffsetKey() {
+    public void getActivityHistoryV3() {
         Activity activity = TestUtils.getActivity1();
         String referentGuid = BridgeUtils.createReferentGuidIndex(activity, SCHEDULED_ON_START.toLocalDateTime());
         String guid = activity.getGuid() + ":" + SCHEDULED_ON_START.toLocalDateTime();
@@ -324,6 +323,7 @@ public class DynamoScheduledActivityDaoMockTest {
     }
     
     @SuppressWarnings("unchecked")
+    @Test
     public void testOnlyPersistedActivitiesReturned() {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
@@ -337,43 +337,17 @@ public class DynamoScheduledActivityDaoMockTest {
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
-        // Only mock the return of one of these activities
-        // Mocks loading one of the supplied activities.
-        when(mapper.load(any())).thenAnswer(invocation -> {
-            DynamoScheduledActivity thisSchActivity = invocation.getArgument(0);
-            for (ScheduledActivity schActivity : activities) {
-                if (thisSchActivity.getGuid().equals(schActivity.getGuid()) && thisSchActivity.getHealthCode().equals(schActivity.getHealthCode())) {
-                    return thisSchActivity;
-                }
-            }
-            return null;
-        });
-        // Mocks a query that returns all of the activities.
-        final PaginatedQueryList<DynamoScheduledActivity> queryResults = (PaginatedQueryList<DynamoScheduledActivity>) mock(PaginatedQueryList.class);
-        when(queryResults.iterator()).thenReturn(((List<DynamoScheduledActivity>)(List<?>)activities).iterator());
-        when(queryResults.toArray()).thenReturn(activities.toArray());
-        when(mapper.query((Class<DynamoScheduledActivity>) any(Class.class),
-            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
-            .thenReturn(queryResults);
-
         List<DynamoScheduledActivity> dynamoActivities = dynamoScheduledActivities(activities);
-        
-        QueryResultPage<DynamoScheduledActivity> queryResultPage = (QueryResultPage<DynamoScheduledActivity>)mock(QueryResultPage.class);
-        when(queryResultPage.getResults()).thenReturn(dynamoActivities);
-        when(queryResultPage.getLastEvaluatedKey()).thenReturn(null);
-        
-        when(mapper.queryPage((Class<DynamoScheduledActivity>) any(Class.class),
-            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
-            .thenReturn(queryResultPage);
         
         // Mock a batch load of the activities
         Map<String,List<Object>> results = Maps.newHashMap();
-        results.put("some-table-name", new ArrayList<Object>(activities));
+        results.put("some-table-name", ImmutableList.of(dynamoActivities.get(0)));
         when(mapper.batchLoad(any(List.class))).thenReturn(results);
         
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Regardless of the requested activities, only the ones in the db are returned (in this case, there's 1).
+        assertTrue(activities.size() > 1); // just verify the scheduler did schedule more than one
         assertEquals(1, activities2.size());
         assertScheduledActivity(activities2.get(0), ACTIVITY_2_REF, "2015-04-12T13:00:00-07:00");
 
