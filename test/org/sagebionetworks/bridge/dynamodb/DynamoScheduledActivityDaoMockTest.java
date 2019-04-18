@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -556,5 +557,48 @@ public class DynamoScheduledActivityDaoMockTest {
         List<ScheduledActivity> activities = ImmutableList.of();
         activityDao.saveActivities(activities);
         verify(mapper, never()).batchSave(activities);
-    }    
+    }  
+    
+    private Item makeActivity(String guid) {
+        return new Item().withString("guid", guid)
+                .with("referentGuid", "referent"+guid).with("healthCode", HEALTH_CODE);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Test
+    public void truncateToMiddleOfResultList() {
+        List<Item> dynamoActivities = Lists.newArrayList(
+            makeActivity("AAA:foo"),
+            makeActivity("BBB:foo"),
+            makeActivity("CCC:foo"), // <-- offset starts here
+            makeActivity("DDD:foo"),
+            makeActivity("EEE:foo"),
+            makeActivity("FFF:foo"),
+            makeActivity("GGG:foo") // <-- and must end before 10 records
+        );
+        
+        DynamoIndexHelper indexHelper = mock(DynamoIndexHelper.class);
+        activityDao.setReferentIndex(indexHelper);
+        
+        QueryOutcome outcome = mock(QueryOutcome.class);
+        when(outcome.getItems()).thenReturn(dynamoActivities);
+        
+        when(indexHelper.query(any())).thenReturn(outcome);
+        
+        // This does not throw an out of bounds index exception, it correctly truncates the 
+        // list at the start, and then calculates using that new sublist to determine it must 
+        // return a list shorter than the required number of records.
+        activityDao.getActivityHistoryV3(HEALTH_CODE, ActivityType.TASK, "guid", SCHEDULED_ON_START, SCHEDULED_ON_END,
+                "CCC:foo", 10);
+        
+        ArgumentCaptor<Iterable> iterableCaptor = ArgumentCaptor.forClass(Iterable.class);
+        
+        verify(mapper).batchLoad(iterableCaptor.capture());
+        
+        List<DynamoScheduledActivity> capturedActivities = (List<DynamoScheduledActivity>)iterableCaptor.getValue();
+        
+        assertEquals(5, capturedActivities.size());
+        assertEquals("CCC:foo", capturedActivities.get(0).getGuid());
+        assertEquals("GGG:foo", capturedActivities.get(4).getGuid());
+    }
 }

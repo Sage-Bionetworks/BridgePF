@@ -165,8 +165,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         }
         
         // Truncate from index of indicator record, to pageSizeWithIndicator number of records
-        itemsToLoad = truncateListToStartAtIndicatorRecord(itemsToLoad, offsetKey)
-                .subList(0, Math.min(itemsToLoad.size(), pageSizeWithIndicator));
+        itemsToLoad = truncateListToStartAtIndicatorRecord(itemsToLoad, offsetKey);
+        itemsToLoad = itemsToLoad.subList(0, Math.min(itemsToLoad.size(), pageSizeWithIndicator));
         
         // Load the full items
         Map<String, List<Object>> resultMap = mapper.batchLoad(itemsToLoad);
