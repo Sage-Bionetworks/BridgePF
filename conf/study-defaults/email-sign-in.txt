@@ -1,3 +1,0 @@
-Click here to sign in: ${emailSignInUrl}
-
-This link expires in ${emailSignInExpirationPeriod}.
