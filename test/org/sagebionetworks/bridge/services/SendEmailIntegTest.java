@@ -54,7 +54,7 @@ public class SendEmailIntegTest {
 
     private String consentBodyTemplate;
     
-    @Value("classpath:study-defaults/consent-page.xhtml")
+    @Value("classpath:conf/study-defaults/consent-page.xhtml")
     final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
