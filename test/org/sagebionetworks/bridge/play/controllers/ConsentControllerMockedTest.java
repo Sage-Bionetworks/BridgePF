@@ -210,7 +210,7 @@ public class ConsentControllerMockedTest {
         
         verify(consentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
-        verify(cacheProvider).setUserSession(updatedSession);
+        verify(sessionUpdateService).updateSession(session, updatedSession);
     }
     
     @SuppressWarnings("deprecation")
@@ -238,7 +238,7 @@ public class ConsentControllerMockedTest {
         
         verify(consentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
-        verify(cacheProvider).setUserSession(updatedSession);
+        verify(sessionUpdateService).updateSession(session, updatedSession);
     }
     
     @Test
@@ -264,7 +264,7 @@ public class ConsentControllerMockedTest {
         
         verify(consentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
-        verify(cacheProvider).setUserSession(updatedSession);
+        verify(sessionUpdateService).updateSession(session, updatedSession);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -302,7 +302,7 @@ public class ConsentControllerMockedTest {
         
         verify(consentService).withdrawConsent(eq(study), eq(defaultGuid), eq(session.getParticipant()), any(),
                 eq(WITHDRAWAL), eq(UNIX_TIMESTAMP));
-        verify(cacheProvider).setUserSession(updatedSession);
+        verify(sessionUpdateService).updateSession(session, updatedSession);
     }
     
     @Test
@@ -325,7 +325,7 @@ public class ConsentControllerMockedTest {
         
         verify(consentService).withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(session.getParticipant()), any(),
                 eq(WITHDRAWAL), eq(UNIX_TIMESTAMP));
-        verify(cacheProvider).setUserSession(updatedSession);
+        verify(sessionUpdateService).updateSession(session, updatedSession);
     }
     
     @Test

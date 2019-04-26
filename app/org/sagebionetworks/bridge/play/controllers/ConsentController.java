@@ -112,7 +112,7 @@ public class ConsentController extends BaseController {
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
         UserSession updatedSession = authenticationService.getSession(study, context);
-        cacheProvider.setUserSession(updatedSession);
+        sessionUpdateService.updateSession(session, updatedSession);
 
         return okResult(UserSessionInfo.toJSON(updatedSession));
     }
@@ -176,7 +176,7 @@ public class ConsentController extends BaseController {
         // We must do a full refresh of the session because consents can set data groups and substudies.
         CriteriaContext updatedContext = getCriteriaContext(session);
         UserSession updatedSession = authenticationService.getSession(study, updatedContext);
-        cacheProvider.setUserSession(updatedSession);
+        sessionUpdateService.updateSession(session, updatedSession);
         
         return createdResult(UserSessionInfo.toJSON(updatedSession));
     }
