@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "BridgeServerLogic" % "1.0.1",
+  "org.sagebionetworks" % "BridgeServerLogic" % "1.0.3",
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.42.0",
   // Spring
