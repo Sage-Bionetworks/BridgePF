@@ -1195,20 +1195,7 @@ public class ParticipantControllerTest {
         
         verify(mockParticipantService).getParticipant(study, ID, false);
     }
-    
-    @Test
-    public void sendSMS() throws Exception {
-        TestUtils.mockPlay().withBody(new SmsTemplate("This is a message")).mock();
-        
-        Result result = controller.sendSmsMessage(ID);
-        
-        TestUtils.assertResult(result, 202, "Message sent.");
-        verify(mockParticipantService).sendSmsMessage(eq(study), eq(ID), templateCaptor.capture());
-        
-        SmsTemplate resultTemplate = templateCaptor.getValue();
-        assertEquals("This is a message", resultTemplate.getMessage());
-    }
-    
+
     @Test
     public void sendSMSForWorker() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())

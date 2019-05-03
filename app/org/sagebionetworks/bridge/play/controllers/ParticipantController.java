@@ -432,15 +432,6 @@ public class ParticipantController extends BaseController {
 
         return okResult(participantService.getActivityEvents(study, userId));
     }
-    
-    public Result sendSmsMessage(String userId) throws Exception {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        SmsTemplate template = parseJson(request(), SmsTemplate.class);
-        
-        participantService.sendSmsMessage(study, userId, template);
-        return acceptedResult("Message sent.");
-    }
 
     public Result sendSmsMessageForWorker(String studyId, String userId) {
         getAuthenticatedSession(WORKER);
