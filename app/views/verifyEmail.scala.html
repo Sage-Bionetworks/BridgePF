@@ -43,7 +43,7 @@ try {
         type: "POST",
         url: "/v3/auth/verifyEmail",
         data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
-        contentType: "application/json, charset=utf-8",
+        contentType: "application/json; charset=utf-8",
         dataType: "json"
     });
 	// The response in the success case is 412, accept terms of study
