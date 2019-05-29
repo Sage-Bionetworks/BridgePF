@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "BridgeServerLogic" % "1.0.3",
+  "org.sagebionetworks" % "BridgeServerLogic" % "1.0.4",
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.42.0",
   // Spring
@@ -33,6 +33,9 @@ libraryDependencies ++= Seq(
   "org.sagebionetworks" % "BridgeTestUtils" % "1.4" % Test,
   "org.springframework" % "spring-test" % "4.3.18.RELEASE" % Test
 )
+
+// For some reason, Play overrides commons-codec with an older version. Use dependencyOverrides to force the latest.
+dependencyOverrides += "commons-codec" % "commons-codec" % "1.12"
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
 

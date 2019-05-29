@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.dynamodb.DynamoSmsMessage;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -202,6 +203,11 @@ public class BridgeSpringConfig {
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
+    }
+
+    @Bean(name = "md5DigestUtils")
+    public DigestUtils md5DigestUtils() {
+        return new DigestUtils(DigestUtils.getMd5Digest());
     }
 
     @Bean(name = "s3CmsHelper")
